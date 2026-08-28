@@ -1,0 +1,10319 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+            name="viewport"
+            content="width=device-width,initial-scale=1.0"
+    >
+
+    <title>MedZoneX</title>
+
+    <!-- =====================================================
+         RAZORPAY
+         ===================================================== -->
+
+    <script
+            src="https://checkout.razorpay.com/v1/checkout.js">
+    </script>
+
+    <script>
+
+        /*
+         * MedZoneX Razorpay Payment Link
+         *
+         * IMPORTANT:
+         * This link opens the Razorpay payment page.
+         * Automatic subscription verification requires
+         * server-side Razorpay verification/webhook.
+         */
+
+        window.MEDZONE_RAZORPAY_LINK =
+            "https://razorpay.me/@StockPro26";
+
+    </script>
+
+
+    <!-- =====================================================
+         MAIN CSS
+         ===================================================== -->
+
+    <style>
+
+        *{
+            box-sizing:border-box;
+            font-family:Arial,sans-serif;
+        }
+
+
+        body{
+            margin:0;
+            background:#f5f7fb;
+            color:#18212f;
+        }
+
+
+        button{
+            border:0;
+            cursor:pointer;
+        }
+
+
+        button:disabled{
+            opacity:.55;
+            cursor:not-allowed;
+        }
+
+
+        input,
+        select{
+            width:100%;
+            padding:13px;
+            border:1px solid #d6dbe5;
+            border-radius:10px;
+            outline:none;
+            font-size:15px;
+            background:#fff;
+        }
+
+
+        input:focus,
+        select:focus{
+            border-color:#6d28d9;
+        }
+
+
+        /* =====================================================
+           PAGES
+           ===================================================== */
+
+        .page{
+            min-height:100vh;
+            display:none;
+            align-items:center;
+            justify-content:center;
+            padding:20px;
+        }
+
+
+        .page.active{
+            display:flex;
+        }
+
+
+        /* =====================================================
+           CARD
+           ===================================================== */
+
+        .card{
+            width:100%;
+            max-width:520px;
+            background:#fff;
+            border-radius:20px;
+            padding:30px;
+            box-shadow:0 10px 35px rgba(0,0,0,.08);
+        }
+
+
+        /* =====================================================
+           LOGO
+           ===================================================== */
+
+        .logo{
+            width:64px;
+            height:64px;
+            margin:auto;
+            border-radius:18px;
+            background:
+                linear-gradient(
+                    135deg,
+                    #5b21b6,
+                    #7c3aed
+                );
+            color:#fff;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:27px;
+            font-weight:bold;
+        }
+
+
+        h1,
+        h2{
+            text-align:center;
+        }
+
+
+        .sub{
+            text-align:center;
+            color:#6b7280;
+            margin-bottom:25px;
+        }
+
+
+        label{
+            display:block;
+            margin:14px 0 7px;
+            font-weight:600;
+        }
+
+
+        /* =====================================================
+           BUTTONS
+           ===================================================== */
+
+        .btn{
+            width:100%;
+            padding:14px;
+            margin-top:15px;
+            border-radius:10px;
+            background:#6d28d9;
+            color:#fff;
+            font-size:16px;
+            font-weight:bold;
+        }
+
+
+        .secondary{
+            background:#ede9fe;
+            color:#5b21b6;
+        }
+
+
+        .dark{
+            background:#111827;
+            color:#fff;
+        }
+
+
+        .green{
+            background:#15803d;
+            color:#fff;
+        }
+
+
+        .red{
+            background:#dc2626;
+            color:#fff;
+        }
+
+
+        .blue{
+            background:#0369a1;
+            color:#fff;
+        }
+
+
+        /* =====================================================
+           LINKS
+           ===================================================== */
+
+        .link{
+            text-align:center;
+            margin-top:18px;
+            color:#5b21b6;
+            cursor:pointer;
+            font-weight:bold;
+        }
+
+
+        .link:hover{
+            text-decoration:underline;
+        }
+
+
+        /* =====================================================
+           ERROR / SUCCESS
+           ===================================================== */
+
+        .error,
+        .success{
+            padding:12px;
+            border-radius:9px;
+            margin-top:15px;
+            display:none;
+        }
+
+
+        .error{
+            color:#991b1b;
+            background:#fef2f2;
+        }
+
+
+        .success{
+            color:#166534;
+            background:#f0fdf4;
+        }
+
+
+        /* =====================================================
+           OTP
+           ===================================================== */
+
+        .otp-row{
+            display:flex;
+            gap:10px;
+        }
+
+
+        .otp-row input{
+            flex:1;
+        }
+
+
+        .otp-row button{
+            width:125px;
+            border-radius:10px;
+            background:#111827;
+            color:#fff;
+            font-weight:bold;
+        }
+
+
+        /* =====================================================
+           PLANS
+           ===================================================== */
+
+        .plans-wrapper{
+            width:100%;
+            max-width:1100px;
+        }
+
+
+        .plans{
+            display:grid;
+            grid-template-columns:
+                repeat(3,1fr);
+            gap:20px;
+        }
+
+
+        .plan{
+            background:#fff;
+            border-radius:18px;
+            padding:25px;
+            box-shadow:
+                0 8px 30px rgba(0,0,0,.08);
+        }
+
+
+        .plan h3{
+            margin-top:0;
+            text-align:center;
+        }
+
+
+        .price{
+            font-size:29px;
+            font-weight:bold;
+            text-align:center;
+        }
+
+
+        .regular{
+            color:#9ca3af;
+            text-decoration:line-through;
+        }
+
+
+        .discount{
+            color:#15803d;
+            font-weight:bold;
+        }
+
+
+        .plan-feature{
+            margin:8px 0;
+        }
+
+
+        /* =====================================================
+           DASHBOARD
+           ===================================================== */
+
+        #dashboardPage{
+            padding:0;
+            align-items:stretch;
+            justify-content:stretch;
+        }
+
+
+        .dashboard{
+            width:100%;
+            min-height:100vh;
+            display:flex;
+        }
+
+
+        /* =====================================================
+           SIDEBAR
+           ===================================================== */
+
+        .sidebar{
+            width:230px;
+            background:#111827;
+            color:#fff;
+            padding:20px 14px;
+            flex-shrink:0;
+        }
+
+
+        .brand{
+            font-size:20px;
+            font-weight:bold;
+            padding:12px;
+            margin-bottom:25px;
+        }
+
+
+        .nav{
+            padding:13px;
+            border-radius:9px;
+            margin-bottom:7px;
+            cursor:pointer;
+        }
+
+
+        .nav:hover,
+        .nav.active{
+            background:#6d28d9;
+        }
+
+
+        .nav-warning{
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            min-width:22px;
+            height:22px;
+            margin-left:6px;
+            border-radius:50%;
+            background:#dc2626;
+            color:#fff;
+            font-size:12px;
+            font-weight:bold;
+        }
+
+
+        /* =====================================================
+           MAIN
+           ===================================================== */
+
+        .main{
+            flex:1;
+            padding:25px;
+            overflow:auto;
+        }
+
+
+        .section{
+            display:none;
+        }
+
+
+        .section.active{
+            display:block;
+        }
+
+
+        .dashboard-header{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:20px;
+        }
+
+
+        .dashboard-header h1{
+            margin:0;
+            text-align:left;
+        }
+
+
+        .dashboard-card{
+            background:#fff;
+            border-radius:16px;
+            padding:22px;
+            margin-bottom:20px;
+            box-shadow:
+                0 5px 20px rgba(0,0,0,.06);
+        }
+
+
+        /* =====================================================
+           TOP ADS
+           ===================================================== */
+
+        .top-ad{
+            height:150px;
+            border-radius:18px;
+            overflow:hidden;
+            margin-bottom:20px;
+        }
+
+
+        .ad-track{
+            height:100%;
+            display:flex;
+            width:300%;
+            animation:adslide 12s infinite;
+        }
+
+
+        .ad{
+            width:33.333%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            color:#fff;
+            font-size:26px;
+            font-weight:bold;
+            text-align:center;
+        }
+
+
+        .ad:nth-child(1){
+            background:#4c1d95;
+        }
+
+
+        .ad:nth-child(2){
+            background:#0369a1;
+        }
+
+
+        .ad:nth-child(3){
+            background:#047857;
+        }
+
+
+        @keyframes adslide{
+
+            0%,
+            28%{
+                transform:translateX(0);
+            }
+
+            33%,
+            61%{
+                transform:translateX(-33.333%);
+            }
+
+            66%,
+            94%{
+                transform:translateX(-66.666%);
+            }
+
+            100%{
+                transform:translateX(0);
+            }
+
+        }
+
+
+        /* =====================================================
+           CALCULATOR
+           ===================================================== */
+
+        .search-title{
+            font-weight:bold;
+            margin-bottom:8px;
+        }
+
+
+        .search-wrap{
+            position:relative;
+        }
+
+
+        .search-input{
+            padding-left:43px;
+        }
+
+
+        .search-icon{
+            position:absolute;
+            left:14px;
+            top:13px;
+            font-size:18px;
+        }
+
+
+        .search-results{
+            margin-top:8px;
+        }
+
+
+        .search-result{
+            background:#fff;
+            border:1px solid #e5e7eb;
+            border-radius:12px;
+            padding:13px;
+            margin-bottom:8px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:10px;
+        }
+
+
+        .search-product-name{
+            font-weight:bold;
+        }
+
+
+        .search-product-info{
+            font-size:13px;
+            color:#6b7280;
+            margin-top:4px;
+        }
+
+
+        .sell-btn{
+            padding:9px 14px;
+            border-radius:8px;
+            background:#15803d;
+            color:#fff;
+            font-weight:bold;
+            white-space:nowrap;
+        }
+
+
+        .not-found{
+            padding:15px;
+            background:#fef2f2;
+            border-radius:12px;
+            color:#991b1b;
+        }
+
+
+        .add-found{
+            margin-top:10px;
+            padding:10px 14px;
+            border-radius:9px;
+            background:#6d28d9;
+            color:#fff;
+            font-weight:bold;
+        }
+
+
+        .manual-sale{
+            margin-top:15px;
+            padding-top:15px;
+            border-top:1px solid #eee;
+        }
+
+
+        .bill-list{
+            margin-top:20px;
+        }
+
+
+        .bill-item{
+            padding:15px;
+            border:1px solid #e5e7eb;
+            border-radius:12px;
+            margin-top:10px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:12px;
+        }
+
+
+        .bill-name{
+            font-weight:bold;
+        }
+
+
+        .bill-info{
+            color:#6b7280;
+            font-size:13px;
+            margin-top:4px;
+        }
+
+
+        .bill-right{
+            text-align:right;
+        }
+
+
+        .remove-btn{
+            margin-top:5px;
+            padding:6px 9px;
+            border-radius:7px;
+            background:#fee2e2;
+            color:#991b1b;
+        }
+
+
+        .total-box{
+            margin-top:20px;
+            padding:20px;
+            border-radius:14px;
+            background:#111827;
+            color:#fff;
+            display:flex;
+            justify-content:space-between;
+            font-size:20px;
+            font-weight:bold;
+        }
+
+
+        .clear-bill{
+            width:auto;
+            padding:9px 14px;
+            margin:0;
+            font-size:13px;
+        }
+
+
+        /* =====================================================
+           STOCK / CAMERA
+           ===================================================== */
+
+        .camera-box{
+            border:2px dashed #c4b5fd;
+            border-radius:16px;
+            padding:25px;
+            text-align:center;
+            background:#faf5ff;
+        }
+
+
+        .camera-icon{
+            font-size:50px;
+        }
+
+
+        .camera-actions{
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:12px;
+            margin-top:15px;
+        }
+
+
+        #cameraVideo{
+            width:100%;
+            border-radius:14px;
+            margin-top:15px;
+            display:none;
+            background:#000;
+        }
+
+
+        #cameraCanvas{
+            display:none;
+        }
+
+
+        .ai-status{
+            display:none;
+            margin-top:15px;
+            padding:12px;
+            border-radius:10px;
+            background:#f3f4f6;
+        }
+
+
+        .medicine-form{
+            display:none;
+            margin-top:20px;
+        }
+
+
+        .form-grid{
+            display:grid;
+            grid-template-columns:
+                repeat(2,1fr);
+            gap:0 15px;
+        }
+
+
+        .full{
+            grid-column:1/-1;
+        }
+
+
+        .profit-preview{
+            margin-top:12px;
+            padding:12px;
+            border-radius:9px;
+            background:#eff6ff;
+            color:#1d4ed8;
+            font-weight:bold;
+        }
+
+
+        .stock-message{
+            margin-top:15px;
+            display:none;
+            padding:12px;
+            border-radius:9px;
+        }
+
+
+        .stock-success{
+            background:#f0fdf4;
+            color:#166534;
+        }
+
+
+        .stock-error{
+            background:#fef2f2;
+            color:#991b1b;
+        }
+
+
+        .stock-list{
+            margin-top:25px;
+        }
+
+
+        .stock-item{
+            background:#f9fafb;
+            border:1px solid #e5e7eb;
+            border-radius:13px;
+            padding:16px;
+            margin-bottom:10px;
+        }
+
+
+        .stock-item-title{
+            font-weight:bold;
+            font-size:17px;
+        }
+
+
+        .stock-item-info{
+            color:#6b7280;
+            font-size:14px;
+            margin-top:5px;
+            line-height:1.7;
+        }
+
+
+        .stock-grid{
+            display:grid;
+            grid-template-columns:
+                repeat(3,1fr);
+            gap:8px;
+            margin-top:10px;
+        }
+
+
+        .stock-stat{
+            background:#fff;
+            padding:8px;
+            border-radius:8px;
+            font-size:12px;
+        }
+
+
+        /* =====================================================
+           BUSINESS
+           ===================================================== */
+
+        .low-stock-card{
+            border:1px solid #fecaca;
+            background:#fff7f7;
+            border-radius:12px;
+            padding:14px;
+            margin-top:10px;
+            display:flex;
+            justify-content:space-between;
+            gap:12px;
+            align-items:center;
+        }
+
+
+        .low-stock-name{
+            font-weight:bold;
+        }
+
+
+        .low-stock-info{
+            font-size:13px;
+            color:#6b7280;
+            margin-top:4px;
+        }
+
+
+        .warning-text{
+            color:#b91c1c;
+            font-weight:bold;
+        }
+
+
+        /* =====================================================
+           PROFILE
+           ===================================================== */
+
+        .profile-row{
+            display:flex;
+            justify-content:space-between;
+            gap:20px;
+            padding:14px 0;
+            border-bottom:1px solid #eee;
+        }
+
+
+        .profile-label{
+            color:#6b7280;
+        }
+
+
+        .profile-value{
+            font-weight:bold;
+            text-align:right;
+        }
+
+
+        /* =====================================================
+           MODALS
+           ===================================================== */
+
+        .modal{
+            position:fixed;
+            inset:0;
+            background:rgba(0,0,0,.65);
+            display:none;
+            align-items:center;
+            justify-content:center;
+            padding:20px;
+            z-index:1000;
+        }
+
+
+        .modal.show{
+            display:flex;
+        }
+
+
+        .modal-card{
+            width:100%;
+            max-width:600px;
+            max-height:90vh;
+            overflow:auto;
+            background:#fff;
+            border-radius:18px;
+            padding:20px;
+        }
+
+
+        .modal-card h2{
+            text-align:left;
+        }
+
+
+        .modal-card video{
+            width:100%;
+            border-radius:14px;
+            background:#000;
+        }
+
+
+        .modal-actions{
+            display:grid;
+            grid-template-columns:
+                1fr 1fr;
+            gap:10px;
+            margin-top:15px;
+        }
+
+
+        /* =====================================================
+           MOBILE
+           ===================================================== */
+
+        @media(max-width:850px){
+
+            .plans{
+                grid-template-columns:1fr;
+            }
+
+
+            .form-grid{
+                grid-template-columns:1fr;
+            }
+
+
+            .full{
+                grid-column:auto;
+            }
+
+
+            .stock-grid{
+                grid-template-columns:
+                    1fr 1fr;
+            }
+
+        }
+
+
+        @media(max-width:650px){
+
+            .dashboard{
+                flex-direction:column;
+            }
+
+
+            .sidebar{
+                width:100%;
+                display:flex;
+                overflow-x:auto;
+                padding:8px;
+                order:2;
+                position:sticky;
+                bottom:0;
+                z-index:50;
+            }
+
+
+            .brand{
+                display:none;
+            }
+
+
+            .nav{
+                white-space:nowrap;
+                margin:0 4px;
+            }
+
+
+            .main{
+                padding:14px;
+                order:1;
+            }
+
+
+            .top-ad{
+                height:120px;
+            }
+
+
+            .ad{
+                font-size:20px;
+            }
+
+
+            .profile-row{
+                flex-direction:column;
+                gap:4px;
+            }
+
+
+            .profile-value{
+                text-align:left;
+            }
+
+
+            .stock-grid{
+                grid-template-columns:1fr;
+            }
+
+
+            .search-result{
+                align-items:flex-start;
+                flex-direction:column;
+            }
+
+
+            .sell-btn{
+                width:100%;
+            }
+
+
+            .bill-item{
+                align-items:flex-start;
+                flex-direction:column;
+            }
+
+
+            .bill-right{
+                text-align:left;
+                width:100%;
+            }
+
+
+            .camera-actions{
+                grid-template-columns:1fr;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     LOGIN PAGE
+     ===================================================== -->
+
+<div
+        id="loginPage"
+        class="page active"
+>
+
+    <div class="card">
+
+        <div class="logo">
+            MZ
+        </div>
+
+
+        <h1>
+            MedZoneX
+        </h1>
+
+
+        <div class="sub">
+            Medical Store Management
+        </div>
+
+
+        <label>
+            Email
+        </label>
+
+        <input
+                id="loginEmail"
+                type="email"
+                placeholder="Enter email"
+                autocomplete="email"
+        >
+
+
+        <label>
+            Password
+        </label>
+
+        <input
+                id="loginPassword"
+                type="password"
+                placeholder="Enter password"
+                autocomplete="current-password"
+        >
+
+
+        <button
+                id="loginBtn"
+                class="btn"
+                type="button"
+        >
+            Login
+        </button>
+
+
+        <div
+                id="loginError"
+                class="error"
+        ></div>
+
+
+        <div
+                id="openSignup"
+                class="link"
+        >
+            Don't have an account? Sign Up
+        </div>
+
+
+        <div
+                id="openForgotPassword"
+                class="link"
+        >
+            Forgot Password? Reset with OTP
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     SIGNUP PAGE
+     ===================================================== -->
+
+<div
+        id="signupPage"
+        class="page"
+>
+
+    <div class="card">
+
+        <div class="logo">
+            MZ
+        </div>
+
+
+        <h1>
+            Create Account
+        </h1>
+
+
+        <div class="sub">
+            Register your medical store
+        </div>
+
+
+        <label>
+            Medical / Store Name
+        </label>
+
+        <input
+                id="storeName"
+                type="text"
+                placeholder="Medical store name"
+                autocomplete="organization"
+        >
+
+
+        <label>
+            Owner Name
+        </label>
+
+        <input
+                id="ownerName"
+                type="text"
+                placeholder="Owner name"
+                autocomplete="name"
+        >
+
+
+        <label>
+            Mobile Number
+        </label>
+
+
+        <div class="otp-row">
+
+            <input
+                    id="phone"
+                    type="tel"
+                    placeholder="+91XXXXXXXXXX"
+                    autocomplete="tel"
+            >
+
+
+            <button
+                    id="sendOtpBtn"
+                    type="button"
+            >
+                Send OTP
+            </button>
+
+        </div>
+
+
+        <div
+                id="recaptcha-container"
+                style="margin-top:15px;"
+        ></div>
+
+
+        <label>
+            OTP
+        </label>
+
+
+        <div class="otp-row">
+
+            <input
+                    id="otp"
+                    type="text"
+                    maxlength="6"
+                    inputmode="numeric"
+                    placeholder="Enter OTP"
+            >
+
+
+            <button
+                    id="verifyOtpBtn"
+                    type="button"
+            >
+                Verify
+            </button>
+
+        </div>
+
+
+        <div
+                id="verifiedText"
+                style="
+                display:none;
+                color:#15803d;
+                font-weight:bold;
+                margin-top:8px;
+            "
+        >
+            ✓ Mobile number verified
+        </div>
+
+
+        <div
+                id="existingAccountMessage"
+                class="error"
+        >
+            Account already exists. You can continue by logging in.
+        </div>
+
+
+        <div
+                id="changeNumberContainer"
+                style="
+                display:none;
+                margin-top:10px;
+            "
+        >
+
+            <button
+                    id="changeNumberBtn"
+                    type="button"
+                    class="btn secondary"
+            >
+                Change Mobile Number
+            </button>
+
+        </div>
+
+
+        <label>
+            Email
+        </label>
+
+        <input
+                id="signupEmail"
+                type="email"
+                placeholder="Email"
+                autocomplete="email"
+        >
+
+
+        <label>
+            Password
+        </label>
+
+        <input
+                id="signupPassword"
+                type="password"
+                placeholder="Create password"
+                autocomplete="new-password"
+        >
+
+
+        <button
+                id="signupBtn"
+                class="btn"
+                type="button"
+                disabled
+        >
+            Create Account
+        </button>
+
+
+        <div
+                id="signupError"
+                class="error"
+        ></div>
+
+
+        <div
+                id="signupSuccess"
+                class="success"
+        ></div>
+
+
+        <div
+                class="link"
+                id="openLogin"
+        >
+            Already have an account? Login
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     FORGOT PASSWORD PAGE
+     ===================================================== -->
+
+<div
+        id="forgotPasswordPage"
+        class="page"
+>
+
+    <div class="card">
+
+        <div class="logo">
+            MZ
+        </div>
+
+
+        <h1>
+            Reset Password
+        </h1>
+
+
+        <div class="sub">
+            Verify your registered mobile number with OTP
+        </div>
+
+
+        <label>
+            Registered Mobile Number
+        </label>
+
+
+        <div class="otp-row">
+
+            <input
+                    id="resetPhone"
+                    type="tel"
+                    placeholder="+91XXXXXXXXXX"
+                    autocomplete="tel"
+            >
+
+
+            <button
+                    id="resetSendOtpBtn"
+                    type="button"
+            >
+                Send OTP
+            </button>
+
+        </div>
+
+
+        <div
+                id="reset-recaptcha-container"
+                style="margin-top:15px;"
+        ></div>
+
+
+        <label>
+            OTP
+        </label>
+
+
+        <div class="otp-row">
+
+            <input
+                    id="resetOtp"
+                    type="text"
+                    maxlength="6"
+                    inputmode="numeric"
+                    placeholder="Enter OTP"
+            >
+
+
+            <button
+                    id="resetVerifyOtpBtn"
+                    type="button"
+            >
+                Verify
+            </button>
+
+        </div>
+
+
+        <div
+                id="resetVerifiedText"
+                style="
+                display:none;
+                color:#15803d;
+                font-weight:bold;
+                margin-top:8px;
+            "
+        >
+            ✓ Mobile number verified
+        </div>
+
+
+        <div
+                id="resetPasswordFields"
+                style="display:none;"
+        >
+
+            <label>
+                New Password
+            </label>
+
+            <input
+                    id="newPassword"
+                    type="password"
+                    placeholder="New password (minimum 6 characters)"
+                    autocomplete="new-password"
+            >
+
+
+            <label>
+                Confirm New Password
+            </label>
+
+            <input
+                    id="confirmNewPassword"
+                    type="password"
+                    placeholder="Confirm new password"
+                    autocomplete="new-password"
+            >
+
+
+            <button
+                    id="resetPasswordBtn"
+                    type="button"
+                    class="btn"
+            >
+                Change Password
+            </button>
+
+        </div>
+
+
+        <div
+                id="forgotError"
+                class="error"
+        ></div>
+
+
+        <div
+                id="forgotSuccess"
+                class="success"
+        ></div>
+
+
+        <div
+                class="link"
+                id="forgotBackToLogin"
+        >
+            Back to Login
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     PLANS PAGE
+     ===================================================== -->
+
+<div
+        id="plansPage"
+        class="page"
+>
+
+    <div class="plans-wrapper">
+
+        <h1>
+            Choose Your Plan
+        </h1>
+
+
+        <div class="sub">
+            Select a plan to continue
+        </div>
+
+
+        <div class="plans">
+
+
+            <!-- =================================================
+                 1 MONTH
+                 ================================================= -->
+
+            <div class="plan">
+
+                <h3>
+                    1 Month Plan
+                </h3>
+
+
+                <div class="price">
+                    ₹900
+                </div>
+
+
+                <p>
+                    ₹900 / month
+                </p>
+
+
+                <p class="regular">
+                    Regular: ₹900
+                </p>
+
+
+                <p class="discount">
+                    Total: ₹900
+                </p>
+
+
+                <p class="plan-feature">
+                    ✓ Full Stock Management
+                </p>
+
+                <p class="plan-feature">
+                    ✓ Calculator & Billing
+                </p>
+
+                <p class="plan-feature">
+                    ✓ AI Photo Recognition
+                </p>
+
+                <p class="plan-feature">
+                    ✓ Profile Management
+                </p>
+
+
+                <button
+                        class="btn payBtn"
+                        type="button"
+                        data-plan="1"
+                        data-amount="900"
+                >
+                    Pay ₹900
+                </button>
+
+
+                <button
+                        class="btn secondary direct-pay-link"
+                        type="button"
+                        data-plan="1"
+                >
+                    Pay via Razorpay
+                </button>
+
+            </div>
+
+
+            <!-- =================================================
+                 6 MONTH
+                 ================================================= -->
+
+            <div class="plan">
+
+                <h3>
+                    6 Month Plan
+                </h3>
+
+
+                <div class="price">
+                    ₹4,800
+                </div>
+
+
+                <p>
+                    ₹800 / month × 6 months
+                </p>
+
+
+                <p class="regular">
+                    Regular: ₹5,400
+                </p>
+
+
+                <p class="discount">
+                    Save ₹600
+                </p>
+
+
+                <p class="plan-feature">
+                    ✓ Full Stock Management
+                </p>
+
+                <p class="plan-feature">
+                    ✓ Calculator & Billing
+                </p>
+
+                <p class="plan-feature">
+                    ✓ AI Photo Recognition
+                </p>
+
+                <p class="plan-feature">
+                    ✓ Profile Management
+                </p>
+
+
+                <button
+                        class="btn payBtn"
+                        type="button"
+                        data-plan="6"
+                        data-amount="4800"
+                >
+                    Pay ₹4,800
+                </button>
+
+
+                <button
+                        class="btn secondary direct-pay-link"
+                        type="button"
+                        data-plan="6"
+                >
+                    Pay via Razorpay
+                </button>
+
+            </div>
+
+
+            <!-- =================================================
+                 12 MONTH
+                 ================================================= -->
+
+            <div class="plan">
+
+                <h3>
+                    12 Month Plan
+                </h3>
+
+
+                <div class="price">
+                    ₹9,000
+                </div>
+
+
+                <p>
+                    ₹750 / month × 12 months
+                </p>
+
+
+                <p class="regular">
+                    Regular: ₹10,800
+                </p>
+
+
+                <p class="discount">
+                    Save ₹1,800
+                </p>
+
+
+                <p class="plan-feature">
+                    ✓ Full Stock Management
+                </p>
+
+                <p class="plan-feature">
+                    ✓ Calculator & Billing
+                </p>
+
+                <p class="plan-feature">
+                    ✓ AI Photo Recognition
+                </p>
+
+                <p class="plan-feature">
+                    ✓ Profile Management
+                </p>
+
+
+                <button
+                        class="btn payBtn"
+                        type="button"
+                        data-plan="12"
+                        data-amount="9000"
+                >
+                    Pay ₹9,000
+                </button>
+
+
+                <button
+                        class="btn secondary direct-pay-link"
+                        type="button"
+                        data-plan="12"
+                >
+                    Pay via Razorpay
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div
+                id="paymentError"
+                class="error"
+        ></div>
+
+
+        <div
+                class="dashboard-card"
+                style="
+                margin:20px auto 0;
+                max-width:620px;
+                background:#f8fafc;
+            "
+        >
+
+            <h3 style="margin-top:0;">
+                💳 Direct Razorpay Payment
+            </h3>
+
+
+            <p class="small-text">
+                Payment button se checkout open na ho
+                to direct Razorpay payment page khol sakte ho.
+            </p>
+
+
+            <button
+                    id="directRazorpayBtn"
+                    type="button"
+                    class="btn"
+            >
+                Open Razorpay Payment Page
+            </button>
+
+        </div>
+
+
+        <div
+                class="link"
+                id="plansBack"
+        >
+            Back
+        </div>
+
+    </div>
+
+</div>
+
+<!-- =========================================================
+     MEDZONEX — PART 2
+     FIREBASE AUTHENTICATION + NAVIGATION
+     ========================================================= -->
+
+<script type="module">
+
+    /* =========================================================
+       FIREBASE IMPORTS
+       ========================================================= */
+
+    import {
+        initializeApp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+
+    import {
+        getAuth,
+        RecaptchaVerifier,
+        signInWithPhoneNumber,
+        createUserWithEmailAndPassword,
+        signInWithEmailAndPassword,
+        sendPasswordResetEmail,
+        signOut,
+        onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+
+    import {
+        getFirestore,
+        collection,
+        doc,
+        setDoc,
+        getDoc,
+        getDocs,
+        query,
+        where,
+        updateDoc,
+        serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+    /* =========================================================
+       FIREBASE CONFIG
+       =========================================================
+
+       IMPORTANT:
+       YAHAN APNE FIREBASE PROJECT KA ACTUAL CONFIG DALO.
+       Firebase Console:
+       Project Settings
+       → General
+       → Your apps
+       → Web app
+       → Firebase SDK snippet
+       ========================================================= */
+
+    const firebaseConfig = {
+
+        apiKey: "YOUR_API_KEY",
+
+        authDomain: "YOUR_PROJECT.firebaseapp.com",
+
+        projectId: "YOUR_PROJECT_ID",
+
+        storageBucket: "YOUR_PROJECT.appspot.com",
+
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+
+        appId: "YOUR_APP_ID"
+
+    };
+
+
+    /* =========================================================
+       INITIALIZE FIREBASE
+       ========================================================= */
+
+    const app = initializeApp(firebaseConfig);
+
+    const auth = getAuth(app);
+
+    const db = getFirestore(app);
+
+
+    /* =========================================================
+       GLOBAL MEDZONEX STATE
+       ========================================================= */
+
+    window.MedZoneX = {
+
+        currentUser: null,
+
+        currentUserData: null,
+
+        signupPhoneVerified: false,
+
+        resetPhoneVerified: false,
+
+        signupConfirmation: null,
+
+        resetConfirmation: null,
+
+        signupRecaptcha: null,
+
+        resetRecaptcha: null,
+
+        pendingPlan: null,
+
+        pendingAmount: null
+
+    };
+
+
+    /* =========================================================
+       HELPER — GET ELEMENT
+       ========================================================= */
+
+    function $(id) {
+
+        return document.getElementById(id);
+
+    }
+
+
+    /* =========================================================
+       HELPER — SHOW ERROR
+       ========================================================= */
+
+    function showError(id, message) {
+
+        const el = $(id);
+
+        if (!el) return;
+
+        el.textContent = message;
+
+        el.style.display = "block";
+
+    }
+
+
+    /* =========================================================
+       HELPER — SHOW SUCCESS
+       ========================================================= */
+
+    function showSuccess(id, message) {
+
+        const el = $(id);
+
+        if (!el) return;
+
+        el.textContent = message;
+
+        el.style.display = "block";
+
+    }
+
+
+    /* =========================================================
+       HELPER — HIDE MESSAGE
+       ========================================================= */
+
+    function hideMessage(id) {
+
+        const el = $(id);
+
+        if (!el) return;
+
+        el.style.display = "none";
+
+        el.textContent = "";
+
+    }
+
+
+    /* =========================================================
+       HELPER — NORMALIZE PHONE
+       ========================================================= */
+
+    function normalizePhone(phone) {
+
+        phone = String(phone || "")
+            .replace(/\s+/g, "")
+            .replace(/-/g, "");
+
+
+        if (phone.startsWith("+91")) {
+
+            return phone;
+
+        }
+
+
+        if (phone.startsWith("91") && phone.length === 12) {
+
+            return "+" + phone;
+
+        }
+
+
+        if (/^\d{10}$/.test(phone)) {
+
+            return "+91" + phone;
+
+        }
+
+
+        return phone;
+
+    }
+
+
+    /* =========================================================
+       HELPER — VALIDATE INDIAN MOBILE
+       ========================================================= */
+
+    function validIndianPhone(phone) {
+
+        phone = normalizePhone(phone);
+
+        return /^\+91[6-9]\d{9}$/.test(phone);
+
+    }
+
+
+    /* =========================================================
+       HELPER — SHOW PAGE
+       ========================================================= */
+
+    function showPage(pageId) {
+
+        document
+            .querySelectorAll(".page")
+            .forEach(page => {
+
+                page.classList.remove("active");
+
+            });
+
+
+        const page = $(pageId);
+
+        if (page) {
+
+            page.classList.add("active");
+
+            window.scrollTo({
+
+                top: 0,
+
+                behavior: "smooth"
+
+            });
+
+        }
+
+    }
+
+
+    /* =========================================================
+       LOGIN PAGE
+       ========================================================= */
+
+    function goToLogin() {
+
+        showPage("loginPage");
+
+        hideMessage("loginError");
+
+        hideMessage("loginSuccess");
+
+    }
+
+
+    /* =========================================================
+       SIGNUP PAGE
+       ========================================================= */
+
+    function goToSignup() {
+
+        showPage("signupPage");
+
+        hideMessage("signupError");
+
+        hideMessage("signupSuccess");
+
+    }
+
+
+    /* =========================================================
+       FORGOT PASSWORD PAGE
+       ========================================================= */
+
+    function goToForgotPassword() {
+
+        showPage("forgotPasswordPage");
+
+        hideMessage("forgotError");
+
+        hideMessage("forgotSuccess");
+
+    }
+
+
+    /* =========================================================
+       PLANS PAGE
+       ========================================================= */
+
+    function goToPlans() {
+
+        showPage("plansPage");
+
+    }
+
+
+    /* =========================================================
+       DASHBOARD PAGE
+       ========================================================= */
+
+    function goToDashboard() {
+
+        showPage("dashboardPage");
+
+    }
+
+
+    /* =========================================================
+       SIGNUP — RESET OTP STATE
+       ========================================================= */
+
+    function resetSignupOtpState() {
+
+        window.MedZoneX.signupPhoneVerified = false;
+
+        window.MedZoneX.signupConfirmation = null;
+
+
+        const verified = $("verifiedText");
+
+        if (verified) {
+
+            verified.style.display = "none";
+
+        }
+
+
+        const signupBtn = $("signupBtn");
+
+        if (signupBtn) {
+
+            signupBtn.disabled = true;
+
+        }
+
+
+        const changeContainer =
+            $("changeNumberContainer");
+
+        if (changeContainer) {
+
+            changeContainer.style.display = "none";
+
+        }
+
+    }
+
+
+    /* =========================================================
+       RESET PASSWORD — RESET OTP STATE
+       ========================================================= */
+
+    function resetPasswordOtpState() {
+
+        window.MedZoneX.resetPhoneVerified = false;
+
+        window.MedZoneX.resetConfirmation = null;
+
+
+        const verified =
+            $("resetVerifiedText");
+
+        if (verified) {
+
+            verified.style.display = "none";
+
+        }
+
+
+        const fields =
+            $("resetPasswordFields");
+
+        if (fields) {
+
+            fields.style.display = "none";
+
+        }
+
+    }
+
+
+    /* =========================================================
+       FIREBASE RECAPTCHA
+       ========================================================= */
+
+    function createSignupRecaptcha() {
+
+        try {
+
+            if (window.MedZoneX.signupRecaptcha) {
+
+                return window.MedZoneX.signupRecaptcha;
+
+            }
+
+
+            window.MedZoneX.signupRecaptcha =
+                new RecaptchaVerifier(
+                    auth,
+                    "recaptcha-container",
+                    {
+                        size: "normal",
+
+                        callback: () => {
+
+                            hideMessage("signupError");
+
+                        },
+
+                        "expired-callback": () => {
+
+                            showError(
+                                "signupError",
+                                "reCAPTCHA expired. Please verify again."
+                            );
+
+                        }
+
+                    }
+                );
+
+
+            return window.MedZoneX.signupRecaptcha;
+
+        } catch (error) {
+
+            console.error(
+                "Signup reCAPTCHA error:",
+                error
+            );
+
+            throw error;
+
+        }
+
+    }
+
+
+    /* =========================================================
+       RESET PASSWORD RECAPTCHA
+       ========================================================= */
+
+    function createResetRecaptcha() {
+
+        try {
+
+            if (window.MedZoneX.resetRecaptcha) {
+
+                return window.MedZoneX.resetRecaptcha;
+
+            }
+
+
+            window.MedZoneX.resetRecaptcha =
+                new RecaptchaVerifier(
+                    auth,
+                    "reset-recaptcha-container",
+                    {
+                        size: "normal",
+
+                        callback: () => {
+
+                            hideMessage("forgotError");
+
+                        },
+
+                        "expired-callback": () => {
+
+                            showError(
+                                "forgotError",
+                                "reCAPTCHA expired. Please verify again."
+                            );
+
+                        }
+
+                    }
+                );
+
+
+            return window.MedZoneX.resetRecaptcha;
+
+        } catch (error) {
+
+            console.error(
+                "Reset reCAPTCHA error:",
+                error
+            );
+
+            throw error;
+
+        }
+
+    }
+
+
+    /* =========================================================
+       CHECK MOBILE ALREADY EXISTS
+       ========================================================= */
+
+    async function checkMobileExists(phone) {
+
+        const normalized =
+            normalizePhone(phone);
+
+
+        try {
+
+            const q = query(
+
+                collection(db, "users"),
+
+                where(
+                    "mobile",
+                    "==",
+                    normalized
+                )
+
+            );
+
+
+            const snapshot =
+                await getDocs(q);
+
+
+            return !snapshot.empty;
+
+        } catch (error) {
+
+            console.error(
+                "Mobile check failed:",
+                error
+            );
+
+            throw error;
+
+        }
+
+    }
+
+
+    /* =========================================================
+       CHECK EMAIL ALREADY EXISTS
+       ========================================================= */
+
+    async function checkEmailExists(email) {
+
+        try {
+
+            const q = query(
+
+                collection(db, "users"),
+
+                where(
+                    "email",
+                    "==",
+                    email.toLowerCase()
+                )
+
+            );
+
+
+            const snapshot =
+                await getDocs(q);
+
+
+            return !snapshot.empty;
+
+        } catch (error) {
+
+            console.error(
+                "Email check failed:",
+                error
+            );
+
+            return false;
+
+        }
+
+    }
+
+
+    /* =========================================================
+       SIGNUP — SEND OTP
+       ========================================================= */
+
+    async function sendSignupOTP() {
+
+        hideMessage("signupError");
+
+        hideMessage("signupSuccess");
+
+
+        const phoneInput =
+            $("phone");
+
+
+        if (!phoneInput) return;
+
+
+        const phone =
+            normalizePhone(
+                phoneInput.value
+            );
+
+
+        if (!validIndianPhone(phone)) {
+
+            showError(
+                "signupError",
+                "Please enter a valid 10-digit Indian mobile number."
+            );
+
+            return;
+
+        }
+
+
+        const sendButton =
+            $("sendOtpBtn");
+
+
+        if (sendButton) {
+
+            sendButton.disabled = true;
+
+            sendButton.textContent =
+                "Checking...";
+
+        }
+
+
+        try {
+
+            /* =============================================
+               CHECK EXISTING ACCOUNT FIRST
+               ============================================= */
+
+            const exists =
+                await checkMobileExists(phone);
+
+
+            if (exists) {
+
+                const existing =
+                    $("existingAccountMessage");
+
+
+                if (existing) {
+
+                    existing.style.display =
+                        "block";
+
+                }
+
+
+                const change =
+                    $("changeNumberContainer");
+
+
+                if (change) {
+
+                    change.style.display =
+                        "block";
+
+                }
+
+
+                if (sendButton) {
+
+                    sendButton.disabled = false;
+
+                    sendButton.textContent =
+                        "Send OTP";
+
+                }
+
+
+                return;
+
+            }
+
+
+            /* =============================================
+               CREATE RECAPTCHA
+               ============================================= */
+
+            const verifier =
+                createSignupRecaptcha();
+
+
+            if (sendButton) {
+
+                sendButton.textContent =
+                    "Sending...";
+
+            }
+
+
+            /* =============================================
+               SEND FIREBASE PHONE OTP
+               ============================================= */
+
+            const confirmation =
+                await signInWithPhoneNumber(
+                    auth,
+                    phone,
+                    verifier
+                );
+
+
+            window.MedZoneX
+                .signupConfirmation =
+                confirmation;
+
+
+            window.MedZoneX
+                .signupPhoneVerified =
+                false;
+
+
+            showSuccess(
+                "signupSuccess",
+                "OTP sent successfully to " + phone
+            );
+
+
+            if (sendButton) {
+
+                sendButton.disabled = false;
+
+                sendButton.textContent =
+                    "OTP Sent";
+
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                "Signup OTP error:",
+                error
+            );
+
+
+            let message =
+                "Unable to send OTP.";
+
+
+            if (
+                error.code ===
+                "auth/invalid-phone-number"
+            ) {
+
+                message =
+                    "Invalid mobile number.";
+
+            }
+
+
+            if (
+                error.code ===
+                "auth/too-many-requests"
+            ) {
+
+                message =
+                    "Too many OTP requests. Please try again later.";
+
+            }
+
+
+            if (
+                error.code ===
+                "auth/quota-exceeded"
+            ) {
+
+                message =
+                    "Firebase SMS quota exceeded.";
+
+            }
+
+
+            if (
+                error.code ===
+                "auth/operation-not-allowed"
+            ) {
+
+                message =
+                    "Phone Authentication is not enabled in Firebase.";
+
+            }
+
+
+            showError(
+                "signupError",
+                message
+            );
+
+
+            if (sendButton) {
+
+                sendButton.disabled = false;
+
+                sendButton.textContent =
+                    "Send OTP";
+
+            }
+
+        }
+
+    }
+
+
+    /* =========================================================
+       SIGNUP — VERIFY OTP
+       ========================================================= */
+
+    async function verifySignupOTP() {
+
+        hideMessage("signupError");
+
+        hideMessage("signupSuccess");
+
+
+        const confirmation =
+            window.MedZoneX
+                .signupConfirmation;
+
+
+        if (!confirmation) {
+
+            showError(
+                "signupError",
+                "Please send OTP first."
+            );
+
+            return;
+
+        }
+
+
+        const otp =
+            String(
+                $("otp")?.value || ""
+            ).trim();
+
+
+        if (!/^\d{6}$/.test(otp)) {
+
+            showError(
+                "signupError",
+                "Please enter the 6-digit OTP."
+            );
+
+            return;
+
+        }
+
+
+        const button =
+            $("verifyOtpBtn");
+
+
+        if (button) {
+
+            button.disabled = true;
+
+            button.textContent =
+                "Verifying...";
+
+        }
+
+
+        try {
+
+            await confirmation.confirm(otp);
+
+
+            window.MedZoneX
+                .signupPhoneVerified =
+                true;
+
+
+            const verified =
+                $("verifiedText");
+
+
+            if (verified) {
+
+                verified.style.display =
+                    "block";
+
+            }
+
+
+            const signupButton =
+                $("signupBtn");
+
+
+            if (signupButton) {
+
+                signupButton.disabled =
+                    false;
+
+            }
+
+
+            const change =
+                $("changeNumberContainer");
+
+
+            if (change) {
+
+                change.style.display =
+                    "block";
+
+            }
+
+
+            showSuccess(
+                "signupSuccess",
+                "Mobile number verified. You can create your account now."
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "OTP verification error:",
+                error
+            );
+
+
+            showError(
+                "signupError",
+                "Invalid or expired OTP. Please try again."
+            );
+
+
+        } finally {
+
+            if (button) {
+
+                button.disabled = false;
+
+                button.textContent =
+                    "Verify";
+
+            }
+
+        }
+
+    }
+
+
+    /* =========================================================
+       SIGNUP — CREATE ACCOUNT
+       ========================================================= */
+
+    async function signupUser() {
+
+        hideMessage("signupError");
+
+        hideMessage("signupSuccess");
+
+
+        if (
+            !window.MedZoneX
+                .signupPhoneVerified
+        ) {
+
+            showError(
+                "signupError",
+                "Please verify your mobile number with OTP first."
+            );
+
+            return;
+
+        }
+
+
+        const storeName =
+            String(
+                $("storeName")?.value || ""
+            ).trim();
+
+
+        const ownerName =
+            String(
+                $("ownerName")?.value || ""
+            ).trim();
+
+
+        const mobile =
+            normalizePhone(
+                $("phone")?.value || ""
+            );
+
+
+        const email =
+            String(
+                $("signupEmail")?.value || ""
+            ).trim()
+            .toLowerCase();
+
+
+        const password =
+            String(
+                $("signupPassword")?.value || ""
+            );
+
+
+        /* =============================================
+           VALIDATION
+           ============================================= */
+
+        if (!storeName) {
+
+            showError(
+                "signupError",
+                "Please enter medical/store name."
+            );
+
+            return;
+
+        }
+
+
+        if (!ownerName) {
+
+            showError(
+                "signupError",
+                "Please enter owner name."
+            );
+
+            return;
+
+        }
+
+
+        if (!validIndianPhone(mobile)) {
+
+            showError(
+                "signupError",
+                "Please enter a valid mobile number."
+            );
+
+            return;
+
+        }
+
+
+        if (!email) {
+
+            showError(
+                "signupError",
+                "Email is required."
+            );
+
+            return;
+
+        }
+
+
+        if (!email.includes("@")) {
+
+            showError(
+                "signupError",
+                "Please enter a valid email address."
+            );
+
+            return;
+
+        }
+
+
+        if (password.length < 6) {
+
+            showError(
+                "signupError",
+                "Password must be at least 6 characters."
+            );
+
+            return;
+
+        }
+
+
+        const button =
+            $("signupBtn");
+
+
+        if (button) {
+
+            button.disabled = true;
+
+            button.textContent =
+                "Creating Account...";
+
+        }
+
+
+        try {
+
+            /* =============================================
+               CHECK MOBILE ONE MORE TIME
+               ============================================= */
+
+            const mobileExists =
+                await checkMobileExists(mobile);
+
+
+            if (mobileExists) {
+
+                showError(
+                    "signupError",
+                    "Account already exists. You can continue by logging in."
+                );
+
+                return;
+
+            }
+
+
+            /* =============================================
+               CHECK EMAIL IN OUR DATABASE
+               ============================================= */
+
+            const emailExists =
+                await checkEmailExists(email);
+
+
+            if (emailExists) {
+
+                showError(
+                    "signupError",
+                    "This email is already registered. Please login."
+                );
+
+                return;
+
+            }
+
+
+            /* =============================================
+               CREATE FIREBASE EMAIL/PASSWORD ACCOUNT
+               ============================================= */
+
+            const credential =
+                await createUserWithEmailAndPassword(
+                    auth,
+                    email,
+                    password
+                );
+
+
+            const user =
+                credential.user;
+
+
+            /* =============================================
+               SAVE USER DATA IN FIRESTORE
+               ============================================= */
+
+            await setDoc(
+
+                doc(
+                    db,
+                    "users",
+                    user.uid
+                ),
+
+                {
+
+                    uid: user.uid,
+
+                    ownerName:
+                        ownerName,
+
+                    storeName:
+                        storeName,
+
+                    mobile:
+                        mobile,
+
+                    email:
+                        email,
+
+                    signupDate:
+                        serverTimestamp(),
+
+                    loginDate:
+                        serverTimestamp(),
+
+                    subscriptionActive:
+                        false,
+
+                    subscriptionPlan:
+                        null,
+
+                    subscriptionStart:
+                        null,
+
+                    subscriptionEnd:
+                        null,
+
+                    paymentStatus:
+                        "pending",
+
+                    createdAt:
+                        serverTimestamp(),
+
+                    updatedAt:
+                        serverTimestamp()
+
+                }
+
+            );
+
+
+            /* =============================================
+               SIGNUP COMPLETE
+               ============================================= */
+
+            showSuccess(
+                "signupSuccess",
+                "Account created successfully. Please choose your plan."
+            );
+
+
+            window.MedZoneX.currentUser =
+                user;
+
+
+            window.MedZoneX.currentUserData = {
+
+                uid: user.uid,
+
+                ownerName,
+
+                storeName,
+
+                mobile,
+
+                email,
+
+                subscriptionActive:
+                    false
+
+            };
+
+
+            /* =============================================
+               GO TO PLANS
+               ============================================= */
+
+            setTimeout(() => {
+
+                goToPlans();
+
+            }, 700);
+
+
+        } catch (error) {
+
+            console.error(
+                "Signup error:",
+                error
+            );
+
+
+            let message =
+                "Unable to create account.";
+
+
+            if (
+                error.code ===
+                "auth/email-already-in-use"
+            ) {
+
+                message =
+                    "This email is already registered. Please login.";
+
+            }
+
+
+            if (
+                error.code ===
+                "auth/weak-password"
+            ) {
+
+                message =
+                    "Password is too weak. Use at least 6 characters.";
+
+            }
+
+
+            if (
+                error.code ===
+                "auth/invalid-email"
+            ) {
+
+                message =
+                    "Invalid email address.";
+
+            }
+
+
+            showError(
+                "signupError",
+                message
+            );
+
+
+        } finally {
+
+            if (button) {
+
+                button.disabled = false;
+
+                button.textContent =
+                    "Create Account";
+
+            }
+
+        }
+
+    }
+
+
+    /* =========================================================
+       LOGIN
+       ========================================================= */
+
+    async function loginUser() {
+
+        hideMessage("loginError");
+
+        hideMessage("loginSuccess");
+
+
+        const email =
+            String(
+                $("loginEmail")?.value || ""
+            ).trim()
+            .toLowerCase();
+
+
+        const password =
+            String(
+                $("loginPassword")?.value || ""
+            );
+
+
+        /* =============================================
+           REQUIRED VALIDATION
+           ============================================= */
+
+        if (!email) {
+
+            showError(
+                "loginError",
+                "Email is required."
+            );
+
+            $("loginEmail")?.focus();
+
+            return;
+
+        }
+
+
+        if (!password) {
+
+            showError(
+                "loginError",
+                "Password is required."
+            );
+
+            $("loginPassword")?.focus();
+
+            return;
+
+        }
+
+
+        const button =
+            $("loginBtn");
+
+
+        if (button) {
+
+            button.disabled = true;
+
+            button.textContent =
+                "Logging in...";
+
+        }
+
+
+        try {
+
+            /* =============================================
+               FIREBASE LOGIN
+               ============================================= */
+
+            const credential =
+                await signInWithEmailAndPassword(
+                    auth,
+                    email,
+                    password
+                );
+
+
+            const user =
+                credential.user;
+
+
+            window.MedZoneX.currentUser =
+                user;
+
+
+            /* =============================================
+               GET USER DOCUMENT
+               ============================================= */
+
+            const userRef =
+                doc(
+                    db,
+                    "users",
+                    user.uid
+                );
+
+
+            const userSnap =
+                await getDoc(userRef);
+
+
+            if (!userSnap.exists()) {
+
+                showError(
+                    "loginError",
+                    "Account data was not found. Please contact customer care."
+                );
+
+                return;
+
+            }
+
+
+            const userData =
+                userSnap.data();
+
+
+            /* =============================================
+               UPDATE LOGIN DATE
+               ============================================= */
+
+            await updateDoc(
+
+                userRef,
+
+                {
+
+                    loginDate:
+                        serverTimestamp(),
+
+                    updatedAt:
+                        serverTimestamp()
+
+                }
+
+            );
+
+
+            window.MedZoneX.currentUserData =
+                userData;
+
+
+            /* =============================================
+               SUBSCRIPTION CHECK
+               ============================================= */
+
+            const active =
+                userData.subscriptionActive === true;
+
+
+            if (active) {
+
+                showSuccess(
+                    "loginSuccess",
+                    "Login successful. Opening dashboard..."
+                );
+
+
+                setTimeout(() => {
+
+                    goToDashboard();
+
+                }, 400);
+
+            } else {
+
+                showSuccess(
+                    "loginSuccess",
+                    "Login successful. Please choose a subscription plan."
+                );
+
+
+                setTimeout(() => {
+
+                    goToPlans();
+
+                }, 400);
+
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                "Login error:",
+                error
+            );
+
+
+            let message =
+                "Login failed.";
+
+
+            if (
+                error.code ===
+                "auth/invalid-credential"
+            ) {
+
+                message =
+                    "Wrong email or password.";
+
+            }
+
+
+            if (
+                error.code ===
+                "auth/invalid-email"
+            ) {
+
+                message =
+                    "Please enter a valid email address.";
+
+            }
+
+
+            if (
+                error.code ===
+                "auth/user-not-found"
+            ) {
+
+                message =
+                    "Account not found. Please Sign Up first.";
+
+            }
+
+
+            if (
+                error.code ===
+                "auth/wrong-password"
+            ) {
+
+                message =
+                    "Wrong password.";
+
+            }
+
+
+            if (
+                error.code ===
+                "auth/too-many-requests"
+            ) {
+
+                message =
+                    "Too many login attempts. Please try again later.";
+
+            }
+
+
+            showError(
+                "loginError",
+                message
+            );
+
+
+        } finally {
+
+            if (button) {
+
+                button.disabled = false;
+
+                button.textContent =
+                    "Login";
+
+            }
+
+        }
+
+    }
+
+
+    /* =========================================================
+       FORGOT PASSWORD — SEND OTP
+       ========================================================= */
+
+    async function sendResetOTP() {
+
+        hideMessage("forgotError");
+
+        hideMessage("forgotSuccess");
+
+
+        const phone =
+            normalizePhone(
+                $("resetPhone")?.value || ""
+            );
+
+
+        if (!validIndianPhone(phone)) {
+
+            showError(
+                "forgotError",
+                "Please enter your registered 10-digit mobile number."
+            );
+
+            return;
+
+        }
+
+
+        const button =
+            $("resetSendOtpBtn");
+
+
+        if (button) {
+
+            button.disabled = true;
+
+            button.textContent =
+                "Checking...";
+
+        }
+
+
+        try {
+
+            /* =============================================
+               MAKE SURE NUMBER IS REGISTERED
+               ============================================= */
+
+            const q =
+                query(
+
+                    collection(
+                        db,
+                        "users"
+                    ),
+
+                    where(
+                        "mobile",
+                        "==",
+                        phone
+                    )
+
+                );
+
+
+            const snapshot =
+                await getDocs(q);
+
+
+            if (snapshot.empty) {
+
+                showError(
+                    "forgotError",
+                    "No account found with this mobile number."
+                );
+
+                return;
+
+            }
+
+
+            /* =============================================
+               RECAPTCHA
+               ============================================= */
+
+            const verifier =
+                createResetRecaptcha();
+
+
+            if (button) {
+
+                button.textContent =
+                    "Sending...";
+
+            }
+
+
+            /* =============================================
+               SEND OTP
+               ============================================= */
+
+            const confirmation =
+                await signInWithPhoneNumber(
+                    auth,
+                    phone,
+                    verifier
+                );
+
+
+            window.MedZoneX
+                .resetConfirmation =
+                confirmation;
+
+
+            window.MedZoneX
+                .resetPhoneVerified =
+                false;
+
+
+            showSuccess(
+                "forgotSuccess",
+                "OTP sent successfully."
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Reset OTP error:",
+                error
+            );
+
+
+            showError(
+                "forgotError",
+                "Unable to send OTP. Please check your number and try again."
+            );
+
+
+        } finally {
+
+            if (button) {
+
+                button.disabled = false;
+
+                button.textContent =
+                    "Send OTP";
+
+            }
+
+        }
+
+    }
+
+
+    /* =========================================================
+       FORGOT PASSWORD — VERIFY OTP
+       ========================================================= */
+
+    async function verifyResetOTP() {
+
+        hideMessage("forgotError");
+
+        hideMessage("forgotSuccess");
+
+
+        const confirmation =
+            window.MedZoneX
+                .resetConfirmation;
+
+
+        if (!confirmation) {
+
+            showError(
+                "forgotError",
+                "Please send OTP first."
+            );
+
+            return;
+
+        }
+
+
+        const otp =
+            String(
+                $("resetOtp")?.value || ""
+            ).trim();
+
+
+        if (!/^\d{6}$/.test(otp)) {
+
+            showError(
+                "forgotError",
+                "Please enter the 6-digit OTP."
+            );
+
+            return;
+
+        }
+
+
+        const button =
+            $("resetVerifyOtpBtn");
+
+
+        if (button) {
+
+            button.disabled = true;
+
+            button.textContent =
+                "Verifying...";
+
+        }
+
+
+        try {
+
+            await confirmation.confirm(otp);
+
+
+            window.MedZoneX
+                .resetPhoneVerified =
+                true;
+
+
+            const verified =
+                $("resetVerifiedText");
+
+
+            if (verified) {
+
+                verified.style.display =
+                    "block";
+
+            }
+
+
+            const fields =
+                $("resetPasswordFields");
+
+
+            if (fields) {
+
+                fields.style.display =
+                    "block";
+
+            }
+
+
+            showSuccess(
+                "forgotSuccess",
+                "Mobile number verified. Enter your new password."
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Reset OTP verification error:",
+                error
+            );
+
+
+            showError(
+                "forgotError",
+                "Invalid or expired OTP."
+            );
+
+
+        } finally {
+
+            if (button) {
+
+                button.disabled = false;
+
+                button.textContent =
+                    "Verify";
+
+            }
+
+        }
+
+    }
+
+
+    /* =========================================================
+       FORGOT PASSWORD — CHANGE PASSWORD
+       =========================================================
+
+       IMPORTANT:
+       Firebase Email/Password user ka password directly
+       browser se change nahi kar sakte jab user logged in
+       nahi hai.
+
+       Isliye OTP verification ke baad PART 3 mein server-side
+       secure reset endpoint connect karenge.
+       ========================================================= */
+
+    async function resetPasswordAfterOTP() {
+
+        hideMessage("forgotError");
+
+        hideMessage("forgotSuccess");
+
+
+        if (
+            !window.MedZoneX
+                .resetPhoneVerified
+        ) {
+
+            showError(
+                "forgotError",
+                "Please verify OTP first."
+            );
+
+            return;
+
+        }
+
+
+        const newPassword =
+            String(
+                $("newPassword")?.value || ""
+            );
+
+
+        const confirmPassword =
+            String(
+                $("confirmNewPassword")?.value || ""
+            );
+
+
+        if (newPassword.length < 6) {
+
+            showError(
+                "forgotError",
+                "New password must be at least 6 characters."
+            );
+
+            return;
+
+        }
+
+
+        if (
+            newPassword !==
+            confirmPassword
+        ) {
+
+            showError(
+                "forgotError",
+                "Passwords do not match."
+            );
+
+            return;
+
+        }
+
+
+        /*
+         * PART 3 mein yahan secure server endpoint lagega:
+         *
+         * POST /api/reset-password
+         *
+         * Phone OTP ke Firebase ID token ke saath.
+         *
+         * Server Firebase Admin SDK se actual
+         * Email/Password user's password update karega.
+         */
+
+
+        showError(
+            "forgotError",
+            "OTP verified. Password reset server connection will be enabled in Part 3."
+        );
+
+    }
+
+
+    /* =========================================================
+       CHANGE MOBILE NUMBER
+       ========================================================= */
+
+    function changeSignupNumber() {
+
+        resetSignupOtpState();
+
+        hideMessage("signupError");
+
+        hideMessage("signupSuccess");
+
+
+        const otp =
+            $("otp");
+
+        if (otp) {
+
+            otp.value = "";
+
+        }
+
+
+        const phone =
+            $("phone");
+
+        if (phone) {
+
+            phone.focus();
+
+        }
+
+    }
+
+
+    /* =========================================================
+       RAZORPAY DIRECT PAYMENT
+       ========================================================= */
+
+    function openRazorpayPayment(plan, amount) {
+
+        window.MedZoneX.pendingPlan =
+            plan;
+
+        window.MedZoneX.pendingAmount =
+            amount;
+
+
+        /*
+         * Save selected plan locally.
+         * Actual paid status will NOT be marked here.
+         *
+         * Razorpay webhook/server verification is required
+         * before subscriptionActive becomes true.
+         */
+
+        localStorage.setItem(
+
+            "medzonex_pending_plan",
+
+            String(plan)
+
+        );
+
+
+        localStorage.setItem(
+
+            "medzonex_pending_amount",
+
+            String(amount)
+
+        );
+
+
+        const link =
+            window.MEDZONE_RAZORPAY_LINK;
+
+
+        if (!link) {
+
+            showError(
+                "paymentError",
+                "Razorpay payment link is missing."
+            );
+
+            return;
+
+        }
+
+
+        window.open(
+            link,
+            "_blank",
+            "noopener,noreferrer"
+        );
+
+
+    }
+
+
+    /* =========================================================
+       PAYMENT PLAN BUTTONS
+       ========================================================= */
+
+    function setupPaymentButtons() {
+
+        document
+            .querySelectorAll(".payBtn")
+            .forEach(button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        const plan =
+                            button.dataset.plan;
+
+
+                        const amount =
+                            Number(
+                                button.dataset.amount
+                            );
+
+
+                        openRazorpayPayment(
+                            plan,
+                            amount
+                        );
+
+                    }
+                );
+
+            });
+
+
+        document
+            .querySelectorAll(".direct-pay-link")
+            .forEach(button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        const plan =
+                            button.dataset.plan;
+
+
+                        const amountMap = {
+
+                            "1": 900,
+
+                            "6": 4800,
+
+                            "12": 9000
+
+                        };
+
+
+                        openRazorpayPayment(
+
+                            plan,
+
+                            amountMap[plan]
+
+                        );
+
+                    }
+                );
+
+            });
+
+
+        const directButton =
+            $("directRazorpayBtn");
+
+
+        if (directButton) {
+
+            directButton.addEventListener(
+                "click",
+                () => {
+
+                    openRazorpayPayment(
+                        "custom",
+                        0
+                    );
+
+                }
+            );
+
+        }
+
+    }
+
+
+    /* =========================================================
+       NAVIGATION BUTTONS
+       ========================================================= */
+
+    function setupNavigation() {
+
+
+        /* =============================================
+           LOGIN → SIGNUP
+           ============================================= */
+
+        $("openSignup")
+            ?.addEventListener(
+                "click",
+                goToSignup
+            );
+
+
+        /* =============================================
+           LOGIN → FORGOT
+           ============================================= */
+
+        $("openForgotPassword")
+            ?.addEventListener(
+                "click",
+                goToForgotPassword
+            );
+
+
+        /* =============================================
+           SIGNUP → LOGIN
+           ============================================= */
+
+        $("openLogin")
+            ?.addEventListener(
+                "click",
+                goToLogin
+            );
+
+
+        /* =============================================
+           FORGOT → LOGIN
+           ============================================= */
+
+        $("forgotBackToLogin")
+            ?.addEventListener(
+                "click",
+                goToLogin
+            );
+
+
+        /* =============================================
+           PLANS BACK
+           ============================================= */
+
+        $("plansBack")
+            ?.addEventListener(
+                "click",
+                () => {
+
+                    if (
+                        window.MedZoneX.currentUser
+                    ) {
+
+                        goToLogin();
+
+                    } else {
+
+                        goToLogin();
+
+                    }
+
+                }
+            );
+
+
+        /* =============================================
+           SIGNUP SEND OTP
+           ============================================= */
+
+        $("sendOtpBtn")
+            ?.addEventListener(
+                "click",
+                sendSignupOTP
+            );
+
+
+        /* =============================================
+           SIGNUP VERIFY OTP
+           ============================================= */
+
+        $("verifyOtpBtn")
+            ?.addEventListener(
+                "click",
+                verifySignupOTP
+            );
+
+
+        /* =============================================
+           SIGNUP CREATE
+           ============================================= */
+
+        $("signupBtn")
+            ?.addEventListener(
+                "click",
+                signupUser
+            );
+
+
+        /* =============================================
+           CHANGE NUMBER
+           ============================================= */
+
+        $("changeNumberBtn")
+            ?.addEventListener(
+                "click",
+                changeSignupNumber
+            );
+
+
+        /* =============================================
+           LOGIN
+           ============================================= */
+
+        $("loginBtn")
+            ?.addEventListener(
+                "click",
+                loginUser
+            );
+
+
+        /* =============================================
+           RESET SEND OTP
+           ============================================= */
+
+        $("resetSendOtpBtn")
+            ?.addEventListener(
+                "click",
+                sendResetOTP
+            );
+
+
+        /* =============================================
+           RESET VERIFY OTP
+           ============================================= */
+
+        $("resetVerifyOtpBtn")
+            ?.addEventListener(
+                "click",
+                verifyResetOTP
+            );
+
+
+        /* =============================================
+           RESET PASSWORD
+           ============================================= */
+
+        $("resetPasswordBtn")
+            ?.addEventListener(
+                "click",
+                resetPasswordAfterOTP
+            );
+
+
+        /* =============================================
+           ENTER KEY — LOGIN
+           ============================================= */
+
+        $("loginPassword")
+            ?.addEventListener(
+                "keydown",
+                event => {
+
+                    if (
+                        event.key ===
+                        "Enter"
+                    ) {
+
+                        loginUser();
+
+                    }
+
+                }
+            );
+
+
+        /* =============================================
+           ENTER KEY — SIGNUP OTP
+           ============================================= */
+
+        $("otp")
+            ?.addEventListener(
+                "keydown",
+                event => {
+
+                    if (
+                        event.key ===
+                        "Enter"
+                    ) {
+
+                        verifySignupOTP();
+
+                    }
+
+                }
+            );
+
+
+        /* =============================================
+           ENTER KEY — RESET OTP
+           ============================================= */
+
+        $("resetOtp")
+            ?.addEventListener(
+                "keydown",
+                event => {
+
+                    if (
+                        event.key ===
+                        "Enter"
+                    ) {
+
+                        verifyResetOTP();
+
+                    }
+
+                }
+            );
+
+    }
+
+
+    /* =========================================================
+       AUTH STATE
+       ========================================================= */
+
+    onAuthStateChanged(
+
+        auth,
+
+        async user => {
+
+            console.log(
+                "Firebase auth state:",
+                user
+                    ? user.email || user.phoneNumber
+                    : "logged out"
+            );
+
+
+            if (!user) {
+
+                window.MedZoneX.currentUser =
+                    null;
+
+                return;
+
+            }
+
+
+            /*
+             * Phone OTP verification temporarily signs the user
+             * into Firebase Phone Auth.
+             *
+             * During signup, do NOT automatically open dashboard.
+             * The actual email/password account is created after
+             * OTP verification.
+             */
+
+
+            if (
+                user.phoneNumber &&
+                !user.email
+            ) {
+
+                return;
+
+            }
+
+
+            try {
+
+                const ref =
+                    doc(
+                        db,
+                        "users",
+                        user.uid
+                    );
+
+
+                const snap =
+                    await getDoc(ref);
+
+
+                if (!snap.exists()) {
+
+                    return;
+
+                }
+
+
+                const data =
+                    snap.data();
+
+
+                window.MedZoneX.currentUser =
+                    user;
+
+
+                window.MedZoneX.currentUserData =
+                    data;
+
+
+            } catch (error) {
+
+                console.error(
+                    "Auth state database error:",
+                    error
+                );
+
+            }
+
+        }
+
+    );
+
+
+    /* =========================================================
+       INITIALIZE
+       ========================================================= */
+
+    document.addEventListener(
+
+        "DOMContentLoaded",
+
+        () => {
+
+            console.log(
+                "MedZoneX Part 2 initialized."
+            );
+
+
+            setupNavigation();
+
+            setupPaymentButtons();
+
+
+            /*
+             * Login form should always show required
+             * validation when fields are empty.
+             */
+
+            const loginEmail =
+                $("loginEmail");
+
+
+            const loginPassword =
+                $("loginPassword");
+
+
+            if (loginEmail) {
+
+                loginEmail.addEventListener(
+                    "input",
+                    () => {
+
+                        hideMessage(
+                            "loginError"
+                        );
+
+                    }
+                );
+
+            }
+
+
+            if (loginPassword) {
+
+                loginPassword.addEventListener(
+                    "input",
+                    () => {
+
+                        hideMessage(
+                            "loginError"
+                        );
+
+                    }
+                );
+
+            }
+
+
+            /*
+             * Signup fields clear old messages.
+             */
+
+            [
+                "storeName",
+                "ownerName",
+                "phone",
+                "signupEmail",
+                "signupPassword",
+                "otp"
+            ].forEach(id => {
+
+                $(id)?.addEventListener(
+                    "input",
+                    () => {
+
+                        hideMessage(
+                            "signupError"
+                        );
+
+                    }
+                );
+
+            });
+
+
+            /*
+             * Reset fields clear old messages.
+             */
+
+            [
+                "resetPhone",
+                "resetOtp",
+                "newPassword",
+                "confirmNewPassword"
+            ].forEach(id => {
+
+                $(id)?.addEventListener(
+                    "input",
+                    () => {
+
+                        hideMessage(
+                            "forgotError"
+                        );
+
+                    }
+                );
+
+            });
+
+
+            /*
+             * Make sure login is the initial page.
+             */
+
+            showPage("loginPage");
+
+        }
+
+    );
+
+    </script>
+
+/* ============================================================
+MEDZONEX — PART 3
+AUTH + NAVIGATION + PLANS + SUBSCRIPTION GATE
+============================================================ */
+
+/* ---------- PAGE NAVIGATION ---------- */
+
+function showPage(pageId) {
+document.querySelectorAll(".page").forEach(page => {
+page.classList.remove("active");
+page.style.display = "none";
+});
+
+const page = document.getElementById(pageId);
+
+if (page) {
+page.classList.add("active");
+page.style.display = "block";
+window.scrollTo({
+top: 0,
+behavior: "smooth"
+});
+} else {
+console.error("MedZoneX page not found:", pageId);
+}
+}
+
+window.showPage = showPage;
+
+
+/* ---------- OPEN LOGIN ---------- */
+
+window.openLoginPage = function () {
+showPage("loginPage");
+
+const email = document.getElementById("loginEmail");
+
+if (email) {
+setTimeout(() => email.focus(), 100);
+}
+};
+
+
+/* ---------- OPEN SIGNUP ---------- */
+
+window.openSignupPage = function () {
+showPage("signupPage");
+
+const owner = document.getElementById("ownerName");
+
+if (owner) {
+setTimeout(() => owner.focus(), 100);
+}
+};
+
+
+/* ---------- OPEN FORGOT PASSWORD ---------- */
+
+window.openForgotPasswordPage = function () {
+showPage("forgotPasswordPage");
+
+const mobile = document.getElementById("forgotMobile");
+
+if (mobile) {
+setTimeout(() => mobile.focus(), 100);
+}
+};
+
+
+/* ---------- BACK BUTTONS ---------- */
+
+window.backToLogin = function () {
+showPage("loginPage");
+};
+
+window.backToSignup = function () {
+showPage("signupPage");
+};
+
+window.backToPlans = function () {
+showPage("plansPage");
+};
+
+
+/* ============================================================
+FIREBASE AUTH STATE
+============================================================ */
+
+onAuthStateChanged(auth, async (user) => {
+
+if (!user) {
+console.log("MedZoneX: No user logged in.");
+return;
+}
+
+console.log("MedZoneX user logged in:", user.email);
+
+try {
+
+const userRef = doc(db, "users", user.uid);
+const userSnap = await getDoc(userRef);
+
+if (!userSnap.exists()) {
+
+console.log("User document not found.");
+
+showPage("plansPage");
+return;
+}
+
+const userData = userSnap.data();
+
+/* Save current user globally */
+
+window.medZoneCurrentUser = {
+uid: user.uid,
+email: user.email || "",
+...userData
+};
+
+/* Update login date */
+
+await setDoc(
+userRef,
+{
+loginDate: serverTimestamp()
+},
+{
+merge: true
+}
+);
+
+/* ---------- SUBSCRIPTION CHECK ---------- */
+
+const subscriptionActive =
+userData.subscriptionActive === true;
+
+const subscriptionStatus =
+userData.subscriptionStatus || "";
+
+const subscriptionExpiry =
+userData.subscriptionExpiry || null;
+
+
+let validSubscription = subscriptionActive;
+
+
+/* Check expiry if available */
+
+if (subscriptionExpiry) {
+
+let expiryDate;
+
+if (
+subscriptionExpiry.toDate &&
+typeof subscriptionExpiry.toDate === "function"
+) {
+expiryDate = subscriptionExpiry.toDate();
+} else {
+expiryDate = new Date(subscriptionExpiry);
+}
+
+if (
+expiryDate instanceof Date &&
+!isNaN(expiryDate.getTime())
+) {
+if (expiryDate.getTime() < Date.now()) {
+validSubscription = false;
+
+await setDoc(
+userRef,
+{
+subscriptionActive: false,
+subscriptionStatus: "expired"
+},
+{
+merge: true
+}
+);
+}
+}
+}
+
+
+/* ---------- DASHBOARD OR PLANS ---------- */
+
+if (
+validSubscription &&
+subscriptionStatus !== "expired"
+) {
+
+showPage("dashboardPage");
+
+if (typeof loadDashboardData === "function") {
+await loadDashboardData();
+}
+
+} else {
+
+showPage("plansPage");
+
+}
+
+} catch (error) {
+
+console.error(
+"MedZoneX auth state error:",
+error
+);
+
+showPage("plansPage");
+}
+});
+
+
+/* ============================================================
+LOGIN
+============================================================ */
+
+const loginForm =
+document.getElementById("loginForm");
+
+if (loginForm) {
+
+loginForm.addEventListener("submit", async (event) => {
+
+event.preventDefault();
+
+const emailInput =
+document.getElementById("loginEmail");
+
+const passwordInput =
+document.getElementById("loginPassword");
+
+const message =
+document.getElementById("loginMessage");
+
+const button =
+document.getElementById("loginButton");
+
+
+const email =
+emailInput ? emailInput.value.trim() : "";
+
+const password =
+passwordInput ? passwordInput.value : "";
+
+
+/* Required validation */
+
+if (!email) {
+
+if (message) {
+message.textContent =
+"Email is required.";
+message.style.color = "red";
+}
+
+if (emailInput) {
+emailInput.focus();
+}
+
+return;
+}
+
+
+if (!password) {
+
+if (message) {
+message.textContent =
+"Password is required.";
+message.style.color = "red";
+}
+
+if (passwordInput) {
+passwordInput.focus();
+}
+
+return;
+}
+
+
+try {
+
+if (button) {
+button.disabled = true;
+button.textContent = "Logging in...";
+}
+
+if (message) {
+message.textContent = "";
+}
+
+
+const credential =
+await signInWithEmailAndPassword(
+auth,
+email,
+password
+);
+
+
+const user =
+credential.user;
+
+
+const userRef =
+doc(db, "users", user.uid);
+
+
+const userSnap =
+await getDoc(userRef);
+
+
+if (!userSnap.exists()) {
+
+await setDoc(
+userRef,
+{
+email: email,
+loginDate: serverTimestamp()
+},
+{
+merge: true
+}
+);
+
+showPage("plansPage");
+
+return;
+}
+
+
+const data =
+userSnap.data();
+
+
+const active =
+data.subscriptionActive === true;
+
+
+let notExpired = true;
+
+
+if (data.subscriptionExpiry) {
+
+let expiry;
+
+if (
+data.subscriptionExpiry.toDate &&
+typeof data.subscriptionExpiry.toDate ===
+"function"
+) {
+expiry =
+data.subscriptionExpiry.toDate();
+} else {
+expiry =
+new Date(
+data.subscriptionExpiry
+);
+}
+
+if (
+expiry instanceof Date &&
+!isNaN(expiry.getTime()) &&
+expiry.getTime() < Date.now()
+) {
+notExpired = false;
+}
+}
+
+
+if (
+active &&
+notExpired
+) {
+
+await setDoc(
+userRef,
+{
+loginDate: serverTimestamp()
+},
+{
+merge: true
+}
+);
+
+showPage("dashboardPage");
+
+if (
+typeof loadDashboardData ===
+"function"
+) {
+await loadDashboardData();
+}
+
+} else {
+
+await setDoc(
+userRef,
+{
+loginDate: serverTimestamp(),
+subscriptionActive: false
+},
+{
+merge: true
+}
+);
+
+showPage("plansPage");
+}
+
+
+} catch (error) {
+
+console.error(
+"MedZoneX login error:",
+error
+);
+
+
+let errorText =
+"Login failed. Please try again.";
+
+
+switch (error.code) {
+
+case "auth/invalid-email":
+errorText =
+"Please enter a valid email address.";
+break;
+
+case "auth/invalid-credential":
+case "auth/wrong-password":
+case "auth/user-not-found":
+errorText =
+"Incorrect email or password.";
+break;
+
+case "auth/too-many-requests":
+errorText =
+"Too many attempts. Please try again later.";
+break;
+
+case "auth/network-request-failed":
+errorText =
+"Internet connection problem.";
+break;
+}
+
+
+if (message) {
+
+message.textContent =
+errorText;
+
+message.style.color =
+"red";
+}
+
+} finally {
+
+if (button) {
+button.disabled = false;
+button.textContent = "Login";
+}
+}
+
+});
+}
+
+
+/* ============================================================
+SIGNUP
+============================================================ */
+
+const signupForm =
+document.getElementById("signupForm");
+
+
+if (signupForm) {
+
+signupForm.addEventListener(
+"submit",
+async (event) => {
+
+event.preventDefault();
+
+
+const ownerName =
+document.getElementById(
+"ownerName"
+)?.value.trim() || "";
+
+
+const storeName =
+document.getElementById(
+"storeName"
+)?.value.trim() || "";
+
+
+const mobile =
+document.getElementById(
+"signupMobile"
+)?.value.trim() || "";
+
+
+const email =
+document.getElementById(
+"signupEmail"
+)?.value.trim() || "";
+
+
+const password =
+document.getElementById(
+"signupPassword"
+)?.value || "";
+
+
+const confirmPassword =
+document.getElementById(
+"confirmPassword"
+)?.value || "";
+
+
+const message =
+document.getElementById(
+"signupMessage"
+);
+
+
+const button =
+document.getElementById(
+"signupButton"
+);
+
+
+/* ---------- REQUIRED FIELDS ---------- */
+
+if (!ownerName) {
+
+if (message) {
+message.textContent =
+"Owner name is required.";
+}
+
+return;
+}
+
+
+if (!storeName) {
+
+if (message) {
+message.textContent =
+"Store name is required.";
+}
+
+return;
+}
+
+
+if (!mobile) {
+
+if (message) {
+message.textContent =
+"Mobile number is required.";
+}
+
+return;
+}
+
+
+if (!email) {
+
+if (message) {
+message.textContent =
+"Email is required.";
+}
+
+return;
+}
+
+
+if (!password) {
+
+if (message) {
+message.textContent =
+"Password is required.";
+}
+
+return;
+}
+
+
+if (password.length < 6) {
+
+if (message) {
+message.textContent =
+"Password must be at least 6 characters.";
+}
+
+return;
+}
+
+
+if (password !== confirmPassword) {
+
+if (message) {
+message.textContent =
+"Passwords do not match.";
+}
+
+return;
+}
+
+
+/* ---------- MOBILE FORMAT ---------- */
+
+const cleanMobile =
+mobile.replace(/\D/g, "");
+
+
+if (
+cleanMobile.length !== 10
+) {
+
+if (message) {
+message.textContent =
+"Enter a valid 10-digit mobile number.";
+}
+
+return;
+}
+
+
+try {
+
+if (button) {
+button.disabled = true;
+button.textContent =
+"Creating account...";
+}
+
+
+/*
+* Firebase Auth creates the account.
+*
+* IMPORTANT:
+* Password is NOT stored in Firestore.
+* Firebase Authentication securely manages it.
+*/
+
+
+const credential =
+await createUserWithEmailAndPassword(
+auth,
+email,
+password
+);
+
+
+const user =
+credential.user;
+
+
+/* ---------- SAVE USER PROFILE ---------- */
+
+await setDoc(
+doc(
+db,
+"users",
+user.uid
+),
+{
+ownerName:
+ownerName,
+
+storeName:
+storeName,
+
+mobile:
+"+91" +
+cleanMobile,
+
+email:
+email,
+
+signupDate:
+serverTimestamp(),
+
+loginDate:
+serverTimestamp(),
+
+subscriptionActive:
+false,
+
+subscriptionStatus:
+"not_subscribed",
+
+subscriptionPlan:
+"",
+
+subscriptionExpiry:
+null
+},
+{
+merge: true
+}
+);
+
+
+/*
+* IMPORTANT:
+* Signup successful.
+* Do NOT open dashboard.
+* Open Plans first.
+*/
+
+showPage("plansPage");
+
+
+/* Optional message */
+
+const planMessage =
+document.getElementById(
+"planMessage"
+);
+
+if (planMessage) {
+
+planMessage.textContent =
+"Account created successfully. Please select a subscription plan.";
+
+planMessage.style.color =
+"green";
+}
+
+
+} catch (error) {
+
+console.error(
+"MedZoneX signup error:",
+error
+);
+
+
+let errorText =
+"Signup failed. Please try again.";
+
+
+switch (error.code) {
+
+case "auth/email-already-in-use":
+
+errorText =
+"This email is already registered. Please login.";
+
+break;
+
+
+case "auth/invalid-email":
+
+errorText =
+"Please enter a valid email.";
+
+break;
+
+
+case "auth/weak-password":
+
+errorText =
+"Password is too weak. Use at least 6 characters.";
+
+break;
+
+
+case "auth/network-request-failed":
+
+errorText =
+"Internet connection problem.";
+
+break;
+}
+
+
+if (message) {
+
+message.textContent =
+errorText;
+
+message.style.color =
+"red";
+}
+
+
+} finally {
+
+if (button) {
+
+button.disabled =
+false;
+
+button.textContent =
+"Sign Up";
+}
+}
+}
+);
+}
+
+
+/* ============================================================
+FORGOT PASSWORD — OTP FLOW
+============================================================ */
+
+let forgotConfirmationResult =
+null;
+
+
+/*
+* reCAPTCHA container
+*
+* Your HTML should contain:
+*
+* <div id="forgotRecaptcha"></div>
+*
+*/
+
+window.sendForgotOTP =
+async function () {
+
+const mobileInput =
+document.getElementById(
+"forgotMobile"
+);
+
+
+const message =
+document.getElementById(
+"forgotMessage"
+);
+
+
+if (!mobileInput) {
+
+console.error(
+"forgotMobile input not found"
+);
+
+return;
+}
+
+
+const mobile =
+mobileInput.value.trim()
+.replace(/\D/g, "");
+
+
+if (mobile.length !== 10) {
+
+if (message) {
+
+message.textContent =
+"Enter a valid 10-digit mobile number.";
+
+message.style.color =
+"red";
+}
+
+return;
+}
+
+
+try {
+
+if (
+window.forgotRecaptchaVerifier
+) {
+
+try {
+window.forgotRecaptchaVerifier.clear();
+} catch (_) {}
+}
+
+
+window.forgotRecaptchaVerifier =
+new RecaptchaVerifier(
+auth,
+"forgotRecaptcha",
+{
+size: "normal"
+}
+);
+
+
+await window
+.forgotRecaptchaVerifier
+.render();
+
+
+const phoneNumber =
+"+91" + mobile;
+
+
+forgotConfirmationResult =
+await signInWithPhoneNumber(
+auth,
+phoneNumber,
+window.forgotRecaptchaVerifier
+);
+
+
+if (message) {
+
+message.textContent =
+"OTP sent successfully.";
+
+message.style.color =
+"green";
+}
+
+
+const otpArea =
+document.getElementById(
+"forgotOtpArea"
+);
+
+
+if (otpArea) {
+otpArea.style.display =
+"block";
+}
+
+
+} catch (error) {
+
+console.error(
+"Forgot OTP error:",
+error
+);
+
+
+if (message) {
+
+message.textContent =
+"Could not send OTP. Please try again.";
+
+message.style.color =
+"red";
+}
+}
+};
+
+
+/* ---------- VERIFY FORGOT OTP ---------- */
+
+window.verifyForgotOTP =
+async function () {
+
+const otpInput =
+document.getElementById(
+"forgotOtp"
+);
+
+
+const newPasswordInput =
+document.getElementById(
+"newPassword"
+);
+
+
+const confirmPasswordInput =
+document.getElementById(
+"confirmNewPassword"
+);
+
+
+const message =
+document.getElementById(
+"forgotMessage"
+);
+
+
+if (!forgotConfirmationResult) {
+
+if (message) {
+
+message.textContent =
+"Please send OTP first.";
+
+message.style.color =
+"red";
+}
+
+return;
+}
+
+
+const otp =
+otpInput?.value.trim() || "";
+
+
+const newPassword =
+newPasswordInput?.value || "";
+
+
+const confirmPassword =
+confirmPasswordInput?.value || "";
+
+
+if (otp.length !== 6) {
+
+if (message) {
+
+message.textContent =
+"Enter the 6-digit OTP.";
+
+message.style.color =
+"red";
+}
+
+return;
+}
+
+
+if (newPassword.length < 6) {
+
+if (message) {
+
+message.textContent =
+"New password must be at least 6 characters.";
+
+message.style.color =
+"red";
+}
+
+return;
+}
+
+
+if (
+newPassword !==
+confirmPassword
+) {
+
+if (message) {
+
+message.textContent =
+"Passwords do not match.";
+
+message.style.color =
+"red";
+}
+
+return;
+}
+
+
+try {
+
+const result =
+await forgotConfirmationResult
+.confirm(otp);
+
+
+const user =
+result.user;
+
+
+/*
+* Firebase Authentication updates
+* the authenticated account.
+*
+* We do not store the password
+* inside Firestore.
+*/
+
+await updatePassword(
+user,
+newPassword
+);
+
+
+if (message) {
+
+message.textContent =
+"Password changed successfully. Please login.";
+
+message.style.color =
+"green";
+}
+
+
+setTimeout(() => {
+
+showPage("loginPage");
+
+}, 1200);
+
+
+} catch (error) {
+
+console.error(
+"OTP verification error:",
+error
+);
+
+
+if (message) {
+
+message.textContent =
+"Invalid OTP or password update failed.";
+
+message.style.color =
+"red";
+}
+}
+};
+
+
+/* ============================================================
+PLAN SELECTION
+============================================================ */
+
+window.selectPlan =
+async function (
+planName,
+amount,
+durationMonths
+) {
+
+console.log(
+"MedZoneX selected plan:",
+planName,
+amount,
+durationMonths
+);
+
+
+const user =
+auth.currentUser;
+
+
+if (!user) {
+
+showPage("loginPage");
+
+return;
+}
+
+
+/*
+* Save selected plan locally.
+* Payment verification will happen after
+* successful payment confirmation.
+*/
+
+localStorage.setItem(
+"medZoneSelectedPlan",
+JSON.stringify({
+planName:
+planName,
+
+amount:
+amount,
+
+durationMonths:
+durationMonths
+})
+);
+
+
+/*
+* Open payment page.
+*
+* IMPORTANT:
+* This is your Razorpay payment link.
+*/
+
+const paymentURL =
+"https://razorpay.me/@StockPro26";
+
+
+window.open(
+paymentURL,
+"_blank",
+"noopener,noreferrer"
+);
+
+
+/*
+* DO NOT activate subscription here.
+*
+* Subscription must only become active
+* after payment is verified by your backend/webhook.
+*/
+
+const message =
+document.getElementById(
+"planMessage"
+);
+
+
+if (message) {
+
+message.textContent =
+"Complete the payment. Your subscription will be activated after payment verification.";
+
+message.style.color =
+"orange";
+}
+};
+
+
+/* ============================================================
+PLAN BUTTON AUTO-DETECTION
+============================================================ */
+
+document.addEventListener(
+"click",
+(event) => {
+
+const button =
+event.target.closest(
+"[data-plan]"
+);
+
+
+if (!button) {
+return;
+}
+
+
+const planName =
+button.dataset.plan || "";
+
+
+const amount =
+Number(
+button.dataset.amount || 0
+);
+
+
+const duration =
+Number(
+button.dataset.duration || 1
+);
+
+
+if (planName) {
+
+window.selectPlan(
+planName,
+amount,
+duration
+);
+}
+}
+);
+
+
+/* ============================================================
+LOGOUT
+============================================================ */
+
+window.logoutMedZoneX =
+async function () {
+
+try {
+
+await signOut(auth);
+
+window.medZoneCurrentUser =
+null;
+
+localStorage.removeItem(
+"medZoneSelectedPlan"
+);
+
+showPage("loginPage");
+
+} catch (error) {
+
+console.error(
+"Logout error:",
+error
+);
+}
+};
+
+
+/* ============================================================
+DASHBOARD PROTECTION
+============================================================ */
+
+window.openDashboard =
+async function () {
+
+const user =
+auth.currentUser;
+
+
+if (!user) {
+
+showPage("loginPage");
+
+return;
+}
+
+
+try {
+
+const snap =
+await getDoc(
+doc(
+db,
+"users",
+user.uid
+)
+);
+
+
+if (!snap.exists()) {
+
+showPage("plansPage");
+
+return;
+}
+
+
+const data =
+snap.data();
+
+
+if (
+data.subscriptionActive !==
+true
+) {
+
+showPage("plansPage");
+
+return;
+}
+
+
+showPage(
+"dashboardPage"
+);
+
+
+if (
+typeof loadDashboardData ===
+"function"
+) {
+
+await loadDashboardData();
+}
+
+
+} catch (error) {
+
+console.error(
+"Dashboard protection error:",
+error
+);
+
+showPage("plansPage");
+}
+};
+
+
+/* ============================================================
+SETTINGS — CUSTOMER CARE
+============================================================ */
+
+window.openCustomerCare =
+function () {
+
+const phone =
+"9108526149";
+
+
+window.location.href =
+"tel:+91" + phone;
+};
+
+
+window.openCustomerEmail =
+function () {
+
+const email =
+"customercarestock@gmail.com";
+
+
+window.location.href =
+"mailto:" + email;
+};
+
+
+/* ============================================================
+MEDZONEX BRAND
+============================================================ */
+
+document
+.querySelectorAll(
+"[data-brand-name]"
+)
+.forEach(element => {
+
+element.textContent =
+"MedZoneX";
+
+});
+
+
+/* ============================================================
+INITIAL PAGE
+============================================================ */
+
+document.addEventListener(
+"DOMContentLoaded",
+() => {
+
+/*
+* Never automatically show dashboard
+* without checking Firebase subscription.
+*/
+
+const user =
+auth.currentUser;
+
+
+if (!user) {
+
+/*
+* If login page exists,
+* show login first.
+*/
+
+if (
+document.getElementById(
+"loginPage"
+)
+) {
+
+showPage(
+"loginPage"
+);
+}
+}
+}
+);
+
+
+/* ============================================================
+PART 3 END
+============================================================ */
+
+/* =========================================================
+MEDZONEX SERVER
+Razorpay + Firebase Admin + OpenAI Recognition
+========================================================= */
+
+require("dotenv").config();
+
+const express = require("express");
+const path = require("path");
+const crypto = require("crypto");
+
+const Razorpay = require("razorpay");
+
+const admin = require("firebase-admin");
+
+const OpenAI = require("openai");
+
+const multer = require("multer");
+
+
+/* =========================================================
+EXPRESS
+========================================================= */
+
+const app = express();
+
+const PORT =
+process.env.PORT || 3000;
+
+
+/* =========================================================
+MIDDLEWARE
+========================================================= */
+
+app.use(
+express.json({
+limit: "10mb"
+})
+);
+
+
+/*
+* Razorpay webhook ke liye raw body zaroori hoti hai.
+* Isliye webhook route JSON parser se pehle handle karenge.
+*/
+
+
+/* =========================================================
+STATIC WEBSITE
+========================================================= */
+
+app.use(
+express.static(
+path.join(__dirname)
+)
+);
+
+
+/* =========================================================
+FIREBASE ADMIN
+========================================================= */
+
+let firebaseAdminReady = false;
+
+
+try {
+
+/*
+* OPTION 1:
+* FIREBASE_SERVICE_ACCOUNT_JSON
+*
+* .env mein complete JSON rakh sakte ho.
+*/
+
+if (
+process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+) {
+
+const serviceAccount =
+JSON.parse(
+process.env
+.FIREBASE_SERVICE_ACCOUNT_JSON
+);
+
+
+admin.initializeApp({
+
+credential:
+admin.credential
+.cert(serviceAccount)
+
+});
+
+
+firebaseAdminReady = true;
+
+}
+
+/*
+* OPTION 2:
+* GOOGLE_APPLICATION_CREDENTIALS
+*/
+
+else if (
+process.env.GOOGLE_APPLICATION_CREDENTIALS
+) {
+
+admin.initializeApp({
+
+credential:
+admin.credential
+.applicationDefault()
+
+});
+
+
+firebaseAdminReady = true;
+
+}
+
+} catch (error) {
+
+console.error(
+"Firebase Admin initialization failed:",
+error.message
+);
+
+}
+
+
+let db = null;
+
+let firebaseAuth = null;
+
+
+if (firebaseAdminReady) {
+
+db =
+admin.firestore();
+
+firebaseAuth =
+admin.auth();
+
+}
+
+
+/* =========================================================
+OPENAI
+========================================================= */
+
+let openai = null;
+
+
+if (process.env.OPENAI_API_KEY) {
+
+openai =
+new OpenAI({
+
+apiKey:
+process.env.OPENAI_API_KEY
+
+});
+
+}
+
+
+/* =========================================================
+RAZORPAY
+========================================================= */
+
+let razorpay = null;
+
+
+if (
+process.env.RAZORPAY_KEY_ID &&
+process.env.RAZORPAY_KEY_SECRET
+) {
+
+razorpay =
+new Razorpay({
+
+key_id:
+process.env.RAZORPAY_KEY_ID,
+
+key_secret:
+process.env.RAZORPAY_KEY_SECRET
+
+});
+
+}
+
+
+/* =========================================================
+AUTHENTICATION MIDDLEWARE
+========================================================= */
+
+async function authenticateUser(
+req,
+res,
+next
+) {
+
+try {
+
+if (!firebaseAuth) {
+
+return res.status(500).json({
+
+error:
+"Firebase Admin is not configured."
+
+});
+
+}
+
+
+const header =
+req.headers.authorization || "";
+
+
+if (
+!header.startsWith(
+"Bearer "
+)
+) {
+
+return res.status(401).json({
+
+error:
+"Authentication required."
+
+});
+
+}
+
+
+const token =
+header.substring(7);
+
+
+const decodedToken =
+await firebaseAuth
+.verifyIdToken(token);
+
+
+req.user =
+decodedToken;
+
+
+next();
+
+
+} catch (error) {
+
+console.error(
+"Authentication error:",
+error.message
+);
+
+
+return res.status(401).json({
+
+error:
+"Invalid or expired login session."
+
+});
+
+}
+
+}
+
+
+/* =========================================================
+HOME
+========================================================= */
+
+app.get(
+"/",
+(req, res) => {
+
+res.sendFile(
+path.join(
+__dirname,
+"index.html"
+)
+);
+
+}
+);
+
+
+/* =========================================================
+HEALTH CHECK
+========================================================= */
+
+app.get(
+"/api/health",
+(req, res) => {
+
+res.json({
+
+success: true,
+
+app:
+"MedZoneX",
+
+server:
+"online",
+
+firebase:
+firebaseAdminReady,
+
+razorpay:
+!!razorpay,
+
+openai:
+!!openai
+
+});
+
+}
+);
+
+
+/* =========================================================
+CREATE RAZORPAY ORDER
+========================================================= */
+
+app.post(
+"/api/create-order",
+authenticateUser,
+async (req, res) => {
+
+try {
+
+if (!razorpay) {
+
+return res.status(500).json({
+
+error:
+"Razorpay is not configured on server."
+
+});
+
+}
+
+
+const amount =
+Number(
+req.body.amount
+);
+
+
+const plan =
+String(
+req.body.plan || ""
+);
+
+
+/* ---------- VALID PLANS ---------- */
+
+const plans = {
+
+"1":
+{
+amount: 900,
+months: 1
+},
+
+"6":
+{
+amount: 4800,
+months: 6
+},
+
+"12":
+{
+amount: 9000,
+months: 12
+}
+
+};
+
+
+if (
+!plans[plan]
+) {
+
+return res.status(400).json({
+
+error:
+"Invalid subscription plan."
+
+});
+
+}
+
+
+/*
+* NEVER trust amount coming from browser.
+*/
+
+const correctAmount =
+plans[plan].amount;
+
+
+if (
+amount !== correctAmount
+) {
+
+return res.status(400).json({
+
+error:
+"Invalid payment amount."
+
+});
+
+}
+
+
+const order =
+await razorpay.orders.create({
+
+amount:
+correctAmount * 100,
+
+currency:
+"INR",
+
+receipt:
+"mz_" +
+req.user.uid.substring(
+0,
+12
+) +
+"_" +
+Date.now(),
+
+notes: {
+
+uid:
+req.user.uid,
+
+email:
+req.user.email || "",
+
+plan:
+plan,
+
+months:
+plans[plan].months
+
+}
+
+});
+
+
+/*
+* Save pending payment.
+*/
+
+if (db) {
+
+await db
+.collection(
+"payments"
+)
+.doc(
+order.id
+)
+.set({
+
+uid:
+req.user.uid,
+
+email:
+req.user.email || "",
+
+plan:
+plan,
+
+months:
+plans[plan].months,
+
+amount:
+correctAmount,
+
+razorpayOrderId:
+order.id,
+
+status:
+"created",
+
+createdAt:
+admin.firestore
+.FieldValue
+.serverTimestamp()
+
+});
+
+}
+
+
+return res.json({
+
+success:
+true,
+
+keyId:
+process.env
+.RAZORPAY_KEY_ID,
+
+id:
+order.id,
+
+amount:
+order.amount,
+
+currency:
+order.currency,
+
+plan:
+plan
+
+});
+
+
+} catch (error) {
+
+console.error(
+"Create order error:",
+error
+);
+
+
+return res.status(500).json({
+
+error:
+"Could not create payment order."
+
+});
+
+}
+
+}
+);
+
+
+/* =========================================================
+VERIFY RAZORPAY PAYMENT
+========================================================= */
+
+app.post(
+"/api/verify-payment",
+authenticateUser,
+async (req, res) => {
+
+try {
+
+const {
+
+razorpay_order_id,
+
+razorpay_payment_id,
+
+razorpay_signature,
+
+plan
+
+} = req.body;
+
+
+if (
+!razorpay_order_id ||
+!razorpay_payment_id ||
+!razorpay_signature
+) {
+
+return res.status(400).json({
+
+error:
+"Incomplete payment information."
+
+});
+
+}
+
+
+/*
+* Razorpay signature verification.
+*/
+
+const generatedSignature =
+crypto
+.createHmac(
+"sha256",
+process.env
+.RAZORPAY_KEY_SECRET
+)
+.update(
+razorpay_order_id +
+"|" +
+razorpay_payment_id
+)
+.digest(
+"hex"
+);
+
+
+const validSignature =
+crypto.timingSafeEqual(
+
+Buffer.from(
+generatedSignature
+),
+
+Buffer.from(
+razorpay_signature
+)
+
+);
+
+
+if (!validSignature) {
+
+return res.status(400).json({
+
+error:
+"Payment signature verification failed."
+
+});
+
+}
+
+
+/* ---------- VALID PLAN ---------- */
+
+const plans = {
+
+"1":
+{
+months: 1,
+amount: 900
+},
+
+"6":
+{
+months: 6,
+amount: 4800
+},
+
+"12":
+{
+months: 12,
+amount: 9000
+}
+
+};
+
+
+const selectedPlan =
+plans[String(plan)];
+
+
+if (!selectedPlan) {
+
+return res.status(400).json({
+
+error:
+"Invalid subscription plan."
+
+});
+
+}
+
+
+/*
+* Make sure this order belongs to this user.
+*/
+
+if (db) {
+
+const paymentRef =
+db
+.collection(
+"payments"
+)
+.doc(
+razorpay_order_id
+);
+
+
+const paymentSnap =
+await paymentRef.get();
+
+
+if (
+!paymentSnap.exists
+) {
+
+return res.status(400).json({
+
+error:
+"Payment order not found."
+
+});
+
+}
+
+
+const paymentData =
+paymentSnap.data();
+
+
+if (
+paymentData.uid !==
+req.user.uid
+) {
+
+return res.status(403).json({
+
+error:
+"Payment does not belong to this account."
+
+});
+
+}
+
+
+if (
+paymentData.status ===
+"verified"
+) {
+
+return res.json({
+
+success:
+true,
+
+message:
+"Payment already verified."
+
+});
+
+}
+
+}
+
+
+/*
+* Calculate subscription expiry.
+*/
+
+const now =
+new Date();
+
+
+const expiry =
+new Date(now);
+
+
+expiry.setMonth(
+expiry.getMonth() +
+selectedPlan.months
+);
+
+
+/* ---------- UPDATE USER ---------- */
+
+if (db) {
+
+await db
+.collection(
+"users"
+)
+.doc(
+req.user.uid
+)
+.set({
+
+subscriptionActive:
+true,
+
+subscriptionStatus:
+"active",
+
+subscriptionPlan:
+String(plan),
+
+subscriptionMonths:
+selectedPlan.months,
+
+subscriptionAmount:
+selectedPlan.amount,
+
+subscriptionStart:
+admin.firestore
+.Timestamp
+.fromDate(now),
+
+subscriptionExpiry:
+admin.firestore
+.Timestamp
+.fromDate(expiry),
+
+paymentStatus:
+"paid",
+
+lastPaymentId:
+razorpay_payment_id,
+
+lastOrderId:
+razorpay_order_id,
+
+updatedAt:
+admin.firestore
+.FieldValue
+.serverTimestamp()
+
+}, {
+
+merge:
+true
+
+});
+
+
+/* ---------- UPDATE PAYMENT ---------- */
+
+await db
+.collection(
+"payments"
+)
+.doc(
+razorpay_order_id
+)
+.update({
+
+status:
+"verified",
+
+razorpayPaymentId:
+razorpay_payment_id,
+
+verifiedAt:
+admin.firestore
+.FieldValue
+.serverTimestamp()
+
+});
+
+}
+
+
+return res.json({
+
+success:
+true,
+
+message:
+"Payment verified successfully.",
+
+subscriptionActive:
+true,
+
+plan:
+String(plan),
+
+expiry:
+expiry.toISOString()
+
+});
+
+
+} catch (error) {
+
+console.error(
+"Payment verification error:",
+error
+);
+
+
+return res.status(500).json({
+
+error:
+"Payment verification failed."
+
+});
+
+}
+
+}
+);
+
+
+/* =========================================================
+RAZORPAY WEBHOOK
+=========================================================
+
+IMPORTANT:
+Razorpay Dashboard mein webhook URL:
+
+https://YOUR-DOMAIN.com/api/razorpay-webhook
+
+========================================================= */
+
+app.post(
+"/api/razorpay-webhook",
+express.raw({
+type:
+"application/json"
+}),
+async (req, res) => {
+
+try {
+
+const signature =
+req.headers[
+"x-razorpay-signature"
+];
+
+
+if (!signature) {
+
+return res
+.status(400)
+.send(
+"Missing signature"
+);
+
+}
+
+
+const expectedSignature =
+crypto
+.createHmac(
+"sha256",
+process.env
+.RAZORPAY_WEBHOOK_SECRET
+)
+.update(
+req.body
+)
+.digest(
+"hex"
+);
+
+
+if (
+signature !==
+expectedSignature
+) {
+
+return res
+.status(400)
+.send(
+"Invalid signature"
+);
+
+}
+
+
+const event =
+JSON.parse(
+req.body.toString()
+);
+
+
+console.log(
+"Razorpay webhook:",
+event.event
+);
+
+
+/*
+* Payment captured.
+*/
+
+if (
+event.event ===
+"payment.captured"
+) {
+
+const payment =
+event.payload
+?.payment
+?.entity;
+
+
+if (
+payment &&
+db
+) {
+
+const orderId =
+payment.order_id;
+
+
+const paymentRef =
+db
+.collection(
+"payments"
+)
+.doc(
+orderId
+);
+
+
+const paymentSnap =
+await paymentRef.get();
+
+
+if (
+paymentSnap.exists
+) {
+
+const paymentData =
+paymentSnap.data();
+
+
+const plan =
+String(
+paymentData.plan
+);
+
+
+const plans = {
+
+"1": 1,
+
+"6": 6,
+
+"12": 12
+
+};
+
+
+const months =
+plans[plan];
+
+
+if (months) {
+
+const start =
+new Date();
+
+
+const expiry =
+new Date(
+start
+);
+
+
+expiry.setMonth(
+expiry.getMonth() +
+months
+);
+
+
+await db
+.collection(
+"users"
+)
+.doc(
+paymentData.uid
+)
+.set({
+
+subscriptionActive:
+true,
+
+subscriptionStatus:
+"active",
+
+subscriptionPlan:
+plan,
+
+subscriptionMonths:
+months,
+
+subscriptionStart:
+admin.firestore
+.Timestamp
+.fromDate(
+start
+),
+
+subscriptionExpiry:
+admin.firestore
+.Timestamp
+.fromDate(
+expiry
+),
+
+paymentStatus:
+"paid",
+
+lastPaymentId:
+payment.id,
+
+lastOrderId:
+orderId,
+
+updatedAt:
+admin.firestore
+.FieldValue
+.serverTimestamp()
+
+}, {
+
+merge:
+true
+
+});
+
+
+await paymentRef
+.set({
+
+status:
+"verified",
+
+razorpayPaymentId:
+payment.id,
+
+webhookEvent:
+event.event,
+
+verifiedAt:
+admin.firestore
+.FieldValue
+.serverTimestamp()
+
+}, {
+
+merge:
+true
+
+});
+
+}
+
+}
+
+}
+
+}
+
+
+/*
+* Always acknowledge webhook.
+*/
+
+return res
+.status(200)
+.send("OK");
+
+
+} catch (error) {
+
+console.error(
+"Webhook error:",
+error
+);
+
+
+return res
+.status(500)
+.send("Webhook error");
+
+}
+
+}
+);
+
+
+/* =========================================================
+IMAGE UPLOAD
+========================================================= */
+
+const upload =
+multer({
+
+storage:
+multer.memoryStorage(),
+
+limits: {
+
+fileSize:
+10 * 1024 * 1024
+
+}
+
+});
+
+
+/* =========================================================
+AI MEDICINE RECOGNITION
+========================================================= */
+
+app.post(
+"/api/recognize-medicine",
+authenticateUser,
+upload.single("image"),
+async (req, res) => {
+
+try {
+
+if (!openai) {
+
+return res.status(500).json({
+
+error:
+"OpenAI API is not configured."
+
+});
+
+}
+
+
+if (!req.file) {
+
+return res.status(400).json({
+
+error:
+"Please upload a medicine/product image."
+
+});
+
+}
+
+
+/*
+* Convert image to base64.
+*/
+
+const base64 =
+req.file.buffer
+.toString(
+"base64"
+);
+
+
+const mimeType =
+req.file.mimetype;
+
+
+/*
+* Ask vision model to read the product.
+*/
+
+const response =
+await openai.responses.create({
+
+model:
+"gpt-4.1-mini",
+
+input: [
+
+{
+
+role:
+"user",
+
+content: [
+
+{
+
+type:
+"input_text",
+
+text:
+`Identify the medicine or medical-store product in this image.
+
+Return ONLY valid JSON.
+
+Use this exact structure:
+
+{
+"name": "",
+"brand": "",
+"genericName": "",
+"strength": "",
+"dosageForm": "",
+"packSize": "",
+"manufacturer": "",
+"mrp": "",
+"batchNumber": "",
+"expiryDate": "",
+"confidence": 0
+}
+
+Rules:
+- Read visible text carefully.
+- Do not invent information.
+- If a field cannot be read, use an empty string.
+- confidence must be between 0 and 1.
+- If the image is clear, make a serious attempt to identify it.
+- Return JSON only.`
+
+},
+
+{
+
+type:
+"input_image",
+
+image_url:
+"data:" +
+mimeType +
+";base64," +
+base64
+
+}
+
+]
+
+}
+
+]
+
+});
+
+
+const output =
+response.output_text;
+
+
+let medicine;
+
+
+try {
+
+medicine =
+JSON.parse(
+output
+);
+
+} catch (_) {
+
+/*
+* Sometimes model output may contain
+* markdown fences.
+*/
+
+const cleaned =
+output
+.replace(
+/```json/gi,
+""
+)
+.replace(
+/```/g,
+""
+)
+.trim();
+
+
+medicine =
+JSON.parse(
+cleaned
+);
+
+}
+
+
+return res.json({
+
+success:
+true,
+
+medicine:
+medicine
+
+});
+
+
+} catch (error) {
+
+console.error(
+"Medicine recognition error:",
+error
+);
+
+
+return res.status(500).json({
+
+error:
+"Could not recognise the product. Please upload a clearer image."
+
+});
+
+}
+
+}
+);
+
+
+/* =========================================================
+404 API
+========================================================= */
+
+app.use(
+"/api",
+(req, res) => {
+
+res.status(404).json({
+
+error:
+"API endpoint not found."
+
+});
+
+}
+);
+
+
+/* =========================================================
+SERVER START
+========================================================= */
+
+app.listen(
+PORT,
+"0.0.0.0",
+() => {
+
+console.log("");
+console.log(
+"========================================"
+);
+
+console.log(
+"       MedZoneX Server Started"
+);
+
+console.log(
+"========================================"
+);
+
+console.log(
+"Local:"
+);
+
+console.log(
+"http://localhost:" +
+PORT
+);
+
+console.log(
+"Network:"
+);
+
+console.log(
+"http://0.0.0.0:" +
+PORT
+);
+
+console.log(
+"Firebase Admin:",
+firebaseAdminReady
+? "READY"
+: "NOT CONFIGURED"
+);
+
+console.log(
+"Razorpay:",
+razorpay
+? "READY"
+: "NOT CONFIGURED"
+);
+
+console.log(
+"OpenAI:",
+openai
+? "READY"
+: "NOT CONFIGURED"
+);
+
+console.log(
+"========================================"
+);
+
+console.log("");
+
+}
+);
+
+/* =========================================================
+MEDZONEX — PART 6
+REAL RAZORPAY CHECKOUT
+========================================================= */
+
+async function openRazorpayPayment(plan, amount) {
+
+hideMessage("paymentError");
+
+
+/* ---------- LOGIN CHECK ---------- */
+
+if (!auth.currentUser) {
+
+showError(
+"paymentError",
+"Please login again before selecting a plan."
+);
+
+goToLogin();
+
+return;
+}
+
+
+/* ---------- VALID PLAN ---------- */
+
+const planAmounts = {
+
+"1": 900,
+
+"6": 4800,
+
+"12": 9000
+
+};
+
+
+const validAmount =
+planAmounts[String(plan)];
+
+
+if (!validAmount) {
+
+showError(
+"paymentError",
+"Invalid subscription plan."
+);
+
+return;
+}
+
+
+/*
+* Browser se amount aaye toh bhi
+* server apna amount verify karega.
+*/
+
+amount =
+Number(validAmount);
+
+
+window.MedZoneX.pendingPlan =
+String(plan);
+
+
+window.MedZoneX.pendingAmount =
+amount;
+
+
+localStorage.setItem(
+"medzonex_pending_plan",
+String(plan)
+);
+
+
+localStorage.setItem(
+"medzonex_pending_amount",
+String(amount)
+);
+
+
+try {
+
+/* ---------- FIREBASE TOKEN ---------- */
+
+const token =
+await auth.currentUser
+.getIdToken();
+
+
+/* ---------- CREATE ORDER ---------- */
+
+const response =
+await fetch(
+"/api/create-order",
+{
+
+method:
+"POST",
+
+headers: {
+
+"Content-Type":
+"application/json",
+
+"Authorization":
+"Bearer " +
+token
+
+},
+
+body:
+JSON.stringify({
+
+amount:
+amount,
+
+plan:
+String(plan)
+
+})
+
+}
+);
+
+
+if (!response.ok) {
+
+let errorMessage =
+"Could not create payment order.";
+
+try {
+
+const errorData =
+await response.json();
+
+if (
+errorData.error
+) {
+errorMessage =
+errorData.error;
+}
+
+} catch (_) {}
+
+
+throw new Error(
+errorMessage
+);
+}
+
+
+const order =
+await response.json();
+
+
+if (
+!order.success ||
+!order.id
+) {
+
+throw new Error(
+"Invalid payment order received."
+);
+}
+
+
+/* =================================================
+RAZORPAY CHECKOUT
+================================================= */
+
+if (
+typeof Razorpay ===
+"undefined"
+) {
+
+throw new Error(
+"Razorpay Checkout is not loaded. Please refresh the page."
+);
+}
+
+
+const planNames = {
+
+"1":
+"1 Month Plan",
+
+"6":
+"6 Month Plan",
+
+"12":
+"12 Month Plan"
+
+};
+
+
+const options = {
+
+key:
+order.keyId,
+
+
+amount:
+order.amount,
+
+
+currency:
+order.currency ||
+"INR",
+
+
+name:
+"MedZoneX",
+
+
+description:
+planNames[
+String(plan)
+] ||
+"MedZoneX Subscription",
+
+
+order_id:
+order.id,
+
+
+prefill: {
+
+name:
+$("profileOwner")
+?.textContent ||
+"",
+
+email:
+auth.currentUser
+.email ||
+"",
+
+contact:
+auth.currentUser
+.phoneNumber ||
+""
+
+},
+
+
+notes: {
+
+plan:
+String(plan)
+
+},
+
+
+theme: {
+
+color:
+"#6d28d9"
+
+},
+
+
+modal: {
+
+ondismiss:
+function () {
+
+console.log(
+"MedZoneX payment window closed."
+);
+
+}
+
+},
+
+
+/* =================================================
+PAYMENT SUCCESS
+================================================= */
+
+handler:
+async function (
+paymentResponse
+) {
+
+try {
+
+showMessage(
+"paymentSuccess",
+"Payment received. Verifying payment..."
+);
+
+
+const freshToken =
+await auth.currentUser
+.getIdToken(
+true
+);
+
+
+/* ---------- VERIFY ON SERVER ---------- */
+
+const verifyResponse =
+await fetch(
+"/api/verify-payment",
+{
+
+method:
+"POST",
+
+headers: {
+
+"Content-Type":
+"application/json",
+
+"Authorization":
+"Bearer " +
+freshToken
+
+},
+
+body:
+JSON.stringify({
+
+plan:
+String(plan),
+
+razorpay_order_id:
+paymentResponse
+.razorpay_order_id,
+
+razorpay_payment_id:
+paymentResponse
+.razorpay_payment_id,
+
+razorpay_signature:
+paymentResponse
+.razorpay_signature
+
+})
+
+}
+);
+
+
+const verifyData =
+await verifyResponse
+.json();
+
+
+if (
+!verifyResponse.ok ||
+!verifyData.success
+) {
+
+throw new Error(
+
+verifyData.error ||
+"Payment verification failed."
+
+);
+}
+
+
+/* ---------- PAYMENT VERIFIED ---------- */
+
+localStorage.removeItem(
+"medzonex_pending_plan"
+);
+
+
+localStorage.removeItem(
+"medzonex_pending_amount"
+);
+
+
+window.MedZoneX.pendingPlan =
+null;
+
+
+window.MedZoneX.pendingAmount =
+null;
+
+
+alert(
+"Payment successful! Your MedZoneX subscription is now active."
+);
+
+
+/*
+* IMPORTANT:
+* Dashboard only opens AFTER
+* server verification.
+*/
+
+showPage(
+"dashboardPage"
+);
+
+
+/* ---------- REFRESH PROFILE ---------- */
+
+if (
+typeof loadProfile ===
+"function"
+) {
+
+await loadProfile();
+
+}
+
+
+/* ---------- REFRESH STOCK ---------- */
+
+if (
+typeof loadStock ===
+"function"
+) {
+
+await loadStock();
+
+}
+
+
+/* ---------- REFRESH BILL ---------- */
+
+if (
+typeof renderBill ===
+"function"
+) {
+
+renderBill();
+
+}
+
+
+/*
+* Hide payment error/success
+* messages after navigation.
+*/
+
+hideMessage(
+"paymentError"
+);
+
+
+} catch (error) {
+
+console.error(
+"MedZoneX payment verification error:",
+error
+);
+
+
+showError(
+"paymentError",
+
+error.message ||
+"Payment was completed but verification failed. Please contact customer care."
+);
+
+}
+
+}
+
+};
+
+
+/* =================================================
+CREATE CHECKOUT
+================================================= */
+
+const razorpayCheckout =
+new Razorpay(
+options
+);
+
+
+/* ---------- PAYMENT FAILED ---------- */
+
+razorpayCheckout.on(
+"payment.failed",
+function (
+response
+) {
+
+console.error(
+"Razorpay payment failed:",
+response
+);
+
+
+const description =
+response
+?.error
+?.description;
+
+
+showError(
+"paymentError",
+
+description ||
+"Payment failed. Please try again."
+);
+
+}
+);
+
+
+/* ---------- OPEN ---------- */
+
+razorpayCheckout.open();
+
+
+} catch (error) {
+
+console.error(
+"MedZoneX payment start error:",
+error
+);
+
+
+showError(
+"paymentError",
+
+error.message ||
+"Payment could not be started."
+);
+
+}
+
+}
+
+
+/* =========================================================
+PAYMENT BUTTON SETUP
+========================================================= */
+
+function setupPaymentButtons() {
+
+document
+.querySelectorAll(
+".payBtn"
+)
+.forEach(
+button => {
+
+/*
+* Prevent duplicate listeners.
+*/
+
+if (
+button.dataset
+.medzonexPaymentReady ===
+"true"
+) {
+
+return;
+}
+
+
+button.dataset
+.medzonexPaymentReady =
+"true";
+
+
+button.addEventListener(
+"click",
+async function (
+event
+) {
+
+event.preventDefault();
+
+event.stopPropagation();
+
+
+const plan =
+String(
+button.dataset
+.plan ||
+""
+);
+
+
+const amount =
+Number(
+button.dataset
+.amount ||
+0
+);
+
+
+if (!plan) {
+
+showError(
+"paymentError",
+"Please select a valid plan."
+);
+
+return;
+}
+
+
+await openRazorpayPayment(
+plan,
+amount
+);
+
+}
+);
+
+}
+);
+
+
+/*
+* Support older buttons
+* that use .direct-pay-link
+*/
+
+document
+.querySelectorAll(
+".direct-pay-link"
+)
+.forEach(
+button => {
+
+if (
+button.dataset
+.medzonexPaymentReady ===
+"true"
+) {
+
+return;
+}
+
+
+button.dataset
+.medzonexPaymentReady =
+"true";
+
+
+button.addEventListener(
+"click",
+async function (
+event
+) {
+
+event.preventDefault();
+
+event.stopPropagation();
+
+
+const plan =
+String(
+button.dataset
+.plan ||
+""
+);
+
+
+const amountMap = {
+
+"1":
+900,
+
+"6":
+4800,
+
+"12":
+9000
+
+};
+
+
+const amount =
+amountMap[
+plan
+];
+
+
+if (!amount) {
+
+showError(
+"paymentError",
+"Invalid subscription plan."
+);
+
+return;
+}
+
+
+await openRazorpayPayment(
+plan,
+amount
+);
+
+}
+);
+
+}
+);
+
+}
+
+
+/* =========================================================
+PLAN CARD CLICK SUPPORT
+========================================================= */
+
+document.addEventListener(
+"click",
+function (
+event
+) {
+
+const planButton =
+event.target.closest(
+"[data-plan][data-amount]"
+);
+
+
+if (!planButton) {
+return;
+}
+
+
+/*
+* Agar ye already payBtn/direct-pay-link hai,
+* uske listener ko kaam karne do.
+*/
+
+if (
+planButton.classList
+.contains("payBtn") ||
+
+planButton.classList
+.contains("direct-pay-link")
+) {
+
+return;
+}
+
+
+const plan =
+String(
+planButton.dataset
+.plan
+);
+
+
+const amount =
+Number(
+planButton.dataset
+.amount
+);
+
+
+if (
+plan &&
+amount
+) {
+
+event.preventDefault();
+
+
+openRazorpayPayment(
+plan,
+amount
+);
+
+}
+
+}
+);
+
+
+/* =========================================================
+PLAN PRICES
+========================================================= */
+
+window.MedZoneXPlans = {
+
+"1": {
+
+name:
+"1 Month Plan",
+
+amount:
+900,
+
+months:
+1
+
+},
+
+
+"6": {
+
+name:
+"6 Month Plan",
+
+amount:
+4800,
+
+months:
+6
+
+},
+
+
+"12": {
+
+name:
+"12 Month Plan",
+
+amount:
+9000,
+
+months:
+12
+
+}
+
+};
+
+
+/* =========================================================
+PART 6 END
+========================================================= */
+
+/* =========================================================
+MEDZONEX — PART 7
+FORGOT PASSWORD — MOBILE OTP
+========================================================= */
+
+let medZoneForgotConfirmation = null;
+
+
+/* =========================================================
+OPEN FORGOT PASSWORD
+========================================================= */
+
+function openForgotPassword() {
+
+showPage("forgotPasswordPage");
+
+const mobile =
+document.getElementById(
+"forgotMobile"
+);
+
+if (mobile) {
+
+mobile.value = "";
+
+setTimeout(() => {
+mobile.focus();
+}, 150);
+
+}
+
+
+const otpBox =
+document.getElementById(
+"forgotOtpBox"
+);
+
+if (otpBox) {
+otpBox.style.display =
+"none";
+}
+
+
+const passwordBox =
+document.getElementById(
+"forgotNewPasswordBox"
+);
+
+if (passwordBox) {
+passwordBox.style.display =
+"none";
+}
+
+
+hideMessage(
+"forgotMessage"
+);
+}
+
+
+window.openForgotPassword =
+openForgotPassword;
+
+
+/* =========================================================
+SEND OTP
+========================================================= */
+
+async function sendForgotPasswordOTP() {
+
+const mobileInput =
+document.getElementById(
+"forgotMobile"
+);
+
+
+const message =
+document.getElementById(
+"forgotMessage"
+);
+
+
+if (!mobileInput) {
+
+console.error(
+"MedZoneX: forgotMobile input missing."
+);
+
+return;
+}
+
+
+let mobile =
+mobileInput.value
+.trim()
+.replace(/\D/g, "");
+
+
+/* ---------- VALIDATION ---------- */
+
+if (
+mobile.length !== 10
+) {
+
+if (message) {
+
+message.textContent =
+"Enter a valid 10-digit mobile number.";
+
+message.style.color =
+"red";
+}
+
+mobileInput.focus();
+
+return;
+}
+
+
+try {
+
+const button =
+document.getElementById(
+"sendForgotOTPButton"
+);
+
+
+if (button) {
+
+button.disabled =
+true;
+
+button.textContent =
+"Sending OTP...";
+
+}
+
+
+if (message) {
+
+message.textContent =
+"Checking mobile number...";
+
+message.style.color =
+"inherit";
+}
+
+
+/*
+* Check whether this mobile number
+* exists in Firestore.
+*/
+
+if (typeof db !== "undefined") {
+
+const usersQuery =
+query(
+collection(
+db,
+"users"
+),
+where(
+"mobile",
+"==",
+"+91" + mobile
+)
+);
+
+
+const snapshot =
+await getDocs(
+usersQuery
+);
+
+
+if (
+snapshot.empty
+) {
+
+if (message) {
+
+message.textContent =
+"No account found with this mobile number.";
+
+message.style.color =
+"red";
+}
+
+if (button) {
+
+button.disabled =
+false;
+
+button.textContent =
+"Send OTP";
+
+}
+
+return;
+}
+
+}
+
+
+/*
+* Firebase Phone Authentication.
+*/
+
+if (
+window.medZoneRecaptcha
+) {
+
+try {
+
+window
+.medZoneRecaptcha
+.clear();
+
+} catch (_) {}
+
+}
+
+
+const recaptchaContainer =
+document.getElementById(
+"forgotRecaptcha"
+);
+
+
+if (
+!recaptchaContainer
+) {
+
+throw new Error(
+"Forgot password reCAPTCHA container is missing."
+);
+
+}
+
+
+window.medZoneRecaptcha =
+new RecaptchaVerifier(
+auth,
+"forgotRecaptcha",
+{
+
+size:
+"normal",
+
+callback:
+function () {
+
+console.log(
+"reCAPTCHA verified."
+);
+
+},
+
+"expired-callback":
+function () {
+
+console.log(
+"reCAPTCHA expired."
+);
+
+}
+
+}
+);
+
+
+await window
+.medZoneRecaptcha
+.render();
+
+
+const phoneNumber =
+"+91" + mobile;
+
+
+/*
+* Send Firebase OTP.
+*/
+
+medZoneForgotConfirmation =
+await signInWithPhoneNumber(
+auth,
+phoneNumber,
+window.medZoneRecaptcha
+);
+
+
+/* ---------- SAVE MOBILE TEMPORARILY ---------- */
+
+window.medZoneForgotMobile =
+mobile;
+
+
+/* ---------- SHOW OTP ---------- */
+
+const otpBox =
+document.getElementById(
+"forgotOtpBox"
+);
+
+
+if (otpBox) {
+
+otpBox.style.display =
+"block";
+
+}
+
+
+if (message) {
+
+message.textContent =
+"OTP sent successfully. Check your mobile.";
+
+message.style.color =
+"green";
+
+}
+
+
+const otpInput =
+document.getElementById(
+"forgotOtp"
+);
+
+
+if (otpInput) {
+
+otpInput.value = "";
+
+setTimeout(() => {
+
+otpInput.focus();
+
+}, 150);
+
+}
+
+
+} catch (error) {
+
+console.error(
+"MedZoneX forgot password OTP error:",
+error
+);
+
+
+let errorMessage =
+"Could not send OTP. Please try again.";
+
+
+if (
+error.code ===
+"auth/invalid-phone-number"
+) {
+
+errorMessage =
+"Invalid mobile number.";
+
+}
+
+
+if (
+error.code ===
+"auth/too-many-requests"
+) {
+
+errorMessage =
+"Too many OTP attempts. Please try again later.";
+
+}
+
+
+if (
+error.code ===
+"auth/quota-exceeded"
+) {
+
+errorMessage =
+"OTP limit reached. Please try again later.";
+
+}
+
+
+if (message) {
+
+message.textContent =
+errorMessage;
+
+message.style.color =
+"red";
+
+}
+
+
+} finally {
+
+const button =
+document.getElementById(
+"sendForgotOTPButton"
+);
+
+
+if (button) {
+
+button.disabled =
+false;
+
+button.textContent =
+"Send OTP";
+
+}
+
+}
+
+}
+
+
+window.sendForgotPasswordOTP =
+sendForgotPasswordOTP;
+
+
+/* =========================================================
+VERIFY OTP
+========================================================= */
+
+async function verifyForgotPasswordOTP() {
+
+const otpInput =
+document.getElementById(
+"forgotOtp"
+);
+
+
+const message =
+document.getElementById(
+"forgotMessage"
+);
+
+
+if (
+!medZoneForgotConfirmation
+) {
+
+if (message) {
+
+message.textContent =
+"Please send OTP first.";
+
+message.style.color =
+"red";
+}
+
+return;
+}
+
+
+const otp =
+otpInput
+?.value
+.trim() ||
+"";
+
+
+if (
+otp.length !== 6
+) {
+
+if (message) {
+
+message.textContent =
+"Enter the 6-digit OTP.";
+
+message.style.color =
+"red";
+}
+
+return;
+}
+
+
+try {
+
+const button =
+document.getElementById(
+"verifyForgotOTPButton"
+);
+
+
+if (button) {
+
+button.disabled =
+true;
+
+button.textContent =
+"Verifying...";
+
+}
+
+
+const result =
+await medZoneForgotConfirmation
+.confirm(
+otp
+);
+
+
+const user =
+result.user;
+
+
+/*
+* OTP verified successfully.
+*/
+
+window.medZoneForgotUser =
+user;
+
+
+const passwordBox =
+document.getElementById(
+"forgotNewPasswordBox"
+);
+
+
+if (passwordBox) {
+
+passwordBox.style.display =
+"block";
+
+}
+
+
+if (message) {
+
+message.textContent =
+"OTP verified. Enter your new password.";
+
+message.style.color =
+"green";
+
+}
+
+
+if (button) {
+
+button.style.display =
+"none";
+
+}
+
+
+const newPassword =
+document.getElementById(
+"forgotNewPassword"
+);
+
+
+if (newPassword) {
+
+setTimeout(() => {
+
+newPassword.focus();
+
+}, 150);
+
+}
+
+
+} catch (error) {
+
+console.error(
+"MedZoneX OTP verification error:",
+error
+);
+
+
+if (message) {
+
+message.textContent =
+"Invalid or expired OTP.";
+
+message.style.color =
+"red";
+
+}
+
+} finally {
+
+const button =
+document.getElementById(
+"verifyForgotOTPButton"
+);
+
+
+if (
+button &&
+button.style.display !==
+"none"
+) {
+
+button.disabled =
+false;
+
+button.textContent =
+"Verify OTP";
+
+}
+
+}
+
+}
+
+
+window.verifyForgotPasswordOTP =
+verifyForgotPasswordOTP;
+
+
+/* =========================================================
+CHANGE PASSWORD
+========================================================= */
+
+async function changeForgotPassword() {
+
+const newPasswordInput =
+document.getElementById(
+"forgotNewPassword"
+);
+
+
+const confirmPasswordInput =
+document.getElementById(
+"forgotConfirmPassword"
+);
+
+
+const message =
+document.getElementById(
+"forgotMessage"
+);
+
+
+const newPassword =
+newPasswordInput
+?.value ||
+"";
+
+
+const confirmPassword =
+confirmPasswordInput
+?.value ||
+"";
+
+
+if (
+newPassword.length < 6
+) {
+
+if (message) {
+
+message.textContent =
+"Password must be at least 6 characters.";
+
+message.style.color =
+"red";
+
+}
+
+return;
+}
+
+
+if (
+newPassword !==
+confirmPassword
+) {
+
+if (message) {
+
+message.textContent =
+"Passwords do not match.";
+
+message.style.color =
+"red";
+
+}
+
+return;
+}
+
+
+const user =
+window.medZoneForgotUser ||
+auth.currentUser;
+
+
+if (!user) {
+
+if (message) {
+
+message.textContent =
+"Session expired. Please request OTP again.";
+
+message.style.color =
+"red";
+
+}
+
+return;
+}
+
+
+try {
+
+const button =
+document.getElementById(
+"changeForgotPasswordButton"
+);
+
+
+if (button) {
+
+button.disabled =
+true;
+
+button.textContent =
+"Updating...";
+
+}
+
+
+await updatePassword(
+user,
+newPassword
+);
+
+
+if (message) {
+
+message.textContent =
+"Password changed successfully. You can now login.";
+
+message.style.color =
+"green";
+
+}
+
+
+/*
+* Sign out after password change.
+*/
+
+await signOut(
+auth
+);
+
+
+window.medZoneForgotUser =
+null;
+
+
+medZoneForgotConfirmation =
+null;
+
+
+setTimeout(
+() => {
+
+showPage(
+"loginPage"
+);
+
+},
+1200
+);
+
+
+} catch (error) {
+
+console.error(
+"MedZoneX password update error:",
+error
+);
+
+
+let errorMessage =
+"Could not update password.";
+
+
+if (
+error.code ===
+"auth/requires-recent-login"
+) {
+
+errorMessage =
+"Please request a fresh OTP and try again.";
+
+}
+
+
+if (message) {
+
+message.textContent =
+errorMessage;
+
+message.style.color =
+"red";
+
+}
+
+} finally {
+
+const button =
+document.getElementById(
+"changeForgotPasswordButton"
+);
+
+
+if (button) {
+
+button.disabled =
+false;
+
+button.textContent =
+"Change Password";
+
+}
+
+}
+
+}
+
+
+window.changeForgotPassword =
+changeForgotPassword;
+
+
+/* =========================================================
+FORGOT PASSWORD BUTTON EVENTS
+========================================================= */
+
+document.addEventListener(
+"click",
+function (event) {
+
+const sendButton =
+event.target.closest(
+"#sendForgotOTPButton"
+);
+
+
+if (sendButton) {
+
+event.preventDefault();
+
+sendForgotPasswordOTP();
+
+return;
+
+}
+
+
+const verifyButton =
+event.target.closest(
+"#verifyForgotOTPButton"
+);
+
+
+if (verifyButton) {
+
+event.preventDefault();
+
+verifyForgotPasswordOTP();
+
+return;
+
+}
+
+
+const changeButton =
+event.target.closest(
+"#changeForgotPasswordButton"
+);
+
+
+if (changeButton) {
+
+event.preventDefault();
+
+changeForgotPassword();
+
+return;
+
+}
+
+}
+);
+
+
+/* =========================================================
+PART 7 END
+========================================================= */
+
+/* =========================================================
+MEDZONEX — PART 8
+NAVIGATION + SUBSCRIPTION GATE + LOGOUT
+========================================================= */
+
+
+/* =========================================================
+GLOBAL MEDZONEX STATE
+========================================================= */
+
+window.MedZoneX =
+window.MedZoneX || {};
+
+window.MedZoneX.currentSection =
+"dashboard";
+
+
+/* =========================================================
+SECTION NAVIGATION
+========================================================= */
+
+function openDashboardSection(
+section
+) {
+
+const user =
+auth.currentUser;
+
+
+/*
+* Dashboard protection.
+*/
+
+if (!user) {
+
+showPage(
+"loginPage"
+);
+
+return;
+}
+
+
+/*
+* Dashboard access requires
+* an active subscription.
+*/
+
+checkSubscriptionAccess()
+.then(
+allowed => {
+
+if (!allowed) {
+
+showPage(
+"plansPage"
+);
+
+return;
+}
+
+
+window.MedZoneX.currentSection =
+section;
+
+
+/*
+* First show dashboard.
+*/
+
+showPage(
+"dashboardPage"
+);
+
+
+/*
+* Hide all dashboard sections.
+*/
+
+document
+.querySelectorAll(
+".dashboard-section"
+)
+.forEach(
+element => {
+
+element.style.display =
+"none";
+
+element.classList
+.remove(
+"active"
+);
+
+}
+);
+
+
+/*
+* Try multiple possible
+* naming formats.
+*/
+
+const possibleIds = [
+
+"section-" +
+section,
+
+section +
+"Section",
+
+section,
+
+"dashboard-" +
+section,
+
+"dashboard" +
+section.charAt(0)
+.toUpperCase() +
+section.slice(1)
+
+];
+
+
+let target =
+null;
+
+
+for (
+const id
+of possibleIds
+) {
+
+const element =
+document.getElementById(
+id
+);
+
+
+if (element) {
+
+target =
+element;
+
+break;
+
+}
+
+}
+
+
+if (target) {
+
+target.style.display =
+"block";
+
+target.classList
+.add(
+"active"
+);
+
+}
+
+
+/*
+* Update sidebar active state.
+*/
+
+document
+.querySelectorAll(
+"[data-section]"
+)
+.forEach(
+item => {
+
+item.classList
+.remove(
+"active"
+);
+
+
+if (
+item.dataset
+.section ===
+section
+) {
+
+item.classList
+.add(
+"active"
+);
+
+}
+
+}
+);
+
+
+/*
+* Load section data.
+*/
+
+if (
+section ===
+"profile"
+) {
+
+if (
+typeof loadProfile ===
+"function"
+) {
+
+loadProfile();
+
+}
+
+}
+
+
+if (
+section ===
+"stock"
+) {
+
+if (
+typeof loadStock ===
+"function"
+) {
+
+loadStock();
+
+}
+
+}
+
+
+if (
+section ===
+"business"
+) {
+
+if (
+typeof loadBusiness ===
+"function"
+) {
+
+loadBusiness();
+
+}
+
+}
+
+
+if (
+section ===
+"settings"
+) {
+
+if (
+typeof loadSettings ===
+"function"
+) {
+
+loadSettings();
+
+}
+
+}
+
+
+window.scrollTo({
+
+top:
+0,
+
+behavior:
+"smooth"
+
+});
+
+}
+);
+
+}
+
+
+window.openDashboardSection =
+openDashboardSection;
+
+
+/* =========================================================
+CHECK SUBSCRIPTION ACCESS
+========================================================= */
+
+async function checkSubscriptionAccess() {
+
+const user =
+auth.currentUser;
+
+
+if (!user) {
+
+return false;
+
+}
+
+
+try {
+
+const userRef =
+doc(
+db,
+"users",
+user.uid
+);
+
+
+const snapshot =
+await getDoc(
+userRef
+);
+
+
+if (
+!snapshot.exists()
+) {
+
+return false;
+
+}
+
+
+const data =
+snapshot.data();
+
+
+let active =
+data.subscriptionActive ===
+true;
+
+
+/*
+* Check expiry.
+*/
+
+if (
+active &&
+data.subscriptionExpiry
+) {
+
+let expiry;
+
+
+if (
+data.subscriptionExpiry
+.toDate &&
+typeof data
+.subscriptionExpiry
+.toDate ===
+"function"
+) {
+
+expiry =
+data.subscriptionExpiry
+.toDate();
+
+} else {
+
+expiry =
+new Date(
+data.subscriptionExpiry
+);
+
+}
+
+
+if (
+!isNaN(
+expiry.getTime()
+) &&
+expiry.getTime() <
+Date.now()
+) {
+
+active =
+false;
+
+
+/*
+* Mark expired.
+*/
+
+await setDoc(
+userRef,
+{
+
+subscriptionActive:
+false,
+
+subscriptionStatus:
+"expired"
+
+},
+{
+
+merge:
+true
+
+}
+);
+
+}
+
+}
+
+
+return active;
+
+
+} catch (error) {
+
+console.error(
+"MedZoneX subscription check:",
+error
+);
+
+
+return false;
+
+}
+
+}
+
+
+window.checkSubscriptionAccess =
+checkSubscriptionAccess;
+
+
+/* =========================================================
+PROTECTED DASHBOARD
+========================================================= */
+
+async function enterDashboard() {
+
+const user =
+auth.currentUser;
+
+
+if (!user) {
+
+showPage(
+"loginPage"
+);
+
+return;
+
+}
+
+
+const allowed =
+await checkSubscriptionAccess();
+
+
+if (!allowed) {
+
+showPage(
+"plansPage"
+);
+
+
+const message =
+document.getElementById(
+"planMessage"
+);
+
+
+if (message) {
+
+message.textContent =
+"Please select a subscription plan to access your dashboard.";
+
+message.style.color =
+"orange";
+
+}
+
+
+return;
+
+}
+
+
+showPage(
+"dashboardPage"
+);
+
+
+window.MedZoneX.currentSection =
+"dashboard";
+
+
+if (
+typeof loadDashboardData ===
+"function"
+) {
+
+await loadDashboardData();
+
+}
+
+}
+
+
+window.enterDashboard =
+enterDashboard;
+
+
+/* =========================================================
+SIDEBAR NAVIGATION
+========================================================= */
+
+document.addEventListener(
+"click",
+function (
+event
+) {
+
+const item =
+event.target.closest(
+"[data-section]"
+);
+
+
+if (!item) {
+
+return;
+
+}
+
+
+event.preventDefault();
+
+
+const section =
+item.dataset.section;
+
+
+if (!section) {
+
+return;
+
+}
+
+
+/*
+* Dashboard section.
+*/
+
+openDashboardSection(
+section
+);
+
+}
+);
+
+
+/* =========================================================
+COMMON NAVIGATION BUTTONS
+========================================================= */
+
+document.addEventListener(
+"click",
+function (
+event
+) {
+
+const button =
+event.target.closest(
+"[data-page]"
+);
+
+
+if (!button) {
+
+return;
+
+}
+
+
+const page =
+button.dataset.page;
+
+
+if (!page) {
+
+return;
+
+}
+
+
+event.preventDefault();
+
+
+/*
+* Dashboard needs subscription
+* protection.
+*/
+
+if (
+page ===
+"dashboardPage"
+) {
+
+enterDashboard();
+
+return;
+
+}
+
+
+showPage(
+page
+);
+
+}
+);
+
+
+/* =========================================================
+LOGOUT
+========================================================= */
+
+async function medZoneXLogout() {
+
+try {
+
+/*
+* Firebase logout.
+*/
+
+await signOut(
+auth
+);
+
+
+/*
+* Clear temporary payment data.
+*/
+
+localStorage.removeItem(
+"medzonex_pending_plan"
+);
+
+
+localStorage.removeItem(
+"medzonex_pending_amount"
+);
+
+
+localStorage.removeItem(
+"medZoneSelectedPlan"
+);
+
+
+/*
+* Clear global state.
+*/
+
+window.MedZoneX.currentSection =
+"dashboard";
+
+
+window.MedZoneX.pendingPlan =
+null;
+
+
+window.MedZoneX.pendingAmount =
+null;
+
+
+window.MedZoneX.currentUser =
+null;
+
+
+/*
+* Login page.
+*/
+
+showPage(
+"loginPage"
+);
+
+
+/*
+* Clear login fields.
+*/
+
+const email =
+document.getElementById(
+"loginEmail"
+);
+
+
+const password =
+document.getElementById(
+"loginPassword"
+);
+
+
+if (email) {
+
+email.value =
+"";
+
+}
+
+
+if (password) {
+
+password.value =
+"";
+
+}
+
+
+hideMessage(
+"loginMessage"
+);
+
+
+} catch (error) {
+
+console.error(
+"MedZoneX logout error:",
+error
+);
+
+}
+
+}
+
+
+window.medZoneXLogout =
+medZoneXLogout;
+
+
+/* =========================================================
+LOGOUT BUTTONS
+========================================================= */
+
+document.addEventListener(
+"click",
+function (
+event
+) {
+
+const logoutButton =
+event.target.closest(
+"#logoutButton, " +
+".logout-btn, " +
+"[data-action='logout']"
+);
+
+
+if (!logoutButton) {
+
+return;
+
+}
+
+
+event.preventDefault();
+
+
+medZoneXLogout();
+
+}
+);
+
+
+/* =========================================================
+BACK TO PLANS
+========================================================= */
+
+window.openPlans =
+function () {
+
+showPage(
+"plansPage"
+);
+
+};
+
+
+/* =========================================================
+BACK TO LOGIN
+========================================================= */
+
+window.openLogin =
+function () {
+
+showPage(
+"loginPage"
+);
+
+};
+
+
+/* =========================================================
+BACK TO SIGNUP
+========================================================= */
+
+window.openSignup =
+function () {
+
+showPage(
+"signupPage"
+);
+
+};
+
+
+/* =========================================================
+CUSTOMER CARE
+========================================================= */
+
+window.callMedZoneXCustomerCare =
+function () {
+
+window.location.href =
+"tel:+919108526149";
+
+};
+
+
+window.emailMedZoneXCustomerCare =
+function () {
+
+window.location.href =
+"mailto:customercarestock@gmail.com";
+
+};
+
+
+/* =========================================================
+SETTINGS CUSTOMER CARE BUTTONS
+========================================================= */
+
+document.addEventListener(
+"click",
+function (
+event
+) {
+
+const callButton =
+event.target.closest(
+"[data-customer-care='call']"
+);
+
+
+if (callButton) {
+
+event.preventDefault();
+
+callMedZoneXCustomerCare();
+
+return;
+
+}
+
+
+const emailButton =
+event.target.closest(
+"[data-customer-care='email']"
+);
+
+
+if (emailButton) {
+
+event.preventDefault();
+
+emailMedZoneXCustomerCare();
+
+return;
+
+}
+
+}
+);
+
+
+/* =========================================================
+PREVENT DIRECT DASHBOARD ACCESS
+========================================================= */
+
+async function protectDashboardPage() {
+
+const dashboard =
+document.getElementById(
+"dashboardPage"
+);
+
+
+if (!dashboard) {
+
+return;
+
+}
+
+
+const user =
+auth.currentUser;
+
+
+if (!user) {
+
+dashboard.style.display =
+"none";
+
+return;
+
+}
+
+
+const allowed =
+await checkSubscriptionAccess();
+
+
+if (!allowed) {
+
+dashboard.style.display =
+"none";
+
+showPage(
+"plansPage"
+);
+
+}
+
+}
+
+
+window.protectDashboardPage =
+protectDashboardPage;
+
+
+/* =========================================================
+AUTH STATE NAVIGATION
+========================================================= */
+
+onAuthStateChanged(
+auth,
+async function (
+user
+) {
+
+if (!user) {
+
+console.log(
+"MedZoneX: user logged out."
+);
+
+return;
+
+}
+
+
+console.log(
+"MedZoneX: authenticated:",
+user.uid
+);
+
+
+try {
+
+const userRef =
+doc(
+db,
+"users",
+user.uid
+);
+
+
+const snapshot =
+await getDoc(
+userRef
+);
+
+
+if (
+!snapshot.exists()
+) {
+
+/*
+* Account exists in Auth
+* but profile missing.
+*/
+
+showPage(
+"plansPage"
+);
+
+return;
+
+}
+
+
+const data =
+snapshot.data();
+
+
+window.MedZoneX.currentUser = {
+
+uid:
+user.uid,
+
+email:
+user.email ||
+data.email ||
+"",
+
+ownerName:
+data.ownerName ||
+"",
+
+storeName:
+data.storeName ||
+"",
+
+mobile:
+data.mobile ||
+"",
+
+subscriptionActive:
+data.subscriptionActive ===
+true,
+
+subscriptionPlan:
+data.subscriptionPlan ||
+""
+
+};
+
+
+const allowed =
+await checkSubscriptionAccess();
+
+
+/*
+* If user has active subscription,
+* dashboard is available.
+*
+* Otherwise plans are shown.
+*/
+
+if (allowed) {
+
+console.log(
+"MedZoneX: subscription active."
+);
+
+} else {
+
+console.log(
+"MedZoneX: subscription required."
+);
+
+}
+
+
+} catch (error) {
+
+console.error(
+"MedZoneX auth navigation error:",
+error
+);
+
+}
+
+}
+);
+
+
+/* =========================================================
+FIX OLD LOGIN / SIGNUP LINKS
+========================================================= */
+
+document.addEventListener(
+"click",
+function (
+event
+) {
+
+const loginLink =
+event.target.closest(
+".login-link, " +
+"[data-action='login'], " +
+"[data-open='login']"
+);
+
+
+if (
+loginLink &&
+!loginLink.closest(
+"#loginPage"
+)
+) {
+
+event.preventDefault();
+
+openLogin();
+
+return;
+
+}
+
+
+const signupLink =
+event.target.closest(
+".signup-link, " +
+"[data-action='signup'], " +
+"[data-open='signup']"
+);
+
+
+if (
+signupLink &&
+!signupLink.closest(
+"#signupPage"
+)
+) {
+
+event.preventDefault();
+
+openSignup();
+
+return;
+
+}
+
+
+const forgotLink =
+event.target.closest(
+".forgot-password-link, " +
+"[data-action='forgot-password'], " +
+"[data-open='forgot-password']"
+);
+
+
+if (
+forgotLink
+) {
+
+event.preventDefault();
+
+openForgotPassword();
+
+return;
+
+}
+
+}
+);
+
+
+/* =========================================================
+MEDZONEX BRAND TEXT
+========================================================= */
+
+document
+.querySelectorAll(
+".brand-name, " +
+".logo-text, " +
+"[data-brand-name]"
+)
+.forEach(
+element => {
+
+element.textContent =
+"MedZoneX";
+
+}
+);
+
+
+/* =========================================================
+PART 8 END
+========================================================= */
