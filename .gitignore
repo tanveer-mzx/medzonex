@@ -16,3 +16,4 @@ local.properties
 web/.env
 web/serviceAccountKey.json
 node_modules/
+.idea/
