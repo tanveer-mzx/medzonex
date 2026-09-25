@@ -2235,7 +2235,10 @@ console.log(
     "MedZoneX frontend initialized."
 );
 
+const API_BASE_URL =
+    "https://medzonex-backend.onrender.com";
+
 console.log(
-    "API Base URL:",
-    API_BASE_URL || "(same-domain /api)"
+    "API_Base_Url:",
+    API_BASE_URL || ) "(same-domain /api
 );
