@@ -1,3 +1,7 @@
+// =====================================================
+// MEDZONEX - FRONTEND APP
+// =====================================================
+
 import {
     initializeApp
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
@@ -49,7 +53,7 @@ const firebaseConfig = {
 
 
 // =====================================================
-// FIREBASE INITIALIZE
+// FIREBASE INITIALIZATION
 // =====================================================
 
 const firebaseApp =
@@ -66,28 +70,10 @@ const db =
 // API BASE URL
 // =====================================================
 
-/*
-    LOCAL TEST:
-
-    Website opened through local development:
-        http://localhost/...
-    Backend:
-        http://localhost:5000
-
-    LIVE:
-
-    https://medzonex.site
-
-    If Firebase Hosting is configured to forward
-    /api/** to your Node backend, use:
-        /api
-*/
-
 const savedApiBase =
     localStorage.getItem(
         "MedZoneX_API_BASE_URL"
     );
-
 
 let API_BASE_URL;
 
@@ -106,20 +92,14 @@ if (savedApiBase) {
 
 } else {
 
-    /*
-        Production same-domain API.
-
-        This requires your hosting/reverse proxy
-        to forward /api requests to Node backend.
-    */
-
-    API_BASE_URL = "";
+    API_BASE_URL =
+        "https://medzonex-backend.onrender.com";
 
 }
 
 
 // =====================================================
-// API HELPER
+// API URL HELPER
 // =====================================================
 
 function apiUrl(path) {
@@ -141,7 +121,7 @@ const TRIAL_DURATION_MS =
 
 
 // =====================================================
-// STATE
+// OTP STATE
 // =====================================================
 
 let signupOtpVerified = false;
@@ -154,13 +134,19 @@ let forgotOtpEmail = "";
 
 
 // =====================================================
-// DOM HELPERS
+// DOM HELPER
 // =====================================================
 
 function $(id) {
+
     return document.getElementById(id);
+
 }
 
+
+// =====================================================
+// PAGE NAVIGATION
+// =====================================================
 
 function showPage(pageId) {
 
@@ -176,19 +162,28 @@ function showPage(pageId) {
     const page =
         $(pageId);
 
-    if (page) {
-
-        page.classList.remove("hidden");
-
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-        });
-
+    if (!page) {
+        console.warn(
+            `Page not found: ${pageId}`
+        );
+        return;
     }
+
+
+    page.classList.remove("hidden");
+
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
 
 }
 
+
+// =====================================================
+// AUTH SECTION NAVIGATION
+// =====================================================
 
 function showAuthSection(sectionId) {
 
@@ -204,14 +199,22 @@ function showAuthSection(sectionId) {
     const section =
         $(sectionId);
 
-    if (section) {
-
-        section.classList.add("active");
-
+    if (!section) {
+        console.warn(
+            `Auth section not found: ${sectionId}`
+        );
+        return;
     }
+
+
+    section.classList.add("active");
 
 }
 
+
+// =====================================================
+// MESSAGE
+// =====================================================
 
 function setMessage(
     elementId,
@@ -222,16 +225,27 @@ function setMessage(
     const element =
         $(elementId);
 
-    if (!element) return;
+    if (!element) {
+        console.warn(
+            `Message element not found: ${elementId}`
+        );
+        return;
+    }
+
 
     element.textContent =
         message;
+
 
     element.className =
         `message ${type}`;
 
 }
 
+
+// =====================================================
+// CLEAR MESSAGE
+// =====================================================
 
 function clearMessage(elementId) {
 
@@ -240,13 +254,20 @@ function clearMessage(elementId) {
 
     if (!element) return;
 
-    element.textContent = "";
+
+    element.textContent =
+        "";
+
 
     element.className =
         "message";
 
 }
 
+
+// =====================================================
+// BUTTON LOADING
+// =====================================================
 
 function setButtonLoading(
     button,
@@ -257,13 +278,24 @@ function setButtonLoading(
 
     if (!button) return;
 
+
     if (loading) {
 
-        button.dataset.originalText =
-            button.textContent;
+        if (!button.dataset.originalText) {
+
+            button.dataset.originalText =
+                button.textContent;
+
+        }
+
+
+        button.disabled =
+            true;
+
 
         button.textContent =
             loadingText;
+
 
         button.classList.add(
             "loading"
@@ -271,10 +303,15 @@ function setButtonLoading(
 
     } else {
 
+        button.disabled =
+            false;
+
+
         button.textContent =
             normalText ||
             button.dataset.originalText ||
             button.textContent;
+
 
         button.classList.remove(
             "loading"
@@ -329,51 +366,73 @@ function validOtp(otp) {
 
 
 // =====================================================
-// SEND OTP API
+// GENERIC API JSON REQUEST
 // =====================================================
 
-async function sendEmailOtp(
-    email,
-    purpose
+async function apiRequest(
+    path,
+    options = {}
 ) {
 
-    const response =
-        await fetch(
-            apiUrl(
-                "/api/auth/send-email-otp"
-            ),
-            {
+    const url =
+        apiUrl(path);
 
-                method: "POST",
 
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
+    let response;
 
-                body: JSON.stringify({
 
-                    email:
-                        email.trim().toLowerCase(),
+    try {
 
-                    purpose
+        response =
+            await fetch(
+                url,
+                {
+                    ...options,
 
-                })
+                    headers: {
+                        "Content-Type":
+                            "application/json",
 
-            }
+                        ...(options.headers || {})
+                    }
+                }
+            );
+
+    } catch (error) {
+
+        console.error(
+            "API NETWORK ERROR:",
+            error
         );
 
 
-    const data =
-        await response.json()
-            .catch(() => ({}));
+        throw new Error(
+            "Unable to connect to MedZoneX server. Please try again."
+        );
+
+    }
+
+
+    let data = {};
+
+
+    try {
+
+        data =
+            await response.json();
+
+    } catch {
+
+        data = {};
+
+    }
 
 
     if (!response.ok) {
 
         throw new Error(
             data.message ||
-            "Unable to send OTP."
+            `Server error (${response.status}).`
         );
 
     }
@@ -385,7 +444,37 @@ async function sendEmailOtp(
 
 
 // =====================================================
-// VERIFY OTP API
+// SEND EMAIL OTP
+// =====================================================
+
+async function sendEmailOtp(
+    email,
+    purpose
+) {
+
+    return await apiRequest(
+        "/api/auth/send-email-otp",
+        {
+
+            method: "POST",
+
+            body: JSON.stringify({
+
+                email:
+                    email.trim().toLowerCase(),
+
+                purpose
+
+            })
+
+        }
+    );
+
+}
+
+
+// =====================================================
+// VERIFY EMAIL OTP
 // =====================================================
 
 async function verifyEmailOtp(
@@ -394,58 +483,32 @@ async function verifyEmailOtp(
     purpose
 ) {
 
-    const response =
-        await fetch(
-            apiUrl(
-                "/api/auth/verify-email-otp"
-            ),
-            {
+    return await apiRequest(
+        "/api/auth/verify-email-otp",
+        {
 
-                method: "POST",
+            method: "POST",
 
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
+            body: JSON.stringify({
 
-                body: JSON.stringify({
+                email:
+                    email.trim().toLowerCase(),
 
-                    email:
-                        email.trim().toLowerCase(),
+                otp:
+                    otp.trim(),
 
-                    otp:
-                        otp.trim(),
+                purpose
 
-                    purpose
+            })
 
-                })
-
-            }
-        );
-
-
-    const data =
-        await response.json()
-            .catch(() => ({}));
-
-
-    if (!response.ok) {
-
-        throw new Error(
-            data.message ||
-            "OTP verification failed."
-        );
-
-    }
-
-
-    return data;
+        }
+    );
 
 }
 
 
 // =====================================================
-// RESET PASSWORD API
+// RESET PASSWORD
 // =====================================================
 
 async function resetPasswordApi(
@@ -453,49 +516,23 @@ async function resetPasswordApi(
     newPassword
 ) {
 
-    const response =
-        await fetch(
-            apiUrl(
-                "/api/auth/reset-password"
-            ),
-            {
+    return await apiRequest(
+        "/api/auth/reset-password",
+        {
 
-                method: "POST",
+            method: "POST",
 
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
+            body: JSON.stringify({
 
-                body: JSON.stringify({
+                email:
+                    email.trim().toLowerCase(),
 
-                    email:
-                        email.trim().toLowerCase(),
+                newPassword
 
-                    newPassword
+            })
 
-                })
-
-            }
-        );
-
-
-    const data =
-        await response.json()
-            .catch(() => ({}));
-
-
-    if (!response.ok) {
-
-        throw new Error(
-            data.message ||
-            "Password reset failed."
-        );
-
-    }
-
-
-    return data;
+        }
+    );
 
 }
 
@@ -510,9 +547,11 @@ function openGetStarted() {
         "authPage"
     );
 
+
     showAuthSection(
         "signupSection"
     );
+
 
     clearMessage(
         "signupMessage"
@@ -529,7 +568,7 @@ $("getStartedBtn")
 
 
 // =====================================================
-// LOGIN / SIGNUP NAVIGATION
+// SIGNUP NAVIGATION
 // =====================================================
 
 $("showSignupBtn")
@@ -549,6 +588,10 @@ $("showSignupBtn")
     );
 
 
+// =====================================================
+// LOGIN NAVIGATION
+// =====================================================
+
 $("showLoginFromSignupBtn")
     ?.addEventListener(
         "click",
@@ -566,6 +609,10 @@ $("showLoginFromSignupBtn")
     );
 
 
+// =====================================================
+// FORGOT PASSWORD NAVIGATION
+// =====================================================
+
 $("showForgotBtn")
     ?.addEventListener(
         "click",
@@ -582,6 +629,10 @@ $("showForgotBtn")
         }
     );
 
+
+// =====================================================
+// BACK TO LOGIN
+// =====================================================
 
 $("backToLoginBtn")
     ?.addEventListener(
@@ -601,7 +652,7 @@ $("backToLoginBtn")
 
 
 // =====================================================
-// SIGNUP EMAIL OTP
+// SIGNUP - SEND OTP
 // =====================================================
 
 $("sendSignupOtpBtn")
@@ -612,6 +663,7 @@ $("sendSignupOtpBtn")
             clearMessage(
                 "signupMessage"
             );
+
 
             const email =
                 $("signupEmail")
@@ -655,6 +707,7 @@ $("sendSignupOtpBtn")
                 signupOtpVerified =
                     false;
 
+
                 signupOtpEmail =
                     email;
 
@@ -664,14 +717,18 @@ $("sendSignupOtpBtn")
                     .remove("hidden");
 
 
-                $("signupOtpStatus")
-                    .textContent =
-                    "";
+                if ($("signupOtpStatus")) {
+
+                    $("signupOtpStatus")
+                        .textContent =
+                        "";
+
+                }
 
 
                 setMessage(
                     "signupMessage",
-                    "OTP sent to your email. Check your inbox.",
+                    "OTP sent successfully. Please check your email.",
                     "success"
                 );
 
@@ -679,6 +736,7 @@ $("sendSignupOtpBtn")
             } catch (error) {
 
                 console.error(
+                    "SIGNUP SEND OTP ERROR:",
                     error
                 );
 
@@ -706,7 +764,7 @@ $("sendSignupOtpBtn")
 
 
 // =====================================================
-// VERIFY SIGNUP OTP
+// SIGNUP - VERIFY OTP
 // =====================================================
 
 $("verifySignupOtpBtn")
@@ -732,9 +790,7 @@ $("verifySignupOtpBtn")
                     .trim();
 
 
-            if (
-                !validEmail(email)
-            ) {
+            if (!validEmail(email)) {
 
                 setMessage(
                     "signupMessage",
@@ -746,9 +802,7 @@ $("verifySignupOtpBtn")
             }
 
 
-            if (
-                !validOtp(otp)
-            ) {
+            if (!validOtp(otp)) {
 
                 setMessage(
                     "signupMessage",
@@ -784,18 +838,23 @@ $("verifySignupOtpBtn")
                 signupOtpVerified =
                     true;
 
+
                 signupOtpEmail =
                     email;
 
 
-                $("signupOtpStatus")
-                    .textContent =
-                    "✓ Email verified";
+                if ($("signupOtpStatus")) {
+
+                    $("signupOtpStatus")
+                        .textContent =
+                        "✓ Email verified";
+
+                }
 
 
                 setMessage(
                     "signupMessage",
-                    "Email verified successfully. You can create your account.",
+                    "Email verified successfully.",
                     "success"
                 );
 
@@ -803,6 +862,7 @@ $("verifySignupOtpBtn")
             } catch (error) {
 
                 console.error(
+                    "SIGNUP VERIFY OTP ERROR:",
                     error
                 );
 
@@ -875,7 +935,6 @@ $("signupBtn")
                     ?.checked;
 
 
-            // Store name
             if (!storeName) {
 
                 setMessage(
@@ -888,7 +947,6 @@ $("signupBtn")
             }
 
 
-            // Email
             if (!validEmail(email)) {
 
                 setMessage(
@@ -901,7 +959,6 @@ $("signupBtn")
             }
 
 
-            // OTP
             if (
                 !signupOtpVerified ||
                 signupOtpEmail !== email
@@ -917,10 +974,7 @@ $("signupBtn")
             }
 
 
-            // Password
-            if (
-                !validPassword(password)
-            ) {
+            if (!validPassword(password)) {
 
                 setMessage(
                     "signupMessage",
@@ -932,7 +986,6 @@ $("signupBtn")
             }
 
 
-            // Confirm
             if (
                 password !==
                 confirmPassword
@@ -948,7 +1001,6 @@ $("signupBtn")
             }
 
 
-            // Terms
             if (!termsAccepted) {
 
                 setMessage(
@@ -975,10 +1027,6 @@ $("signupBtn")
                 );
 
 
-                /*
-                    Create Firebase account.
-                */
-
                 const credential =
                     await createUserWithEmailAndPassword(
                         auth,
@@ -991,20 +1039,12 @@ $("signupBtn")
                     credential.user;
 
 
-                const now =
-                    Date.now();
-
-
                 const trialEnd =
                     new Date(
-                        now +
+                        Date.now() +
                         TRIAL_DURATION_MS
                     );
 
-
-                /*
-                    Create user profile.
-                */
 
                 await setDoc(
                     doc(
@@ -1068,10 +1108,6 @@ $("signupBtn")
 
                 setTimeout(
                     () => {
-
-                        showPage(
-                            "dashboardPage"
-                        );
 
                         loadDashboard(
                             user
@@ -1176,9 +1212,7 @@ $("loginBtn")
                     ?.value;
 
 
-            if (
-                !validEmail(email)
-            ) {
+            if (!validEmail(email)) {
 
                 setMessage(
                     "loginMessage",
@@ -1224,7 +1258,7 @@ $("loginBtn")
                     );
 
 
-                loadDashboard(
+                await loadDashboard(
                     credential.user
                 );
 
@@ -1299,7 +1333,7 @@ $("loginBtn")
 
 
 // =====================================================
-// FORGOT PASSWORD SEND OTP
+// FORGOT PASSWORD - SEND OTP
 // =====================================================
 
 $("sendForgotOtpBtn")
@@ -1319,9 +1353,7 @@ $("sendForgotOtpBtn")
                     .toLowerCase();
 
 
-            if (
-                !validEmail(email)
-            ) {
+            if (!validEmail(email)) {
 
                 setMessage(
                     "forgotMessage",
@@ -1356,6 +1388,7 @@ $("sendForgotOtpBtn")
                 forgotOtpVerified =
                     false;
 
+
                 forgotOtpEmail =
                     email;
 
@@ -1370,9 +1403,13 @@ $("sendForgotOtpBtn")
                     .add("hidden");
 
 
-                $("forgotOtpStatus")
-                    .textContent =
-                    "";
+                if ($("forgotOtpStatus")) {
+
+                    $("forgotOtpStatus")
+                        .textContent =
+                        "";
+
+                }
 
 
                 setMessage(
@@ -1385,6 +1422,7 @@ $("sendForgotOtpBtn")
             } catch (error) {
 
                 console.error(
+                    "FORGOT SEND OTP ERROR:",
                     error
                 );
 
@@ -1412,7 +1450,7 @@ $("sendForgotOtpBtn")
 
 
 // =====================================================
-// VERIFY FORGOT OTP
+// FORGOT PASSWORD - VERIFY OTP
 // =====================================================
 
 $("verifyForgotOtpBtn")
@@ -1438,9 +1476,7 @@ $("verifyForgotOtpBtn")
                     .trim();
 
 
-            if (
-                !validEmail(email)
-            ) {
+            if (!validEmail(email)) {
 
                 setMessage(
                     "forgotMessage",
@@ -1452,9 +1488,7 @@ $("verifyForgotOtpBtn")
             }
 
 
-            if (
-                !validOtp(otp)
-            ) {
+            if (!validOtp(otp)) {
 
                 setMessage(
                     "forgotMessage",
@@ -1490,13 +1524,18 @@ $("verifyForgotOtpBtn")
                 forgotOtpVerified =
                     true;
 
+
                 forgotOtpEmail =
                     email;
 
 
-                $("forgotOtpStatus")
-                    .textContent =
-                    "✓ Email verified";
+                if ($("forgotOtpStatus")) {
+
+                    $("forgotOtpStatus")
+                        .textContent =
+                        "✓ Email verified";
+
+                }
 
 
                 $("newPasswordArea")
@@ -1514,6 +1553,7 @@ $("verifyForgotOtpBtn")
             } catch (error) {
 
                 console.error(
+                    "FORGOT VERIFY OTP ERROR:",
                     error
                 );
 
@@ -1590,11 +1630,7 @@ $("resetPasswordBtn")
             }
 
 
-            if (
-                !validPassword(
-                    newPassword
-                )
-            ) {
+            if (!validPassword(newPassword)) {
 
                 setMessage(
                     "forgotMessage",
@@ -1644,6 +1680,7 @@ $("resetPasswordBtn")
                 forgotOtpVerified =
                     false;
 
+
                 forgotOtpEmail =
                     "";
 
@@ -1665,17 +1702,21 @@ $("resetPasswordBtn")
                     .add("hidden");
 
 
-                $("forgotEmail").value =
-                    "";
+                if ($("forgotEmail")) {
+                    $("forgotEmail").value = "";
+                }
 
-                $("forgotOtp").value =
-                    "";
+                if ($("forgotOtp")) {
+                    $("forgotOtp").value = "";
+                }
 
-                $("newPassword").value =
-                    "";
+                if ($("newPassword")) {
+                    $("newPassword").value = "";
+                }
 
-                $("confirmNewPassword").value =
-                    "";
+                if ($("confirmNewPassword")) {
+                    $("confirmNewPassword").value = "";
+                }
 
 
                 setTimeout(
@@ -1693,6 +1734,7 @@ $("resetPasswordBtn")
             } catch (error) {
 
                 console.error(
+                    "RESET PASSWORD ERROR:",
                     error
                 );
 
@@ -1723,9 +1765,7 @@ $("resetPasswordBtn")
 // DASHBOARD
 // =====================================================
 
-async function loadDashboard(
-    user
-) {
+async function loadDashboard(user) {
 
     showPage(
         "dashboardPage"
@@ -1748,9 +1788,11 @@ async function loadDashboard(
             );
 
 
-        if (
-            !snapshot.exists()
-        ) {
+        if (!snapshot.exists()) {
+
+            console.warn(
+                "User profile not found."
+            );
 
             return;
         }
@@ -1766,9 +1808,13 @@ async function loadDashboard(
             "Pharmacy";
 
 
-        $("dashboardStoreName")
-            .textContent =
-            storeName;
+        if ($("dashboardStoreName")) {
+
+            $("dashboardStoreName")
+                .textContent =
+                storeName;
+
+        }
 
 
         updateTrialStatus(
@@ -1792,9 +1838,7 @@ async function loadDashboard(
 // TRIAL STATUS
 // =====================================================
 
-function updateTrialStatus(
-    userData
-) {
+function updateTrialStatus(userData) {
 
     const element =
         $("trialStatus");
@@ -1803,12 +1847,24 @@ function updateTrialStatus(
     if (!element) return;
 
 
-    const trialEnd =
+    let trialEnd;
+
+
+    if (
         userData.trialEnd?.toDate
-            ? userData.trialEnd.toDate()
-            : new Date(
+    ) {
+
+        trialEnd =
+            userData.trialEnd.toDate();
+
+    } else {
+
+        trialEnd =
+            new Date(
                 userData.trialEnd
             );
+
+    }
 
 
     if (
@@ -1829,9 +1885,7 @@ function updateTrialStatus(
         Date.now();
 
 
-    if (
-        remaining <= 0
-    ) {
+    if (remaining <= 0) {
 
         element.textContent =
             "Free trial expired.";
@@ -1878,9 +1932,11 @@ $("logoutBtn")
                     auth
                 );
 
+
                 showPage(
                     "welcomePage"
                 );
+
 
             } catch (error) {
 
@@ -1899,44 +1955,42 @@ $("logoutBtn")
 // LEGAL MODALS
 // =====================================================
 
-function openModal(
-    modalId
-) {
+function openModal(modalId) {
 
     const modal =
         $(modalId);
 
-    if (modal) {
 
-        modal.classList.add(
-            "active"
-        );
+    if (!modal) return;
 
-        document.body.style.overflow =
-            "hidden";
 
-    }
+    modal.classList.add(
+        "active"
+    );
+
+
+    document.body.style.overflow =
+        "hidden";
 
 }
 
 
-function closeModal(
-    modalId
-) {
+function closeModal(modalId) {
 
     const modal =
         $(modalId);
 
-    if (modal) {
 
-        modal.classList.remove(
-            "active"
-        );
+    if (!modal) return;
 
-        document.body.style.overflow =
-            "";
 
-    }
+    modal.classList.remove(
+        "active"
+    );
+
+
+    document.body.style.overflow =
+        "";
 
 }
 
@@ -1944,36 +1998,52 @@ function closeModal(
 $("welcomeTermsBtn")
     ?.addEventListener(
         "click",
-        () => openModal(
-            "termsModal"
-        )
+        () => {
+
+            openModal(
+                "termsModal"
+            );
+
+        }
     );
 
 
 $("welcomePrivacyBtn")
     ?.addEventListener(
         "click",
-        () => openModal(
-            "privacyModal"
-        )
+        () => {
+
+            openModal(
+                "privacyModal"
+            );
+
+        }
     );
 
 
 $("signupTermsBtn")
     ?.addEventListener(
         "click",
-        () => openModal(
-            "termsModal"
-        )
+        () => {
+
+            openModal(
+                "termsModal"
+            );
+
+        }
     );
 
 
 $("signupPrivacyBtn")
     ?.addEventListener(
         "click",
-        () => openModal(
-            "privacyModal"
-        )
+        () => {
+
+            openModal(
+                "privacyModal"
+            );
+
+        }
     );
 
 
@@ -2027,7 +2097,7 @@ document
 
 
 // =====================================================
-// ESCAPE CLOSE MODAL
+// ESC CLOSE MODAL
 // =====================================================
 
 document.addEventListener(
@@ -2059,7 +2129,7 @@ document.addEventListener(
 
 
 // =====================================================
-// OTP INPUT ONLY NUMBERS
+// OTP INPUT - NUMBERS ONLY
 // =====================================================
 
 [
@@ -2101,26 +2171,29 @@ onAuthStateChanged(
 
         if (!user) {
 
-            /*
-                Only show welcome page if user
-                isn't already on an auth screen.
-            */
+            const authPage =
+                $("authPage");
+
 
             if (
-                !$("authPage")
-                    ?.classList
-                    .contains("hidden")
+                authPage &&
+                !authPage.classList.contains(
+                    "hidden"
+                )
             ) {
 
                 return;
 
             }
 
+
             showPage(
                 "welcomePage"
             );
 
+
             return;
+
         }
 
 
@@ -2139,7 +2212,7 @@ onAuthStateChanged(
 
 
 // =====================================================
-// BILLING HOOK
+// MEDZONEX GLOBAL OBJECT
 // =====================================================
 
 window.MedZoneX = {
@@ -2158,52 +2231,73 @@ window.MedZoneX = {
     setLoading:
         setButtonLoading,
 
+
     openBilling() {
 
-        /*
-            If your billing page/module already exists,
-            this function can open it.
-
-            We keep a safe fallback for now.
-        */
-
         const billingPage =
-            document.getElementById(
-                "billingPage"
+            $("billingPage");
+
+
+        if (!billingPage) {
+
+            alert(
+                "Billing module is not available."
+            );
+
+            return;
+
+        }
+
+
+        document
+            .querySelectorAll(".page")
+            .forEach(
+                (page) => {
+
+                    page.classList.add(
+                        "hidden"
+                    );
+
+                }
             );
 
 
-        if (billingPage) {
-
-            document
-                .querySelectorAll(
-                    ".page"
-                )
-                .forEach(
-                    (page) => {
-
-                        page.classList.add(
-                            "hidden"
-                        );
-
-                    }
-                );
+        billingPage.classList.remove(
+            "hidden"
+        );
 
 
-            billingPage.classList.remove(
-                "hidden"
-            );
+        if (
+            window.MedZoneXBilling
+                ?.loadMedicines
+        ) {
+
+            window.MedZoneXBilling
+                .loadMedicines();
+
+        }
+
+    },
 
 
-            if (
-                window.MedZoneXBilling
-                    ?.loadMedicines
-            ) {
+    closeBilling() {
 
-                window.MedZoneXBilling
-                    .loadMedicines();
+        showPage(
+            "dashboardPage"
+        );
 
-            }
+    },
+
+
+    openPurchases() {
+
+        if (
+            window.MedZoneXPurchases
+                ?.openPurchases
+        ) {
+
+            window.MedZoneXPurchases
+                .openPurchases();
 
             return;
 
@@ -2211,15 +2305,7 @@ window.MedZoneX = {
 
 
         alert(
-            "Billing module will be connected here."
-        );
-
-    },
-
-    closeBilling() {
-
-        showPage(
-            "dashboardPage"
+            "Purchase module is not available."
         );
 
     }
@@ -2228,17 +2314,14 @@ window.MedZoneX = {
 
 
 // =====================================================
-// DEBUG INFO
+// FINAL DEBUG
 // =====================================================
 
 console.log(
     "MedZoneX frontend initialized."
 );
 
-const API_BASE_URL =
-    "https://medzonex-backend.onrender.com";
-
 console.log(
-    "API_Base_Url:",
-    API_BASE_URL || ) "(same-domain /api
+    "MedZoneX API:",
+    API_BASE_URL
 );
