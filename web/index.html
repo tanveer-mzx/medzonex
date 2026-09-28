@@ -13,6 +13,11 @@
             content="#05070d"
     >
 
+    <meta
+            name="description"
+            content="MedZoneX - Smart pharmacy management, simplified."
+    >
+
     <title>MedZoneX</title>
 
     <link
@@ -25,888 +30,128 @@
             rel="stylesheet"
             href="css/style.css"
     >
-
-    <style>
-
-        /* =========================================================
-           BASIC PAGE CONTROL
-        ========================================================= */
-
-        .app-page {
-            display: none;
-        }
-
-        .app-page.active {
-            display: block;
-        }
-
-        /* =========================================================
-           WELCOME PAGE
-        ========================================================= */
-
-        #welcomePage {
-            min-height: 100vh;
-            min-height: 100dvh;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            padding: 24px;
-
-            position: relative;
-            overflow: hidden;
-
-            background:
-                radial-gradient(
-                    circle at 50% 30%,
-                    rgba(79, 70, 229, 0.18),
-                    transparent 40%
-                ),
-                #05070d;
-        }
-
-        .welcome-container {
-            width: min(520px, 100%);
-
-            text-align: center;
-
-            position: relative;
-            z-index: 2;
-        }
-
-        .welcome-logo-wrap {
-            width: 150px;
-            height: 150px;
-
-            margin: 0 auto 28px;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            animation: logoFloat 3s ease-in-out infinite;
-        }
-
-        .welcome-logo {
-            display: block;
-
-            width: 150px;
-            height: 150px;
-
-            object-fit: contain;
-
-            filter:
-                drop-shadow(0 0 18px rgba(99, 102, 241, 0.45));
-
-            opacity: 1;
-        }
-
-        @keyframes logoFloat {
-            0%, 100% {
-                transform: translateY(0);
-            }
-
-            50% {
-                transform: translateY(-8px);
-            }
-        }
-
-        .welcome-title {
-            margin: 0;
-
-            font-size: clamp(34px, 8vw, 58px);
-            font-weight: 800;
-
-            letter-spacing: -2px;
-
-            color: #ffffff;
-        }
-
-        .welcome-title span {
-            color: #8b5cf6;
-        }
-
-        .welcome-subtitle {
-            margin: 14px auto 30px;
-
-            max-width: 430px;
-
-            color: #9ca3af;
-
-            line-height: 1.6;
-
-            font-size: 16px;
-        }
-
-        /* =========================================================
-           BUTTONS
-        ========================================================= */
-
-        .primary-btn,
-        .secondary-btn,
-        .danger-btn,
-        .text-btn {
-            cursor: pointer;
-            font-family: inherit;
-        }
-
-        .primary-btn {
-            border: 0;
-
-            min-height: 52px;
-
-            padding: 0 28px;
-
-            border-radius: 14px;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #7c3aed,
-                    #4f46e5
-                );
-
-            color: #ffffff;
-
-            font-size: 16px;
-            font-weight: 700;
-
-            box-shadow:
-                0 12px 30px rgba(79, 70, 229, 0.25);
-
-            transition:
-                transform .2s ease,
-                box-shadow .2s ease;
-        }
-
-        .primary-btn:hover {
-            transform: translateY(-2px);
-
-            box-shadow:
-                0 16px 36px rgba(79, 70, 229, 0.35);
-        }
-
-        .primary-btn:active {
-            transform: scale(.98);
-        }
-
-        .secondary-btn {
-            min-height: 48px;
-
-            padding: 0 22px;
-
-            border-radius: 12px;
-
-            border: 1px solid rgba(255,255,255,.12);
-
-            background: rgba(255,255,255,.05);
-
-            color: #ffffff;
-
-            font-weight: 600;
-        }
-
-        .text-btn {
-            border: 0;
-            background: transparent;
-
-            color: #a78bfa;
-
-            font-weight: 600;
-
-            padding: 8px;
-        }
-
-        /* =========================================================
-           AUTH PAGE
-        ========================================================= */
-
-        #authPage {
-            min-height: 100vh;
-            min-height: 100dvh;
-
-            padding: 24px;
-
-            background:
-                radial-gradient(
-                    circle at top,
-                    rgba(124,58,237,.14),
-                    transparent 45%
-                ),
-                #05070d;
-        }
-
-        .auth-wrapper {
-            width: min(480px, 100%);
-
-            margin: 0 auto;
-
-            padding-top: 30px;
-        }
-
-        .auth-top {
-            display: flex;
-
-            align-items: center;
-            justify-content: space-between;
-
-            margin-bottom: 20px;
-        }
-
-        .auth-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-
-            color: #ffffff;
-            font-weight: 800;
-        }
-
-        .auth-brand img {
-            width: 42px;
-            height: 42px;
-
-            object-fit: contain;
-        }
-
-        .back-btn {
-            border: 0;
-
-            background: rgba(255,255,255,.06);
-
-            color: #ffffff;
-
-            border-radius: 10px;
-
-            padding: 10px 14px;
-
-            cursor: pointer;
-        }
-
-        /* =========================================================
-           PAPER / CARD
-        ========================================================= */
-
-        .paper-stage {
-            perspective: 1200px;
-
-            width: 100%;
-        }
-
-        .auth-paper {
-            width: 100%;
-
-            position: relative;
-
-            transform-style: preserve-3d;
-
-            transition:
-                transform .75s cubic-bezier(.2,.75,.25,1);
-        }
-
-        .auth-paper.flipping {
-            animation: paperFlip .75s ease;
-        }
-
-        @keyframes paperFlip {
-
-            0% {
-                transform: rotateY(0deg);
-            }
-
-            45% {
-                transform: rotateY(88deg);
-            }
-
-            55% {
-                transform: rotateY(88deg);
-            }
-
-            100% {
-                transform: rotateY(0deg);
-            }
-        }
-
-        .auth-card {
-            width: 100%;
-
-            padding: 28px;
-
-            border-radius: 24px;
-
-            border: 1px solid rgba(255,255,255,.10);
-
-            background:
-                linear-gradient(
-                    145deg,
-                    rgba(255,255,255,.075),
-                    rgba(255,255,255,.025)
-                );
-
-            box-shadow:
-                0 30px 80px rgba(0,0,0,.45);
-
-            backdrop-filter: blur(20px);
-        }
-
-        .auth-card h1 {
-            margin: 0 0 8px;
-
-            color: #ffffff;
-
-            font-size: 30px;
-        }
-
-        .auth-card .description {
-            margin: 0 0 24px;
-
-            color: #9ca3af;
-
-            line-height: 1.5;
-        }
-
-        /* =========================================================
-           FORMS
-        ========================================================= */
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-
-            margin-bottom: 8px;
-
-            color: #d1d5db;
-
-            font-size: 14px;
-
-            font-weight: 600;
-        }
-
-        .form-input {
-            width: 100%;
-
-            height: 50px;
-
-            box-sizing: border-box;
-
-            padding: 0 15px;
-
-            border-radius: 12px;
-
-            border: 1px solid rgba(255,255,255,.10);
-
-            outline: none;
-
-            background: rgba(0,0,0,.25);
-
-            color: #ffffff;
-
-            font-family: inherit;
-
-            font-size: 15px;
-
-            transition:
-                border-color .2s ease,
-                box-shadow .2s ease;
-        }
-
-        .form-input:focus {
-            border-color: #8b5cf6;
-
-            box-shadow:
-                0 0 0 3px rgba(139,92,246,.12);
-        }
-
-        .form-input::placeholder {
-            color: #6b7280;
-        }
-
-        .otp-row {
-            display: flex;
-            gap: 8px;
-        }
-
-        .otp-row .form-input {
-            flex: 1;
-        }
-
-        .otp-row button {
-            white-space: nowrap;
-
-            padding: 0 14px;
-
-            border-radius: 12px;
-
-            border: 1px solid rgba(139,92,246,.35);
-
-            background: rgba(124,58,237,.15);
-
-            color: #c4b5fd;
-
-            cursor: pointer;
-
-            font-weight: 700;
-        }
-
-        .checkbox-row {
-            display: flex;
-
-            align-items: flex-start;
-
-            gap: 10px;
-
-            margin: 18px 0;
-
-            color: #9ca3af;
-
-            font-size: 13px;
-
-            line-height: 1.5;
-        }
-
-        .checkbox-row input {
-            margin-top: 3px;
-        }
-
-        .checkbox-row a {
-            color: #a78bfa;
-
-            text-decoration: none;
-        }
-
-        .full-btn {
-            width: 100%;
-        }
-
-        .form-message {
-            min-height: 20px;
-
-            margin: 10px 0;
-
-            color: #fca5a5;
-
-            font-size: 13px;
-        }
-
-        .form-message.success {
-            color: #86efac;
-        }
-
-        .auth-links {
-            margin-top: 18px;
-
-            display: flex;
-
-            justify-content: space-between;
-
-            align-items: center;
-
-            gap: 10px;
-        }
-
-        .switch-auth {
-            text-align: center;
-
-            margin-top: 22px;
-
-            color: #9ca3af;
-
-            font-size: 14px;
-        }
-
-        /* =========================================================
-           DASHBOARD
-        ========================================================= */
-
-        #dashboardPage {
-            min-height: 100vh;
-
-            padding: 24px;
-
-            background: #05070d;
-        }
-
-        .dashboard-container {
-            width: min(1100px, 100%);
-
-            margin: 0 auto;
-        }
-
-        .dashboard-header {
-            display: flex;
-
-            align-items: center;
-            justify-content: space-between;
-
-            gap: 20px;
-
-            margin-bottom: 28px;
-        }
-
-        .dashboard-brand {
-            display: flex;
-
-            align-items: center;
-
-            gap: 12px;
-        }
-
-        .dashboard-brand img {
-            width: 55px;
-            height: 55px;
-
-            object-fit: contain;
-        }
-
-        .dashboard-brand h1 {
-            margin: 0;
-
-            color: #ffffff;
-
-            font-size: 25px;
-        }
-
-        .dashboard-brand p {
-            margin: 4px 0 0;
-
-            color: #9ca3af;
-        }
-
-        .dashboard-grid {
-            display: grid;
-
-            grid-template-columns:
-                repeat(auto-fit, minmax(220px, 1fr));
-
-            gap: 16px;
-        }
-
-        .dashboard-card {
-            border: 1px solid rgba(255,255,255,.08);
-
-            background:
-                rgba(255,255,255,.045);
-
-            border-radius: 18px;
-
-            padding: 22px;
-
-            text-align: left;
-
-            cursor: pointer;
-
-            color: #ffffff;
-
-            min-height: 120px;
-
-            transition:
-                transform .2s ease,
-                background .2s ease;
-        }
-
-        .dashboard-card:hover {
-            transform: translateY(-3px);
-
-            background:
-                rgba(255,255,255,.075);
-        }
-
-        .dashboard-card strong {
-            display: block;
-
-            font-size: 17px;
-
-            margin-bottom: 8px;
-        }
-
-        .dashboard-card span {
-            color: #9ca3af;
-
-            font-size: 13px;
-        }
-
-        /* =========================================================
-           PAYMENT PAGE
-        ========================================================= */
-
-        #paymentPage {
-            min-height: 100vh;
-
-            display: flex;
-
-            align-items: center;
-            justify-content: center;
-
-            padding: 24px;
-
-            background: #05070d;
-        }
-
-        .payment-card {
-            width: min(480px, 100%);
-
-            padding: 32px;
-
-            border-radius: 24px;
-
-            background:
-                rgba(255,255,255,.05);
-
-            border:
-                1px solid rgba(255,255,255,.1);
-
-            text-align: center;
-
-            color: #ffffff;
-        }
-
-        /* =========================================================
-           BILLING PAGE
-        ========================================================= */
-
-        #billingPage {
-            min-height: 100vh;
-
-            padding: 24px;
-
-            background: #05070d;
-        }
-
-        .billing-container {
-            width: min(1100px, 100%);
-
-            margin: 0 auto;
-        }
-
-        /* =========================================================
-           LEGAL MODAL
-        ========================================================= */
-
-        .modal {
-            display: none;
-
-            position: fixed;
-
-            inset: 0;
-
-            z-index: 9999;
-
-            padding: 20px;
-
-            background:
-                rgba(0,0,0,.75);
-
-            backdrop-filter: blur(8px);
-
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal.open {
-            display: flex;
-        }
-
-        .modal-card {
-            width: min(700px, 100%);
-
-            max-height: 85vh;
-
-            overflow-y: auto;
-
-            padding: 28px;
-
-            border-radius: 20px;
-
-            background: #0b0f19;
-
-            border:
-                1px solid rgba(255,255,255,.1);
-
-            color: #d1d5db;
-        }
-
-        .modal-card h2 {
-            color: #ffffff;
-
-            margin-top: 0;
-        }
-
-        .modal-card h3 {
-            color: #ffffff;
-
-            margin-top: 24px;
-        }
-
-        .modal-close {
-            float: right;
-
-            border: 0;
-
-            background: rgba(255,255,255,.08);
-
-            color: #ffffff;
-
-            border-radius: 8px;
-
-            width: 36px;
-            height: 36px;
-
-            cursor: pointer;
-        }
-
-        /* =========================================================
-           MOBILE
-        ========================================================= */
-
-        @media (max-width: 600px) {
-
-            #welcomePage,
-            #authPage,
-            #dashboardPage,
-            #billingPage {
-                padding: 16px;
-            }
-
-            .welcome-logo-wrap,
-            .welcome-logo {
-                width: 120px;
-                height: 120px;
-            }
-
-            .auth-card {
-                padding: 22px;
-            }
-
-            .auth-links {
-                flex-direction: column;
-            }
-
-            .otp-row {
-                flex-direction: column;
-            }
-
-            .otp-row button {
-                height: 46px;
-            }
-
-            .dashboard-header {
-                align-items: flex-start;
-            }
-        }
-
-    </style>
 </head>
 
 <body>
 
-<!-- ============================================================
-     WELCOME PAGE
-============================================================ -->
+<!-- =====================================================
+     APP CONTAINER
+===================================================== -->
 
-<section
-        id="welcomePage"
-        class="app-page active"
->
-
-    <div class="welcome-container">
-
-        <div class="welcome-logo-wrap">
-
-            <img
-                    src="assets/medzonex-logo.png"
-                    alt="MedZoneX Logo"
-                    class="welcome-logo"
-                    onerror="this.onerror=null;this.src='medzonex-logo.png';"
-            >
-
-        </div>
-
-        <h1 class="welcome-title">
-            Welcome to <span>MedZoneX</span>
-        </h1>
-
-        <p class="welcome-subtitle">
-            A modern pharmacy management platform for
-            inventory, purchases, billing and business management.
-        </p>
-
-        <button
-                type="button"
-                id="getStartedBtn"
-                class="primary-btn"
-        >
-            Get Started
-        </button>
-
-    </div>
-
-</section>
+<div id="app">
 
 
-<!-- ============================================================
-     AUTH PAGE
-============================================================ -->
+    <!-- =================================================
+         WELCOME PAGE
+    ================================================== -->
 
-<section
-        id="authPage"
-        class="app-page"
->
+    <section
+            id="welcomePage"
+            class="app-page active"
+    >
 
-    <div class="auth-wrapper">
+        <div class="welcome-overlay"></div>
 
-        <div class="auth-top">
+        <div class="welcome-content">
 
-            <div class="auth-brand">
+            <!-- LOGO -->
+
+            <div class="welcome-logo-wrap">
 
                 <img
                         src="assets/medzonex-logo.png"
                         alt="MedZoneX"
-                        onerror="this.onerror=null;this.src='medzonex-logo.png';"
+                        class="welcome-logo"
                 >
-
-                <span>MedZoneX</span>
 
             </div>
 
+
+            <!-- BRAND -->
+
+            <div class="welcome-brand">
+
+                <h1>
+                    MedZoneX
+                </h1>
+
+                <p>
+                    Smart pharmacy management, simplified.
+                </p>
+
+            </div>
+
+
+            <!-- GET STARTED -->
+
             <button
                     type="button"
-                    class="back-btn"
-                    id="authBackBtn"
+                    id="getStartedBtn"
+                    class="primary-btn get-started-btn"
             >
-                ← Back
+                Get Started
             </button>
 
         </div>
 
+    </section>
 
-        <div class="paper-stage">
 
-            <div
-                    class="auth-paper"
-                    id="authPaper"
-            >
 
-                <!-- ==================================================
+    <!-- =================================================
+         AUTH PAGE
+    ================================================== -->
+
+    <section
+            id="authPage"
+            class="app-page"
+            style="display:none;"
+    >
+
+        <div class="auth-wrapper">
+
+            <div class="auth-card">
+
+
+                <!-- SMALL LOGO -->
+
+                <div class="auth-logo-wrap">
+
+                    <img
+                            src="assets/medzonex-logo.png"
+                            alt="MedZoneX"
+                            class="auth-logo"
+                    >
+
+                </div>
+
+
+
+                <!-- =====================================
                      LOGIN
-                =================================================== -->
+                ====================================== -->
 
                 <div
-                        id="loginPage"
-                        class="auth-card"
+                        id="loginSection"
+                        class="auth-section"
                 >
 
-                    <h1>Welcome Back</h1>
+                    <div class="auth-heading">
 
-                    <p class="description">
-                        Login to your MedZoneX account.
-                    </p>
+                        <h2>
+                            Welcome Back
+                        </h2>
+
+                        <p>
+                            Login to continue to MedZoneX.
+                        </p>
+
+                    </div>
 
 
-                    <div class="form-group">
+                    <!-- EMAIL -->
+
+                    <div class="input-group">
 
                         <label for="loginEmail">
                             Email Address
@@ -915,7 +160,7 @@
                         <input
                                 type="email"
                                 id="loginEmail"
-                                class="form-input"
+                                name="loginEmail"
                                 placeholder="Enter your email"
                                 autocomplete="email"
                         >
@@ -923,7 +168,9 @@
                     </div>
 
 
-                    <div class="form-group">
+                    <!-- PASSWORD -->
+
+                    <div class="input-group">
 
                         <label for="loginPassword">
                             Password
@@ -932,7 +179,7 @@
                         <input
                                 type="password"
                                 id="loginPassword"
-                                class="form-input"
+                                name="loginPassword"
                                 placeholder="Enter your password"
                                 autocomplete="current-password"
                         >
@@ -940,11 +187,7 @@
                     </div>
 
 
-                    <div
-                            id="loginMessage"
-                            class="form-message"
-                    ></div>
-
+                    <!-- LOGIN BUTTON -->
 
                     <button
                             type="button"
@@ -955,22 +198,40 @@
                     </button>
 
 
-                    <div class="auth-links">
+                    <!-- LOGIN MESSAGE -->
+
+                    <div
+                            id="loginMessage"
+                            class="form-message"
+                            aria-live="polite"
+                    ></div>
+
+
+                    <!-- FORGOT PASSWORD -->
+
+                    <button
+                            type="button"
+                            id="showForgotBtn"
+                            class="text-btn"
+                    >
+                        Forgot Password?
+                    </button>
+
+
+                    <!-- SIGN UP -->
+
+                    <div class="auth-switch">
+
+                        <span>
+                            Don't have an account?
+                        </span>
 
                         <button
                                 type="button"
-                                id="openForgotPassword"
-                                class="text-btn"
+                                id="showSignupBtn"
+                                class="link-btn"
                         >
-                            Forgot Password?
-                        </button>
-
-                        <button
-                                type="button"
-                                id="openSignup"
-                                class="text-btn"
-                        >
-                            Create New Account
+                            Sign Up
                         </button>
 
                     </div>
@@ -978,26 +239,33 @@
                 </div>
 
 
-                <!-- ==================================================
+
+                <!-- =====================================
                      SIGN UP
-                =================================================== -->
+                ====================================== -->
 
                 <div
-                        id="signupPage"
-                        class="auth-card"
+                        id="signupSection"
+                        class="auth-section"
                         style="display:none;"
                 >
 
-                    <h1>Create Account</h1>
+                    <div class="auth-heading">
 
-                    <p class="description">
-                        Create your MedZoneX pharmacy account.
-                    </p>
+                        <h2>
+                            Create Account
+                        </h2>
+
+                        <p>
+                            Start your MedZoneX free trial.
+                        </p>
+
+                    </div>
 
 
                     <!-- STORE NAME -->
 
-                    <div class="form-group">
+                    <div class="input-group">
 
                         <label for="storeName">
                             Store Name *
@@ -1006,8 +274,8 @@
                         <input
                                 type="text"
                                 id="storeName"
-                                class="form-input"
-                                placeholder="Enter pharmacy/store name"
+                                name="storeName"
+                                placeholder="Enter pharmacy / store name"
                                 autocomplete="organization"
                         >
 
@@ -1016,82 +284,94 @@
 
                     <!-- EMAIL -->
 
-                    <div class="form-group">
+                    <div class="input-group">
 
-                        <label for="email">
+                        <label for="signupEmail">
                             Email Address *
                         </label>
 
-                        <div class="otp-row">
-
-                            <input
-                                    type="email"
-                                    id="email"
-                                    class="form-input"
-                                    placeholder="Enter email address"
-                                    autocomplete="email"
-                            >
-
-                            <button
-                                    type="button"
-                                    id="sendEmailOtpBtn"
-                            >
-                                Send OTP
-                            </button>
-
-                        </div>
+                        <input
+                                type="email"
+                                id="signupEmail"
+                                name="signupEmail"
+                                placeholder="Enter your email"
+                                autocomplete="email"
+                        >
 
                     </div>
 
 
-                    <!-- EMAIL OTP -->
+                    <!-- SEND OTP -->
+
+                    <button
+                            type="button"
+                            id="sendSignupOtpBtn"
+                            class="secondary-btn full-btn"
+                    >
+                        Send OTP
+                    </button>
+
+
+                    <!-- OTP AREA -->
 
                     <div
-                            class="form-group"
-                            id="signupOtpGroup"
+                            id="signupOtpArea"
+                            class="otp-area"
+                            style="display:none;"
                     >
 
-                        <label for="emailOtp">
-                            Email OTP *
-                        </label>
+                        <div class="otp-info">
 
-                        <div class="otp-row">
+                            <span id="signupOtpStatus">
+                                OTP has been sent to your email.
+                            </span>
+
+                        </div>
+
+
+                        <div class="input-group">
+
+                            <label for="signupOtp">
+                                Email OTP *
+                            </label>
 
                             <input
                                     type="text"
-                                    id="emailOtp"
-                                    class="form-input"
+                                    id="signupOtp"
+                                    name="signupOtp"
                                     placeholder="Enter 6-digit OTP"
                                     inputmode="numeric"
                                     maxlength="6"
                                     autocomplete="one-time-code"
                             >
 
-                            <button
-                                    type="button"
-                                    id="verifyEmailOtpBtn"
-                            >
-                                Verify
-                            </button>
-
                         </div>
+
+
+                        <button
+                                type="button"
+                                id="verifySignupOtpBtn"
+                                class="secondary-btn full-btn"
+                        >
+                            Verify Email
+                        </button>
 
                     </div>
 
 
                     <!-- PASSWORD -->
 
-                    <div class="form-group">
+                    <div class="input-group">
 
-                        <label for="password">
+                        <label for="signupPassword">
                             Create Password *
                         </label>
 
                         <input
                                 type="password"
-                                id="password"
-                                class="form-input"
-                                placeholder="Create password"
+                                id="signupPassword"
+                                name="signupPassword"
+                                placeholder="Minimum 8 characters"
                                 autocomplete="new-password"
                         >
 
@@ -1100,61 +380,61 @@
 
                     <!-- CONFIRM PASSWORD -->
 
-                    <div class="form-group">
+                    <div class="input-group">
 
-                        <label for="confirmPassword">
+                        <label for="signupConfirmPassword">
                             Confirm Password *
                         </label>
 
                         <input
                                 type="password"
-                                id="confirmPassword"
-                                class="form-input"
-                                placeholder="Confirm password"
+                                id="signupConfirmPassword"
+                                name="signupConfirmPassword"
+                                placeholder="Re-enter your password"
                                 autocomplete="new-password"
                         >
 
                     </div>
 
 
-                    <!-- MESSAGE -->
-
-                    <div
-                            id="signupMessage"
-                            class="form-message"
-                    ></div>
-
-
                     <!-- TERMS -->
 
-                    <label class="checkbox-row">
+                    <div class="terms-row">
 
                         <input
                                 type="checkbox"
-                                id="termsCheckbox"
+                                id="signupTerms"
+                                name="signupTerms"
                         >
 
-                        <span>
+                        <label for="signupTerms">
+
                             I agree to the
-                            <a
-                                    href="#"
-                                    id="signupTermsLink"
+
+                            <button
+                                    type="button"
+                                    id="signupTermsBtn"
+                                    class="inline-link"
                             >
                                 Terms & Conditions
-                            </a>
+                            </button>
+
                             and
-                            <a
-                                    href="#"
-                                    id="signupPrivacyLink"
+
+                            <button
+                                    type="button"
+                                    id="signupPrivacyBtn"
+                                    class="inline-link"
                             >
                                 Privacy Policy
-                            </a>.
-                        </span>
+                            </button>
 
-                    </label>
+                        </label>
+
+                    </div>
 
 
-                    <!-- CREATE -->
+                    <!-- CREATE ACCOUNT -->
 
                     <button
                             type="button"
@@ -1165,14 +445,27 @@
                     </button>
 
 
-                    <div class="switch-auth">
+                    <!-- SIGNUP MESSAGE -->
 
-                        Already have an account?
+                    <div
+                            id="signupMessage"
+                            class="form-message"
+                            aria-live="polite"
+                    ></div>
+
+
+                    <!-- BACK TO LOGIN -->
+
+                    <div class="auth-switch">
+
+                        <span>
+                            Already have an account?
+                        </span>
 
                         <button
                                 type="button"
-                                id="backToLogin"
-                                class="text-btn"
+                                id="showLoginFromSignupBtn"
+                                class="link-btn"
                         >
                             Login
                         </button>
@@ -1182,1315 +475,1277 @@
                 </div>
 
 
-                <!-- ==================================================
+
+                <!-- =====================================
                      FORGOT PASSWORD
-                =================================================== -->
+                ====================================== -->
 
                 <div
-                        id="forgotPasswordPage"
-                        class="auth-card"
+                        id="forgotSection"
+                        class="auth-section"
                         style="display:none;"
                 >
 
-                    <h1>Reset Password</h1>
+                    <div class="auth-heading">
 
-                    <p class="description">
-                        Verify your email with OTP and create
-                        a new password.
-                    </p>
+                        <h2>
+                            Reset Password
+                        </h2>
+
+                        <p>
+                            Verify your email and create a new password.
+                        </p>
+
+                    </div>
 
 
-                    <div class="form-group">
+                    <!-- EMAIL -->
+
+                    <div class="input-group">
 
                         <label for="forgotEmail">
                             Email Address *
                         </label>
 
-                        <div class="otp-row">
-
-                            <input
-                                    type="email"
-                                    id="forgotEmail"
-                                    class="form-input"
-                                    placeholder="Enter your email"
-                            >
-
-                            <button
-                                    type="button"
-                                    id="forgotSendOtpBtn"
-                            >
-                                Send OTP
-                            </button>
-
-                        </div>
+                        <input
+                                type="email"
+                                id="forgotEmail"
+                                name="forgotEmail"
+                                placeholder="Enter your account email"
+                                autocomplete="email"
+                        >
 
                     </div>
 
 
-                    <div class="form-group">
+                    <!-- SEND FORGOT OTP -->
 
-                        <label for="forgotOtp">
-                            Email OTP *
-                        </label>
+                    <button
+                            type="button"
+                            id="sendForgotOtpBtn"
+                            class="secondary-btn full-btn"
+                    >
+                        Send OTP
+                    </button>
 
-                        <div class="otp-row">
+
+                    <!-- FORGOT OTP -->
+
+                    <div
+                            id="forgotOtpArea"
+                            class="otp-area"
+                            style="display:none;"
+                    >
+
+                        <div class="otp-info">
+
+                            <span id="forgotOtpStatus">
+                                OTP has been sent to your email.
+                            </span>
+
+                        </div>
+
+
+                        <div class="input-group">
+
+                            <label for="forgotOtp">
+                                Email OTP *
+                            </label>
 
                             <input
                                     type="text"
                                     id="forgotOtp"
-                                    class="form-input"
+                                    name="forgotOtp"
                                     placeholder="Enter 6-digit OTP"
                                     inputmode="numeric"
                                     maxlength="6"
+                                    autocomplete="one-time-code"
                             >
-
-                            <button
-                                    type="button"
-                                    id="forgotVerifyOtpBtn"
-                            >
-                                Verify
-                            </button>
 
                         </div>
 
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label for="newPassword">
-                            New Password *
-                        </label>
-
-                        <input
-                                type="password"
-                                id="newPassword"
-                                class="form-input"
-                                placeholder="Enter new password"
-                        >
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label for="confirmNewPassword">
-                            Confirm New Password *
-                        </label>
-
-                        <input
-                                type="password"
-                                id="confirmNewPassword"
-                                class="form-input"
-                                placeholder="Confirm new password"
-                        >
-
-                    </div>
-
-
-                    <div
-                            id="forgotMessage"
-                            class="form-message"
-                    ></div>
-
-
-                    <button
-                            type="button"
-                            id="resetPasswordBtn"
-                            class="primary-btn full-btn"
-                    >
-                        Reset Password
-                    </button>
-
-
-                    <div class="switch-auth">
 
                         <button
                                 type="button"
-                                id="forgotBackToLogin"
-                                class="text-btn"
+                                id="verifyForgotOtpBtn"
+                                class="secondary-btn full-btn"
                         >
-                            ← Back to Login
+                            Verify OTP
                         </button>
 
                     </div>
 
+
+                    <!-- NEW PASSWORD -->
+
+                    <div
+                            id="newPasswordArea"
+                            style="display:none;"
+                    >
+
+                        <div class="input-group">
+
+                            <label for="newPassword">
+                                New Password *
+                            </label>
+
+                            <input
+                                    type="password"
+                                    id="newPassword"
+                                    name="newPassword"
+                                    placeholder="Minimum 8 characters"
+                                    autocomplete="new-password"
+                            >
+
+                        </div>
+
+
+                        <div class="input-group">
+
+                            <label for="confirmNewPassword">
+                                Confirm New Password *
+                            </label>
+
+                            <input
+                                    type="password"
+                                    id="confirmNewPassword"
+                                    name="confirmNewPassword"
+                                    placeholder="Re-enter new password"
+                                    autocomplete="new-password"
+                            >
+
+                        </div>
+
+
+                        <button
+                                type="button"
+                                id="resetPasswordBtn"
+                                class="primary-btn full-btn"
+                        >
+                            Reset Password
+                        </button>
+
+                    </div>
+
+
+                    <!-- FORGOT MESSAGE -->
+
+                    <div
+                            id="forgotMessage"
+                            class="form-message"
+                            aria-live="polite"
+                    ></div>
+
+
+                    <!-- BACK -->
+
+                    <button
+                            type="button"
+                            id="backToLoginBtn"
+                            class="text-btn"
+                    >
+                        ← Back to Login
+                    </button>
+
                 </div>
 
             </div>
 
         </div>
 
-    </div>
-
-</section>
+    </section>
 
 
-<!-- ============================================================
-     DASHBOARD
-============================================================ -->
 
-<section
-        id="dashboardPage"
-        class="app-page"
->
+    <!-- =================================================
+         DASHBOARD
+    ================================================== -->
 
-    <div class="dashboard-container">
+    <section
+            id="dashboardPage"
+            class="app-page"
+            style="display:none;"
+    >
 
-        <div class="dashboard-header">
+        <div class="dashboard-wrapper">
 
-            <div class="dashboard-brand">
+            <header class="dashboard-header">
 
-                <img
-                        src="assets/medzonex-logo.png"
-                        alt="MedZoneX"
-                        onerror="this.onerror=null;this.src='medzonex-logo.png';"
+                <div class="dashboard-brand">
+
+                    <img
+                            src="assets/medzonex-logo.png"
+                            alt="MedZoneX"
+                    >
+
+                    <div>
+
+                        <h1>
+                            MedZoneX
+                        </h1>
+
+                        <span>
+                            Pharmacy Management
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                        type="button"
+                        id="logoutBtn"
+                        class="logout-btn"
                 >
+                    Logout
+                </button>
+
+            </header>
+
+
+            <main class="dashboard-content">
+
+                <div class="dashboard-welcome">
+
+                    <p>
+                        Welcome
+                    </p>
+
+                    <h2 id="dashboardStoreName">
+                        Your Store
+                    </h2>
+
+                    <div
+                            id="trialStatus"
+                            class="trial-status"
+                    >
+                        Free trial active
+                    </div>
+
+                </div>
+
+
+                <div class="dashboard-grid">
+
+                    <button
+                            type="button"
+                            class="dashboard-card"
+                            id="openBillingDashboardBtn"
+                            onclick="window.MedZoneX && window.MedZoneX.openBilling && window.MedZoneX.openBilling()"
+                    >
+                        <strong>
+                            Billing
+                        </strong>
+
+                        <span>
+                            Create and manage bills
+                        </span>
+
+                    </button>
+
+
+                    <button
+                            type="button"
+                            class="dashboard-card"
+                            id="openInventoryDashboardBtn"
+                            onclick="window.MedZoneXInventory && window.MedZoneXInventory.loadInventory && window.MedZoneXInventory.loadInventory()"
+                    >
+                        <strong>
+                            Inventory
+                        </strong>
+
+                        <span>
+                            Manage medicine stock
+                        </span>
+
+                    </button>
+
+
+                    <button
+                            type="button"
+                            class="dashboard-card"
+                            id="openPurchasesDashboardBtn"
+                            onclick="window.MedZoneX && window.MedZoneX.openPurchases && window.MedZoneX.openPurchases()"
+                    >
+                        <strong>
+                            Purchase / Stock In
+                        </strong>
+
+                        <span>
+                            Add purchased medicines
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </main>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =================================================
+         BILLING PAGE
+    ================================================== -->
+
+    <section
+            id="billingPage"
+            class="app-page"
+            style="display:none;"
+    >
+
+        <div class="module-wrapper">
+
+            <header class="module-header">
 
                 <div>
 
-                    <h1>MedZoneX</h1>
+                    <h1>
+                        Billing
+                    </h1>
 
                     <p>
-                        Pharmacy Management Dashboard
+                        Create a medicine sale
                     </p>
 
                 </div>
 
+                <button
+                        type="button"
+                        id="closeBillingBtn"
+                        class="secondary-btn"
+                >
+                    ← Dashboard
+                </button>
+
+            </header>
+
+
+            <div class="billing-container">
+
+                <div class="billing-search-section">
+
+                    <label for="billingMedicineSearch">
+                        Search Medicine
+                    </label>
+
+                    <input
+                            type="text"
+                            id="billingMedicineSearch"
+                            placeholder="Search medicine, salt, manufacturer or batch"
+                    >
+
+                    <div
+                            id="billingSearchResults"
+                            class="search-results"
+                    ></div>
+
+                </div>
+
+
+                <div
+                        id="billingCart"
+                        class="billing-cart"
+                ></div>
+
+
+                <div class="billing-customer">
+
+                    <input
+                            type="text"
+                            id="billingCustomerName"
+                            placeholder="Customer name"
+                    >
+
+                    <input
+                            type="tel"
+                            id="billingCustomerPhone"
+                            placeholder="Customer phone"
+                    >
+
+                </div>
+
+
+                <div class="billing-controls">
+
+                    <input
+                            type="number"
+                            id="billingDiscount"
+                            min="0"
+                            step="0.01"
+                            placeholder="Discount"
+                    >
+
+                    <select id="billingPaymentMethod">
+
+                        <option value="cash">
+                            Cash
+                        </option>
+
+                        <option value="upi">
+                            UPI
+                        </option>
+
+                        <option value="card">
+                            Card
+                        </option>
+
+                        <option value="other">
+                            Other
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="billing-summary">
+
+                    <div>
+                        <span>
+                            Subtotal
+                        </span>
+
+                        <strong id="billingSubtotal">
+                            ₹0.00
+                        </strong>
+                    </div>
+
+
+                    <div>
+                        <span>
+                            Discount
+                        </span>
+
+                        <strong id="billingDiscountAmount">
+                            ₹0.00
+                        </strong>
+                    </div>
+
+
+                    <div class="grand-total">
+
+                        <span>
+                            Grand Total
+                        </span>
+
+                        <strong id="billingGrandTotal">
+                            ₹0.00
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="billing-actions">
+
+                    <button
+                            type="button"
+                            id="clearBillBtn"
+                            class="secondary-btn"
+                    >
+                        Clear
+                    </button>
+
+                    <button
+                            type="button"
+                            id="completeSaleBtn"
+                            class="primary-btn"
+                    >
+                        Complete Sale
+                    </button>
+
+                </div>
+
+
+                <div
+                        id="billingMessage"
+                        class="form-message"
+                ></div>
+
             </div>
 
-
-            <button
-                    type="button"
-                    id="logoutBtn"
-                    class="secondary-btn"
-            >
-                Logout
-            </button>
-
         </div>
 
-
-        <div class="dashboard-grid">
-
-            <button
-                    type="button"
-                    class="dashboard-card"
-                    id="openInventoryBtn"
-                    onclick="
-                    if (window.MedZoneXInventory &&
-                        typeof window.MedZoneXInventory.open === 'function') {
-                        window.MedZoneXInventory.open();
-                    }
-                "
-            >
-                <strong>Inventory</strong>
-                <span>
-                    Manage medicines and stock
-                </span>
-            </button>
+    </section>
 
 
-            <button
-                    type="button"
-                    class="dashboard-card"
-                    id="openPurchasesBtn"
-                    onclick="
-                    if (window.MedZoneX &&
-                        typeof window.MedZoneX.openPurchases === 'function') {
-                        window.MedZoneX.openPurchases();
-                    }
-                "
-            >
-                <strong>Purchase / Stock In</strong>
-                <span>
-                    Add purchased medicines
-                </span>
-            </button>
 
+    <!-- =================================================
+         INVENTORY PAGE
+    ================================================== -->
 
-            <button
-                    type="button"
-                    class="dashboard-card"
-                    id="openBillingBtn"
-                    onclick="
-                    if (window.MedZoneX &&
-                        typeof window.MedZoneX.openBilling === 'function') {
-                        window.MedZoneX.openBilling();
-                    }
-                "
-            >
-                <strong>Billing</strong>
-                <span>
-                    Create and complete sales
-                </span>
-            </button>
+    <section
+            id="inventoryPage"
+            class="app-page"
+            style="display:none;"
+    >
 
+        <div class="module-wrapper">
 
-            <button
-                    type="button"
-                    class="dashboard-card"
-                    id="openCustomersBtn"
-            >
-                <strong>Customers</strong>
-                <span>
-                    Manage customer records
-                </span>
-            </button>
-
-
-            <button
-                    type="button"
-                    class="dashboard-card"
-                    id="openReportsBtn"
-            >
-                <strong>Reports</strong>
-                <span>
-                    View business reports
-                </span>
-            </button>
-
-
-            <button
-                    type="button"
-                    class="dashboard-card"
-                    id="openSettingsBtn"
-            >
-                <strong>Settings</strong>
-                <span>
-                    Manage account settings
-                </span>
-            </button>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- ============================================================
-     PAYMENT PAGE
-============================================================ -->
-
-<section
-        id="paymentPage"
-        class="app-page"
->
-
-    <div class="payment-card">
-
-        <h1>Subscription Required</h1>
-
-        <p>
-            Your MedZoneX trial has ended.
-            Please activate a subscription to continue.
-        </p>
-
-        <br>
-
-        <button
-                type="button"
-                id="openPaymentBtn"
-                class="primary-btn full-btn"
-        >
-            Continue to Payment
-        </button>
-
-        <br><br>
-
-        <button
-                type="button"
-                id="paymentLogoutBtn"
-                class="secondary-btn"
-        >
-            Logout
-        </button>
-
-    </div>
-
-</section>
-
-
-<!-- ============================================================
-     BILLING PAGE
-============================================================ -->
-
-<section
-        id="billingPage"
-        class="app-page"
->
-
-    <div class="billing-container">
-
-        <div class="dashboard-header">
-
-            <div class="dashboard-brand">
-
-                <img
-                        src="assets/medzonex-logo.png"
-                        alt="MedZoneX"
-                        onerror="this.onerror=null;this.src='medzonex-logo.png';"
-                >
+            <header class="module-header">
 
                 <div>
 
-                    <h1>Billing</h1>
+                    <h1>
+                        Inventory
+                    </h1>
 
                     <p>
-                        Create a pharmacy sale
+                        Manage your medicine stock
                     </p>
 
                 </div>
 
-            </div>
+                <button
+                        type="button"
+                        onclick="MedZoneX.showPage('dashboardPage')"
+                        class="secondary-btn"
+                >
+                    ← Dashboard
+                </button>
+
+            </header>
 
 
-            <button
-                    type="button"
-                    id="closeBillingBtn"
-                    class="secondary-btn"
-            >
-                ← Back
-            </button>
-
-        </div>
-
-
-        <div class="auth-card">
-
-            <div class="form-group">
-
-                <label>
-                    Search Medicine
-                </label>
+            <div class="inventory-toolbar">
 
                 <input
-                        type="text"
-                        id="billingMedicineSearch"
-                        class="form-input"
+                        type="search"
+                        id="inventorySearch"
                         placeholder="Search medicine..."
                 >
 
-            </div>
-
-
-            <div id="billingSearchResults"></div>
-
-            <div id="billingCart"></div>
-
-
-            <div class="form-group">
-
-                <label for="billingCustomerName">
-                    Customer Name
-                </label>
-
-                <input
-                        type="text"
-                        id="billingCustomerName"
-                        class="form-input"
-                        placeholder="Customer name"
+                <button
+                        type="button"
+                        id="addMedicineBtn"
+                        class="primary-btn"
                 >
+                    + Add Medicine
+                </button>
 
-            </div>
-
-
-            <div class="form-group">
-
-                <label for="billingCustomerPhone">
-                    Customer Phone
-                </label>
-
-                <input
-                        type="tel"
-                        id="billingCustomerPhone"
-                        class="form-input"
-                        placeholder="Customer phone"
+                <button
+                        type="button"
+                        id="refreshInventoryBtn"
+                        class="secondary-btn"
                 >
+                    Refresh
+                </button>
 
             </div>
 
 
-            <div class="form-group">
+            <div class="inventory-summary">
 
-                <label for="billingDiscount">
-                    Discount
-                </label>
+                <div>
+                    <span>
+                        Medicines
+                    </span>
 
-                <input
-                        type="number"
-                        id="billingDiscount"
-                        class="form-input"
-                        value="0"
-                        min="0"
+                    <strong id="totalMedicines">
+                        0
+                    </strong>
+                </div>
+
+                <div>
+                    <span>
+                        Stock Units
+                    </span>
+
+                    <strong id="totalStockUnits">
+                        0
+                    </strong>
+                </div>
+
+                <div>
+                    <span>
+                        Stock Value
+                    </span>
+
+                    <strong id="totalStockValue">
+                        ₹0
+                    </strong>
+                </div>
+
+                <div>
+                    <span>
+                        Low Stock
+                    </span>
+
+                    <strong id="lowStockCount">
+                        0
+                    </strong>
+                </div>
+
+                <div>
+                    <span>
+                        Expired
+                    </span>
+
+                    <strong id="expiredStockCount">
+                        0
+                    </strong>
+                </div>
+
+                <div>
+                    <span>
+                        Expiring Soon
+                    </span>
+
+                    <strong id="expiringSoonCount">
+                        0
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <div class="inventory-filters">
+
+                <button
+                        type="button"
+                        id="showAllInventoryBtn"
+                        class="filter-btn"
                 >
+                    All
+                </button>
 
-            </div>
-
-
-            <div class="form-group">
-
-                <label for="billingPaymentMethod">
-                    Payment Method
-                </label>
-
-                <select
-                        id="billingPaymentMethod"
-                        class="form-input"
+                <button
+                        type="button"
+                        id="showLowStockBtn"
+                        class="filter-btn"
                 >
-                    <option value="cash">
-                        Cash
-                    </option>
+                    Low Stock
+                </button>
 
-                    <option value="upi">
-                        UPI
-                    </option>
+                <button
+                        type="button"
+                        id="showExpiredStockBtn"
+                        class="filter-btn"
+                >
+                    Expired
+                </button>
 
-                    <option value="card">
-                        Card
-                    </option>
-
-                    <option value="other">
-                        Other
-                    </option>
-
-                </select>
+                <button
+                        type="button"
+                        id="showExpiringSoonBtn"
+                        class="filter-btn"
+                >
+                    Expiring Soon
+                </button>
 
             </div>
 
 
-            <div id="billingMessage"></div>
+            <div
+                    id="inventoryList"
+                    class="inventory-list"
+            ></div>
 
 
-            <div>
+            <div
+                    id="inventoryForm"
+                    class="inventory-form"
+                    style="display:none;"
+            >
+
+                <h2 id="inventoryFormTitle">
+                    Add Medicine
+                </h2>
+
+
+                <div class="form-grid">
+
+                    <input
+                            id="medicineName"
+                            placeholder="Medicine name"
+                    >
+
+                    <input
+                            id="medicineSalt"
+                            placeholder="Salt"
+                    >
+
+                    <input
+                            id="medicineManufacturer"
+                            placeholder="Manufacturer"
+                    >
+
+                    <input
+                            id="medicineBatch"
+                            placeholder="Batch number"
+                    >
+
+                    <input
+                            id="medicineExpiry"
+                            type="date"
+                    >
+
+                    <input
+                            id="medicinePurchasePrice"
+                            type="number"
+                            step="0.01"
+                            placeholder="Purchase price"
+                    >
+
+                    <input
+                            id="medicineSellingPrice"
+                            type="number"
+                            step="0.01"
+                            placeholder="Selling price"
+                    >
+
+                    <input
+                            id="medicineQuantity"
+                            type="number"
+                            min="0"
+                            placeholder="Quantity"
+                    >
+
+                    <input
+                            id="medicineMinimumStock"
+                            type="number"
+                            min="0"
+                            placeholder="Minimum stock"
+                    >
+
+                </div>
+
+
+                <div class="form-actions">
+
+                    <button
+                            type="button"
+                            id="cancelMedicineBtn"
+                            class="secondary-btn"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                            type="button"
+                            id="saveMedicineBtn"
+                            class="primary-btn"
+                    >
+                        Save Medicine
+                    </button>
+
+                </div>
+
+
+                <div
+                        id="inventoryMessage"
+                        class="form-message"
+                ></div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =================================================
+         PURCHASE PAGE
+    ================================================== -->
+
+    <section
+            id="purchasePage"
+            class="app-page"
+            style="display:none;"
+    >
+
+        <div class="module-wrapper">
+
+            <header class="module-header">
+
+                <div>
+
+                    <h1>
+                        Purchase / Stock In
+                    </h1>
+
+                    <p>
+                        Add purchased medicines to inventory
+                    </p>
+
+                </div>
+
+                <button
+                        type="button"
+                        onclick="MedZoneX.showPage('dashboardPage')"
+                        class="secondary-btn"
+                >
+                    ← Dashboard
+                </button>
+
+            </header>
+
+
+            <div class="purchase-container">
+
+                <div class="form-grid">
+
+                    <input
+                            id="purchaseSupplierName"
+                            placeholder="Supplier name"
+                    >
+
+                    <input
+                            id="purchaseSupplierPhone"
+                            placeholder="Supplier phone"
+                    >
+
+                    <select id="purchaseSupplier">
+                        <option value="">
+                            Select supplier
+                        </option>
+                    </select>
+
+                </div>
+
+
+                <div class="purchase-medicine-form">
+
+                    <input
+                            id="purchaseMedicineName"
+                            placeholder="Medicine name"
+                    >
+
+                    <input
+                            id="purchaseMedicineSalt"
+                            placeholder="Salt"
+                    >
+
+                    <input
+                            id="purchaseMedicineManufacturer"
+                            placeholder="Manufacturer"
+                    >
+
+                    <input
+                            id="purchaseMedicineBatch"
+                            placeholder="Batch"
+                    >
+
+                    <input
+                            id="purchaseMedicineExpiry"
+                            type="date"
+                    >
+
+                    <input
+                            id="purchaseMedicinePurchasePrice"
+                            type="number"
+                            step="0.01"
+                            placeholder="Purchase price"
+                    >
+
+                    <input
+                            id="purchaseMedicineSellingPrice"
+                            type="number"
+                            step="0.01"
+                            placeholder="Selling price"
+                    >
+
+                    <input
+                            id="purchaseMedicineQuantity"
+                            type="number"
+                            min="1"
+                            placeholder="Quantity"
+                    >
+
+                </div>
+
+
+                <button
+                        type="button"
+                        id="addPurchaseItemBtn"
+                        class="secondary-btn"
+                >
+                    + Add Medicine
+                </button>
+
+
+                <div
+                        id="purchaseItems"
+                        class="purchase-items"
+                ></div>
+
+
+                <div class="purchase-summary">
+
+                    <div>
+                        <span>
+                            Subtotal
+                        </span>
+
+                        <strong id="purchaseSubtotal">
+                            ₹0.00
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span>
+                            Discount
+                        </span>
+
+                        <strong id="purchaseDiscountAmount">
+                            ₹0.00
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span>
+                            Grand Total
+                        </span>
+
+                        <strong id="purchaseGrandTotal">
+                            ₹0.00
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span>
+                            Paid
+                        </span>
+
+                        <strong id="purchasePaidAmount">
+                            ₹0.00
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span>
+                            Balance
+                        </span>
+
+                        <strong id="purchaseBalance">
+                            ₹0.00
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <div
+                        id="purchaseHistoryList"
+                        class="purchase-history"
+                ></div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =================================================
+         PAYMENT REQUIRED
+         Hidden until trial expires.
+    ================================================== -->
+
+    <section
+            id="paymentPage"
+            class="app-page"
+            style="display:none;"
+    >
+
+        <div class="payment-wrapper">
+
+            <div class="payment-card">
+
+                <div class="payment-icon">
+                    🔒
+                </div>
+
+                <h1>
+                    Subscription Required
+                </h1>
 
                 <p>
-                    Subtotal:
-                    <strong id="billingSubtotal">
-                        ₹0.00
-                    </strong>
+                    Your MedZoneX trial has ended.
+                    Please activate a subscription to continue.
                 </p>
 
-                <p>
-                    Discount:
-                    <strong id="billingDiscountAmount">
-                        ₹0.00
-                    </strong>
-                </p>
 
-                <p>
-                    Grand Total:
-                    <strong id="billingGrandTotal">
-                        ₹0.00
-                    </strong>
-                </p>
+                <button
+                        type="button"
+                        id="continuePaymentBtn"
+                        class="primary-btn full-btn"
+                >
+                    Continue to Payment
+                </button>
+
+
+                <button
+                        type="button"
+                        id="paymentLogoutBtn"
+                        class="secondary-btn full-btn"
+                >
+                    Logout
+                </button>
 
             </div>
 
+        </div>
+
+    </section>
+
+
+
+    <!-- =================================================
+         TERMS MODAL
+    ================================================== -->
+
+    <div
+            id="termsModal"
+            class="modal"
+            style="display:none;"
+    >
+
+        <div class="modal-overlay"></div>
+
+        <div class="modal-card">
 
             <button
                     type="button"
-                    id="completeSaleBtn"
-                    class="primary-btn full-btn"
+                    class="modal-close"
+                    data-close-modal
             >
-                Complete Sale
+                ×
             </button>
 
-            <br><br>
+            <h2>
+                Terms & Conditions
+            </h2>
 
-            <button
-                    type="button"
-                    id="clearBillBtn"
-                    class="secondary-btn full-btn"
-            >
-                Clear Bill
-            </button>
+            <div class="legal-content">
+
+                <p>
+                    Welcome to MedZoneX. By creating an account
+                    or using the MedZoneX platform, you agree
+                    to these Terms & Conditions.
+                </p>
+
+                <h3>
+                    1. Service
+                </h3>
+
+                <p>
+                    MedZoneX provides pharmacy management
+                    software including inventory, billing,
+                    purchase management, stock tracking,
+                    expiry monitoring and related business
+                    management features.
+                </p>
+
+                <h3>
+                    2. Free Trial
+                </h3>
+
+                <p>
+                    Eligible new accounts may receive a
+                    limited free trial period as displayed
+                    by MedZoneX.
+                </p>
+
+                <h3>
+                    3. Subscription
+                </h3>
+
+                <p>
+                    Continued access after the applicable
+                    trial period requires an active
+                    subscription.
+                </p>
+
+                <h3>
+                    4. Payments
+                </h3>
+
+                <p>
+                    Payments are non-refundable except where
+                    required by applicable law or where
+                    MedZoneX expressly agrees otherwise
+                    in writing.
+                </p>
+
+                <h3>
+                    5. Pharmacy Responsibility
+                </h3>
+
+                <p>
+                    Users are responsible for the accuracy
+                    of medicine information, pricing,
+                    inventory records, billing information
+                    and compliance with applicable laws.
+                </p>
+
+                <h3>
+                    6. AI Features
+                </h3>
+
+                <p>
+                    Any AI-assisted functionality is provided
+                    as an assistive software feature and
+                    should be independently verified by the
+                    responsible pharmacy professional.
+                </p>
+
+                <h3>
+                    7. Account Security
+                </h3>
+
+                <p>
+                    You are responsible for maintaining the
+                    security of your account credentials.
+                </p>
+
+                <h3>
+                    8. Contact
+                </h3>
+
+                <p>
+                    For service-related questions, contact
+                    MedZoneX through the official support
+                    channel provided on the platform.
+                </p>
+
+            </div>
 
         </div>
 
     </div>
 
-</section>
 
 
-<!-- ============================================================
-     TERMS MODAL
-============================================================ -->
+    <!-- =================================================
+         PRIVACY MODAL
+    ================================================== -->
 
-<div
-        id="termsModal"
-        class="modal"
->
+    <div
+            id="privacyModal"
+            class="modal"
+            style="display:none;"
+    >
 
-    <div class="modal-card">
+        <div class="modal-overlay"></div>
 
-        <button
-                type="button"
-                class="modal-close"
-                id="closeTermsModal"
-        >
-            ×
-        </button>
+        <div class="modal-card">
 
-        <h2>
-            Terms & Conditions
-        </h2>
+            <button
+                    type="button"
+                    class="modal-close"
+                    data-close-modal
+            >
+                ×
+            </button>
 
-        <h3>1. Service</h3>
+            <h2>
+                Privacy Policy
+            </h2>
 
-        <p>
-            MedZoneX provides cloud-based pharmacy management
-            software and related digital services.
-        </p>
+            <div class="legal-content">
 
-        <h3>2. Trial</h3>
+                <p>
+                    MedZoneX respects the privacy and security
+                    of information provided by its users.
+                </p>
 
-        <p>
-            Eligible new accounts may receive a limited trial
-            period as displayed by MedZoneX.
-        </p>
+                <h3>
+                    1. Information We Collect
+                </h3>
 
-        <h3>3. Subscription</h3>
+                <p>
+                    Depending on the services used, MedZoneX
+                    may collect account details such as store
+                    name, email address, mobile number and
+                    information entered into the platform.
+                </p>
 
-        <p>
-            Subscription fees are payable according to the
-            selected plan and pricing displayed by MedZoneX.
-        </p>
+                <h3>
+                    2. How Information Is Used
+                </h3>
 
-        <h3>4. Payments</h3>
+                <p>
+                    Information may be used to provide,
+                    secure, maintain and improve MedZoneX
+                    services and to communicate important
+                    account or service information.
+                </p>
 
-        <p>
-            Payments are non-refundable except where required
-            by applicable law or expressly stated otherwise
-            by MedZoneX in writing.
-        </p>
+                <h3>
+                    3. Security
+                </h3>
 
-        <h3>5. Pharmacy Responsibility</h3>
+                <p>
+                    MedZoneX uses reasonable technical and
+                    organizational measures designed to
+                    protect user information.
+                </p>
 
-        <p>
-            MedZoneX is software and does not replace the
-            professional responsibility of pharmacists,
-            pharmacy owners or healthcare professionals.
-        </p>
+                <h3>
+                    4. Data Protection
+                </h3>
 
-        <h3>6. AI Features</h3>
+                <p>
+                    MedZoneX aims to handle personal data in
+                    accordance with applicable Indian data
+                    protection and privacy requirements,
+                    including applicable provisions of the
+                    Digital Personal Data Protection framework.
+                </p>
 
-        <p>
-            Any AI-assisted feature is provided as an
-            assistance tool and should be independently
-            verified before use.
-        </p>
+                <h3>
+                    5. Third-Party Services
+                </h3>
 
-        <h3>7. Acceptable Use</h3>
+                <p>
+                    MedZoneX may use trusted third-party
+                    infrastructure and service providers
+                    necessary to operate the platform.
+                </p>
 
-        <p>
-            Users must not misuse the platform, attempt
-            unauthorized access, or use the service for
-            unlawful activities.
-        </p>
+                <h3>
+                    6. User Requests
+                </h3>
 
-        <h3>8. Changes</h3>
+                <p>
+                    Users may contact MedZoneX regarding
+                    applicable privacy, access, correction
+                    or data-related requests.
+                </p>
 
-        <p>
-            MedZoneX may update these terms when reasonably
-            necessary. Updated terms will be made available
-            through the service.
-        </p>
+                <h3>
+                    7. Changes
+                </h3>
+
+                <p>
+                    This Privacy Policy may be updated when
+                    necessary to reflect changes in the
+                    service or applicable requirements.
+                </p>
+
+            </div>
+
+        </div>
 
     </div>
+
+
 
 </div>
 
 
-<!-- ============================================================
-     PRIVACY MODAL
-============================================================ -->
-
-<div
-        id="privacyModal"
-        class="modal"
->
-
-    <div class="modal-card">
-
-        <button
-                type="button"
-                class="modal-close"
-                id="closePrivacyModal"
-        >
-            ×
-        </button>
-
-        <h2>
-            Privacy Policy
-        </h2>
-
-        <h3>1. Information We Collect</h3>
-
-        <p>
-            MedZoneX may collect account information such as
-            store name, email address and information required
-            to provide the software service.
-        </p>
-
-        <h3>2. Use of Information</h3>
-
-        <p>
-            Information may be used for account management,
-            authentication, customer support, service delivery,
-            security and billing.
-        </p>
-
-        <h3>3. Data Security</h3>
-
-        <p>
-            MedZoneX uses reasonable technical and
-            organizational measures intended to protect
-            information from unauthorized access.
-        </p>
-
-        <h3>4. Service Providers</h3>
-
-        <p>
-            MedZoneX may use trusted third-party infrastructure
-            and service providers for authentication, hosting,
-            email, payments and related functionality.
-        </p>
-
-        <h3>5. Data Requests</h3>
-
-        <p>
-            Users may contact MedZoneX regarding applicable
-            requests concerning their personal information.
-        </p>
-
-        <h3>6. Updates</h3>
-
-        <p>
-            This Privacy Policy may be updated when necessary.
-            The updated version will be made available through
-            the service.
-        </p>
-
-    </div>
-
-</div>
-
-
-<!-- ============================================================
-     JAVASCRIPT
-============================================================ -->
-
-<script type="module">
-
-    /*
-     * -----------------------------------------------------------
-     * PAGE HELPERS
-     * -----------------------------------------------------------
-     */
-
-    function showOnlyPage(pageId) {
-
-        document
-            .querySelectorAll(".app-page")
-            .forEach((page) => {
-
-                page.classList.remove("active");
-
-                page.style.display = "none";
-
-            });
-
-
-        const page =
-            document.getElementById(pageId);
-
-        if (!page) {
-            console.error(
-                "MedZoneX: Page not found:",
-                pageId
-            );
-
-            return;
-        }
-
-
-        page.classList.add("active");
-
-        page.style.display = "block";
-    }
-
-
-    /*
-     * -----------------------------------------------------------
-     * AUTH CARD FLIP
-     * -----------------------------------------------------------
-     */
-
-    function flipPaper() {
-
-        const paper =
-            document.getElementById("authPaper");
-
-        if (!paper) return;
-
-        paper.classList.remove("flipping");
-
-        void paper.offsetWidth;
-
-        paper.classList.add("flipping");
-
-    }
-
-
-    /*
-     * -----------------------------------------------------------
-     * WELCOME → LOGIN
-     * -----------------------------------------------------------
-     */
-
-    const getStartedBtn =
-        document.getElementById("getStartedBtn");
-
-
-    if (getStartedBtn) {
-
-        getStartedBtn.addEventListener(
-            "click",
-            () => {
-
-                showOnlyPage("authPage");
-
-                showAuthCard("loginPage");
-
-            }
-        );
-
-    }
-
-
-    /*
-     * -----------------------------------------------------------
-     * AUTH CARD SWITCHER
-     * -----------------------------------------------------------
-     */
-
-    function showAuthCard(cardId) {
-
-        const cards = [
-            "loginPage",
-            "signupPage",
-            "forgotPasswordPage"
-        ];
-
-
-        cards.forEach((id) => {
-
-            const card =
-                document.getElementById(id);
-
-            if (!card) return;
-
-            card.style.display =
-                id === cardId
-                    ? "block"
-                    : "none";
-
-        });
-
-    }
-
-
-    /*
-     * -----------------------------------------------------------
-     * CREATE ACCOUNT
-     * LOGIN → SIGNUP
-     * -----------------------------------------------------------
-     */
-
-    const openSignup =
-        document.getElementById("openSignup");
-
-
-    if (openSignup) {
-
-        openSignup.addEventListener(
-            "click",
-            () => {
-
-                flipPaper();
-
-                setTimeout(() => {
-
-                    showAuthCard("signupPage");
-
-                }, 250);
-
-            }
-        );
-
-    }
-
-
-    /*
-     * -----------------------------------------------------------
-     * SIGNUP → LOGIN
-     * -----------------------------------------------------------
-     */
-
-    const backToLogin =
-        document.getElementById("backToLogin");
-
-
-    if (backToLogin) {
-
-        backToLogin.addEventListener(
-            "click",
-            () => {
-
-                flipPaper();
-
-                setTimeout(() => {
-
-                    showAuthCard("loginPage");
-
-                }, 250);
-
-            }
-        );
-
-    }
-
-
-    /*
-     * -----------------------------------------------------------
-     * FORGOT PASSWORD
-     * -----------------------------------------------------------
-     */
-
-    const openForgotPassword =
-        document.getElementById(
-            "openForgotPassword"
-        );
-
-
-    if (openForgotPassword) {
-
-        openForgotPassword.addEventListener(
-            "click",
-            () => {
-
-                showAuthCard(
-                    "forgotPasswordPage"
-                );
-
-            }
-        );
-
-    }
-
-
-    /*
-     * -----------------------------------------------------------
-     * FORGOT → LOGIN
-     * -----------------------------------------------------------
-     */
-
-    const forgotBackToLogin =
-        document.getElementById(
-            "forgotBackToLogin"
-        );
-
-
-    if (forgotBackToLogin) {
-
-        forgotBackToLogin.addEventListener(
-            "click",
-            () => {
-
-                showAuthCard("loginPage");
-
-            }
-        );
-
-    }
-
-
-    /*
-     * -----------------------------------------------------------
-     * AUTH BACK
-     * -----------------------------------------------------------
-     */
-
-    const authBackBtn =
-        document.getElementById(
-            "authBackBtn"
-        );
-
-
-    if (authBackBtn) {
-
-        authBackBtn.addEventListener(
-            "click",
-            () => {
-
-                showOnlyPage("welcomePage");
-
-            }
-        );
-
-    }
-
-
-    /*
-     * -----------------------------------------------------------
-     * LEGAL MODALS
-     * -----------------------------------------------------------
-     */
-
-    function openModal(id) {
-
-        const modal =
-            document.getElementById(id);
-
-        if (modal) {
-
-            modal.classList.add("open");
-
-        }
-
-    }
-
-
-    function closeModal(id) {
-
-        const modal =
-            document.getElementById(id);
-
-        if (modal) {
-
-            modal.classList.remove("open");
-
-        }
-
-    }
-
-
-    const signupTermsLink =
-        document.getElementById(
-            "signupTermsLink"
-        );
-
-
-    if (signupTermsLink) {
-
-        signupTermsLink.addEventListener(
-            "click",
-            (event) => {
-
-                event.preventDefault();
-
-                openModal("termsModal");
-
-            }
-        );
-
-    }
-
-
-    const signupPrivacyLink =
-        document.getElementById(
-            "signupPrivacyLink"
-        );
-
-
-    if (signupPrivacyLink) {
-
-        signupPrivacyLink.addEventListener(
-            "click",
-            (event) => {
-
-                event.preventDefault();
-
-                openModal("privacyModal");
-
-            }
-        );
-
-    }
-
-
-    const closeTermsModal =
-        document.getElementById(
-            "closeTermsModal"
-        );
-
-
-    if (closeTermsModal) {
-
-        closeTermsModal.addEventListener(
-            "click",
-            () => {
-
-                closeModal("termsModal");
-
-            }
-        );
-
-    }
-
-
-    const closePrivacyModal =
-        document.getElementById(
-            "closePrivacyModal"
-        );
-
-
-    if (closePrivacyModal) {
-
-        closePrivacyModal.addEventListener(
-            "click",
-            () => {
-
-                closeModal("privacyModal");
-
-            }
-        );
-
-    }
-
-
-    /*
-     * Close modal when clicking outside
-     */
-
-    document
-        .querySelectorAll(".modal")
-        .forEach((modal) => {
-
-            modal.addEventListener(
-                "click",
-                (event) => {
-
-                    if (event.target === modal) {
-
-                        modal.classList.remove(
-                            "open"
-                        );
-
-                    }
-
-                }
-            );
-
-        });
-
-
-    /*
-     * -----------------------------------------------------------
-     * FALLBACK PAGE API
-     * -----------------------------------------------------------
-     *
-     * Existing app.js can still use window.MedZoneX.
-     * We don't overwrite existing functions unnecessarily.
-     * -----------------------------------------------------------
-     */
-
-    window.MedZoneX =
-        window.MedZoneX || {};
-
-
-    window.MedZoneX.showWelcome =
-        function () {
-
-            showOnlyPage("welcomePage");
-
-        };
-
-
-    window.MedZoneX.showLogin =
-        function () {
-
-            showOnlyPage("authPage");
-
-            showAuthCard("loginPage");
-
-        };
-
-
-    window.MedZoneX.showSignup =
-        function () {
-
-            showOnlyPage("authPage");
-
-            flipPaper();
-
-            setTimeout(() => {
-
-                showAuthCard("signupPage");
-
-            }, 250);
-
-        };
-
-
-    window.MedZoneX.showForgotPassword =
-        function () {
-
-            showOnlyPage("authPage");
-
-            showAuthCard(
-                "forgotPasswordPage"
-            );
-
-        };
-
-
-    /*
-     * -----------------------------------------------------------
-     * PAYMENT BUTTON
-     * -----------------------------------------------------------
-     */
-
-    const openPaymentBtn =
-        document.getElementById(
-            "openPaymentBtn"
-        );
-
-
-    if (openPaymentBtn) {
-
-        openPaymentBtn.addEventListener(
-            "click",
-            () => {
-
-                if (
-                    window.MedZoneX &&
-                    typeof window.MedZoneX.openBilling ===
-                    "function"
-                ) {
-
-                    window.MedZoneX.openBilling();
-
-                } else {
-
-                    alert(
-                        "Payment system is being prepared."
-                    );
-
-                }
-
-            }
-        );
-
-    }
-
-
-    /*
-     * -----------------------------------------------------------
-     * CLOSE BILLING
-     * -----------------------------------------------------------
-     */
-
-    const closeBillingBtn =
-        document.getElementById(
-            "closeBillingBtn"
-        );
-
-
-    if (closeBillingBtn) {
-
-        closeBillingBtn.addEventListener(
-            "click",
-            () => {
-
-                showOnlyPage(
-                    "dashboardPage"
-                );
-
-            }
-        );
-
-    }
-
-
-    /*
-     * -----------------------------------------------------------
-     * SIMPLE FALLBACK DASHBOARD BUTTONS
-     * -----------------------------------------------------------
-     */
-
-    const openInventoryBtn =
-        document.getElementById(
-            "openInventoryBtn"
-        );
-
-
-    if (openInventoryBtn) {
-
-        openInventoryBtn.addEventListener(
-            "click",
-            () => {
-
-                if (
-                    window.MedZoneXInventory &&
-                    typeof window.MedZoneXInventory.open ===
-                    "function"
-                ) {
-
-                    window.MedZoneXInventory.open();
-
-                }
-
-            }
-        );
-
-    }
-
-
-    /*
-     * -----------------------------------------------------------
-     * CLOSE MODALS WITH ESC
-     * -----------------------------------------------------------
-     */
-
-    document.addEventListener(
-        "keydown",
-        (event) => {
-
-            if (event.key !== "Escape") return;
-
-            document
-                .querySelectorAll(".modal.open")
-                .forEach((modal) => {
-
-                    modal.classList.remove(
-                        "open"
-                    );
-
-                });
-
-        }
-    );
-
-
-    /*
-     * -----------------------------------------------------------
-     * DEBUG
-     * -----------------------------------------------------------
-     */
-
-    console.log(
-        "MedZoneX UI loaded successfully."
-    );
-
-</script>
-
-
-<!-- ============================================================
-     EXISTING APP
-============================================================ -->
+<!-- =====================================================
+     FIREBASE / APP SCRIPTS
+===================================================== -->
 
 <script
         type="module"
