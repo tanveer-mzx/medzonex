@@ -42,9 +42,7 @@ const defaultOrigins = [
 ];
 
 const environmentOrigins =
-    String(
-        process.env.ALLOWED_ORIGINS || ""
-    )
+    String(process.env.ALLOWED_ORIGINS || "")
         .split(",")
         .map((origin) => origin.trim())
         .filter(Boolean);
@@ -56,43 +54,25 @@ const allowedOrigins = [
     ])
 ];
 
-console.log(
-    "Allowed origins:",
-    allowedOrigins
-);
-
+console.log("Allowed origins:", allowedOrigins);
 
 app.use(
     cors({
-        origin: function (
-            origin,
-            callback
-        ) {
+        origin: function (origin, callback) {
 
-            // Server-to-server / Postman
+            // Allow server-to-server / Postman requests
             if (!origin) {
                 return callback(null, true);
             }
 
-            if (
-                allowedOrigins.includes(origin)
-            ) {
-
-                return callback(
-                    null,
-                    true
-                );
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
             }
 
-            console.error(
-                "CORS blocked:",
-                origin
-            );
+            console.error("CORS blocked:", origin);
 
             return callback(
-                new Error(
-                    "CORS: Origin not allowed"
-                )
+                new Error("CORS: Origin not allowed")
             );
         },
 
@@ -106,9 +86,7 @@ app.use(
 // ======================================================
 
 let firebaseInitialized = false;
-
 let db = null;
-
 let firebaseAuth = null;
 
 
@@ -117,18 +95,55 @@ function initializeFirebase() {
     try {
 
         /*
-         * FIRST:
-         * Render environment variable.
-         *
-         * FIREBASE_SERVICE_ACCOUNT_JSON
+         * PRIORITY 1
+         * Individual Render environment variables.
          */
 
-        const serviceAccountJson =
-            process.env
-                .FIREBASE_SERVICE_ACCOUNT_JSON;
+        const projectId =
+            process.env.FIREBASE_PROJECT_ID;
+
+        const clientEmail =
+            process.env.FIREBASE_CLIENT_EMAIL;
+
+        let privateKey =
+            process.env.FIREBASE_PRIVATE_KEY;
 
 
-        if (serviceAccountJson) {
+        if (
+            projectId &&
+            clientEmail &&
+            privateKey
+        ) {
+
+            console.log(
+                "Firebase: using Render environment variables"
+            );
+
+            privateKey =
+                privateKey.replace(
+                    /\\n/g,
+                    "\n"
+                );
+
+            admin.initializeApp({
+                credential:
+                    admin.credential.cert({
+                        projectId,
+                        clientEmail,
+                        privateKey
+                    })
+            });
+
+        }
+
+        /*
+         * PRIORITY 2
+         * Complete service account JSON.
+         */
+
+        else if (
+            process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+        ) {
 
             console.log(
                 "Firebase: using FIREBASE_SERVICE_ACCOUNT_JSON"
@@ -136,7 +151,7 @@ function initializeFirebase() {
 
             const serviceAccount =
                 JSON.parse(
-                    serviceAccountJson
+                    process.env.FIREBASE_SERVICE_ACCOUNT_JSON
                 );
 
             if (
@@ -144,11 +159,10 @@ function initializeFirebase() {
             ) {
 
                 serviceAccount.private_key =
-                    serviceAccount.private_key
-                        .replace(
-                            /\\n/g,
-                            "\n"
-                        );
+                    serviceAccount.private_key.replace(
+                        /\\n/g,
+                        "\n"
+                    );
             }
 
             admin.initializeApp({
@@ -158,13 +172,14 @@ function initializeFirebase() {
                     )
             });
 
-        } else {
+        }
 
-            /*
-             * LOCAL DEVELOPMENT FALLBACK
-             *
-             * serviceAccountKey.json
-             */
+        /*
+         * PRIORITY 3
+         * Local development only.
+         */
+
+        else {
 
             console.log(
                 "Firebase: trying local serviceAccountKey.json"
@@ -199,8 +214,7 @@ function initializeFirebase() {
 
     } catch (error) {
 
-        firebaseInitialized =
-            false;
+        firebaseInitialized = false;
 
         db = null;
 
@@ -225,7 +239,6 @@ initializeFirebase();
 // ======================================================
 
 let smtpVerified = false;
-
 let transporter = null;
 
 
@@ -242,14 +255,22 @@ function initializeSMTP() {
         const pass =
             process.env.SMTP_PASS;
 
+
+        /*
+         * Namecheap Private Email:
+         *
+         * 587 = STARTTLS
+         * secure = false
+         */
+
         const port =
             Number(
-                process.env.SMTP_PORT || 465
+                process.env.SMTP_PORT || 587
             );
 
         const secure =
             String(
-                process.env.SMTP_SECURE || "true"
+                process.env.SMTP_SECURE || "false"
             ).toLowerCase() === "true";
 
 
@@ -281,19 +302,22 @@ function initializeSMTP() {
 
                 secure,
 
+                requireTLS:
+                    port === 587,
+
                 auth: {
                     user,
                     pass
                 },
 
                 connectionTimeout:
-                    15000,
+                    20000,
 
                 greetingTimeout:
-                    15000,
+                    20000,
 
                 socketTimeout:
-                    20000
+                    30000
             });
 
 
@@ -411,8 +435,7 @@ function createOTPEmail({
 }) {
 
     const isPasswordReset =
-        purpose ===
-        "password_reset";
+        purpose === "password_reset";
 
 
     const title =
@@ -436,8 +459,10 @@ function createOTPEmail({
 
 <meta charset="UTF-8">
 
-<meta name="viewport"
-      content="width=device-width,initial-scale=1.0">
+<meta
+    name="viewport"
+    content="width=device-width,initial-scale=1.0"
+>
 
 <title>MedZoneX OTP</title>
 
@@ -465,9 +490,7 @@ font-size:30px;
 font-weight:700;
 margin-bottom:25px;
 ">
-
 MedZoneX
-
 </div>
 
 
@@ -475,9 +498,7 @@ MedZoneX
 font-size:24px;
 margin-bottom:15px;
 ">
-
 ${title}
-
 </h1>
 
 
@@ -485,9 +506,7 @@ ${title}
 color:#c8cee0;
 line-height:1.6;
 ">
-
 ${description}
-
 </p>
 
 
@@ -501,9 +520,7 @@ font-size:34px;
 font-weight:700;
 letter-spacing:8px;
 ">
-
 ${otp}
-
 </div>
 
 
@@ -511,9 +528,7 @@ ${otp}
 color:#c8cee0;
 line-height:1.6;
 ">
-
 This OTP is valid for 5 minutes.
-
 </p>
 
 
@@ -522,10 +537,8 @@ font-size:13px;
 color:#9299ad;
 line-height:1.6;
 ">
-
 Never share this OTP with anyone.
 MedZoneX will never ask you to share your verification code.
-
 </p>
 
 
@@ -534,9 +547,7 @@ margin-top:30px;
 font-size:12px;
 color:#737b91;
 ">
-
 © ${new Date().getFullYear()} MedZoneX
-
 </div>
 
 </div>
@@ -591,7 +602,10 @@ app.post(
             }
 
 
-            if (!firebaseInitialized || !db) {
+            if (
+                !firebaseInitialized ||
+                !db
+            ) {
 
                 return res.status(503).json({
                     success: false,
@@ -601,7 +615,10 @@ app.post(
             }
 
 
-            if (!transporter || !smtpVerified) {
+            if (
+                !transporter ||
+                !smtpVerified
+            ) {
 
                 return res.status(503).json({
                     success: false,
@@ -628,11 +645,9 @@ app.post(
                 const data =
                     existing.data();
 
-
                 const lastSentAt =
                     data.lastSentAt?.toMillis?.() ||
                     0;
-
 
                 const elapsed =
                     Date.now() -
@@ -784,12 +799,10 @@ app.post(
                     req.body.email
                 );
 
-
             const otp =
                 String(
                     req.body.otp || ""
                 ).trim();
-
 
             const purpose =
                 req.body.purpose ===
@@ -868,7 +881,6 @@ app.post(
 
                 await otpRef.delete();
 
-
                 return res.status(400).json({
 
                     success: false,
@@ -892,7 +904,6 @@ app.post(
             ) {
 
                 await otpRef.delete();
-
 
                 return res.status(429).json({
 
@@ -920,7 +931,6 @@ app.post(
                         attempts + 1
 
                 });
-
 
                 return res.status(400).json({
 
@@ -991,7 +1001,6 @@ app.post(
                 normalizeEmail(
                     req.body.email
                 );
-
 
             const newPassword =
                 String(
@@ -1102,7 +1111,6 @@ app.post(
             ) {
 
                 await otpRef.delete();
-
 
                 return res.status(400).json({
 
@@ -1257,7 +1265,6 @@ app.use(
             "SERVER ERROR:",
             error.message
         );
-
 
         res.status(500).json({
 
