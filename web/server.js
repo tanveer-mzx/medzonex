@@ -3,9 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const crypto = require("crypto");
-const nodemailer = require("nodemailer");
 const admin = require("firebase-admin");
-
 
 // ======================================================
 // APP
@@ -16,7 +14,6 @@ const app = express();
 const PORT =
     Number(process.env.PORT) || 5000;
 
-
 // ======================================================
 // BODY
 // ======================================================
@@ -26,7 +23,6 @@ app.use(
         limit: "1mb"
     })
 );
-
 
 // ======================================================
 // CORS
@@ -80,7 +76,6 @@ app.use(
     })
 );
 
-
 // ======================================================
 // FIREBASE ADMIN
 // ======================================================
@@ -89,15 +84,14 @@ let firebaseInitialized = false;
 let db = null;
 let firebaseAuth = null;
 
-
 function initializeFirebase() {
 
     try {
 
-        /*
-         * PRIORITY 1
-         * Individual Render environment variables.
-         */
+        // --------------------------------------------------
+        // PRIORITY 1
+        // Render environment variables
+        // --------------------------------------------------
 
         const projectId =
             process.env.FIREBASE_PROJECT_ID;
@@ -107,7 +101,6 @@ function initializeFirebase() {
 
         let privateKey =
             process.env.FIREBASE_PRIVATE_KEY;
-
 
         if (
             projectId &&
@@ -133,13 +126,12 @@ function initializeFirebase() {
                         privateKey
                     })
             });
-
         }
 
-        /*
-         * PRIORITY 2
-         * Complete service account JSON.
-         */
+        // --------------------------------------------------
+        // PRIORITY 2
+        // Complete service account JSON
+        // --------------------------------------------------
 
         else if (
             process.env.FIREBASE_SERVICE_ACCOUNT_JSON
@@ -171,13 +163,12 @@ function initializeFirebase() {
                         serviceAccount
                     )
             });
-
         }
 
-        /*
-         * PRIORITY 3
-         * Local development only.
-         */
+        // --------------------------------------------------
+        // PRIORITY 3
+        // Local development
+        // --------------------------------------------------
 
         else {
 
@@ -197,7 +188,6 @@ function initializeFirebase() {
                     )
             });
         }
-
 
         db =
             admin.firestore();
@@ -230,147 +220,143 @@ function initializeFirebase() {
     }
 }
 
-
 initializeFirebase();
 
-
 // ======================================================
-// SMTP
+// RESEND EMAIL API
 // ======================================================
 
-let smtpVerified = false;
-let transporter = null;
+const RESEND_API_URL =
+    "https://api.resend.com/emails";
 
+const resendApiKey =
+    String(
+        process.env.RESEND_API_KEY || ""
+    ).trim();
 
-function initializeSMTP() {
+const emailFrom =
+    String(
+        process.env.EMAIL_FROM ||
+        "MedZoneX <support@medzonex.site>"
+    ).trim();
 
-    try {
+let resendVerified = false;
 
-        const host =
-            process.env.SMTP_HOST;
+// ------------------------------------------------------
+// Validate Resend configuration
+// ------------------------------------------------------
 
-        const user =
-            process.env.SMTP_USER;
+function initializeResend() {
 
-        const pass =
-            process.env.SMTP_PASS;
-
-
-        /*
-         * Namecheap Private Email:
-         *
-         * 587 = STARTTLS
-         * secure = false
-         */
-
-        const port =
-            Number(
-                process.env.SMTP_PORT || 587
-            );
-
-        const secure =
-            String(
-                process.env.SMTP_SECURE || "false"
-            ).toLowerCase() === "true";
-
-
-        if (
-            !host ||
-            !user ||
-            !pass
-        ) {
-
-            console.error(
-                "SMTP configuration missing."
-            );
-
-            return;
-        }
-
-
-        console.log(
-            `SMTP configuration: ${host}:${port} secure=${secure}`
-        );
-
-
-        transporter =
-            nodemailer.createTransport({
-
-                host,
-
-                port,
-
-                secure,
-
-                requireTLS:
-                    port === 587,
-
-                auth: {
-                    user,
-                    pass
-                },
-
-                connectionTimeout:
-                    20000,
-
-                greetingTimeout:
-                    20000,
-
-                socketTimeout:
-                    30000
-            });
-
-
-    } catch (error) {
+    if (!resendApiKey) {
 
         console.error(
-            "SMTP initialization failed:",
-            error.message
+            "Resend configuration missing: RESEND_API_KEY"
         );
-    }
-}
 
-
-// ======================================================
-// SMTP VERIFY
-// ======================================================
-
-async function verifySMTP() {
-
-    if (!transporter) {
-
-        smtpVerified = false;
+        resendVerified = false;
 
         return;
     }
 
-    try {
-
-        await transporter.verify();
-
-        smtpVerified = true;
-
-        console.log(
-            "SMTP connection successful."
-        );
-
-    } catch (error) {
-
-        smtpVerified = false;
+    if (!emailFrom) {
 
         console.error(
-            "SMTP connection FAILED:"
+            "Resend configuration missing: EMAIL_FROM"
         );
 
-        console.error(
-            error.message
-        );
+        resendVerified = false;
+
+        return;
     }
+
+    resendVerified = true;
+
+    console.log(
+        "Resend email API configured successfully."
+    );
+
+    console.log(
+        "Email sender:",
+        emailFrom
+    );
 }
 
+initializeResend();
 
-initializeSMTP();
+// ======================================================
+// SEND EMAIL THROUGH RESEND
+// ======================================================
 
+async function sendEmail({
+    to,
+    subject,
+    html
+}) {
+
+    if (!resendApiKey) {
+
+        throw new Error(
+            "RESEND_API_KEY is not configured."
+        );
+    }
+
+    const response =
+        await fetch(
+            RESEND_API_URL,
+            {
+                method: "POST",
+
+                headers: {
+                    "Authorization":
+                        `Bearer ${resendApiKey}`,
+
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body:
+                    JSON.stringify({
+                        from:
+                            emailFrom,
+
+                        to: [
+                            to
+                        ],
+
+                        subject,
+
+                        html
+                    })
+            }
+        );
+
+    let responseData = null;
+
+    try {
+
+        responseData =
+            await response.json();
+
+    } catch {
+
+        responseData = null;
+    }
+
+    if (!response.ok) {
+
+        const providerMessage =
+            responseData?.message ||
+            responseData?.error ||
+            `HTTP ${response.status}`;
+
+        throw new Error(
+            `Resend API error: ${providerMessage}`
+        );
+    }
+
+    return responseData;
+}
 
 // ======================================================
 // OTP SETTINGS
@@ -385,7 +371,6 @@ const RESEND_COOLDOWN_MS =
 const MAX_ATTEMPTS =
     5;
 
-
 // ======================================================
 // EMAIL HELPERS
 // ======================================================
@@ -397,13 +382,11 @@ function normalizeEmail(email) {
         .toLowerCase();
 }
 
-
 function isValidEmail(email) {
 
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         .test(email);
 }
-
 
 function generateOTP() {
 
@@ -415,7 +398,6 @@ function generateOTP() {
     );
 }
 
-
 function hashOTP(otp) {
 
     return crypto
@@ -424,9 +406,8 @@ function hashOTP(otp) {
         .digest("hex");
 }
 
-
 // ======================================================
-// OTP EMAIL
+// OTP EMAIL HTML
 // ======================================================
 
 function createOTPEmail({
@@ -437,18 +418,15 @@ function createOTPEmail({
     const isPasswordReset =
         purpose === "password_reset";
 
-
     const title =
         isPasswordReset
             ? "Reset your MedZoneX password"
             : "Verify your MedZoneX email";
 
-
     const description =
         isPasswordReset
             ? "Use the verification code below to reset your MedZoneX password."
             : "Use the verification code below to verify your MedZoneX email address.";
-
 
     return `
 <!DOCTYPE html>
@@ -467,7 +445,6 @@ function createOTPEmail({
 <title>MedZoneX OTP</title>
 
 </head>
-
 
 <body style="
 margin:0;
@@ -493,7 +470,6 @@ margin-bottom:25px;
 MedZoneX
 </div>
 
-
 <h1 style="
 font-size:24px;
 margin-bottom:15px;
@@ -501,14 +477,12 @@ margin-bottom:15px;
 ${title}
 </h1>
 
-
 <p style="
 color:#c8cee0;
 line-height:1.6;
 ">
 ${description}
 </p>
-
 
 <div style="
 margin:30px 0;
@@ -523,14 +497,12 @@ letter-spacing:8px;
 ${otp}
 </div>
 
-
 <p style="
 color:#c8cee0;
 line-height:1.6;
 ">
 This OTP is valid for 5 minutes.
 </p>
-
 
 <p style="
 font-size:13px;
@@ -540,7 +512,6 @@ line-height:1.6;
 Never share this OTP with anyone.
 MedZoneX will never ask you to share your verification code.
 </p>
-
 
 <div style="
 margin-top:30px;
@@ -558,7 +529,6 @@ color:#737b91;
 `;
 }
 
-
 // ======================================================
 // SEND EMAIL OTP
 // ======================================================
@@ -574,13 +544,11 @@ app.post(
                     req.body.email
                 );
 
-
             const purpose =
                 req.body.purpose ===
                 "password_reset"
                     ? "password_reset"
                     : "signup";
-
 
             if (!email) {
 
@@ -591,7 +559,6 @@ app.post(
                 });
             }
 
-
             if (!isValidEmail(email)) {
 
                 return res.status(400).json({
@@ -600,7 +567,6 @@ app.post(
                         "Enter a valid email address."
                 });
             }
-
 
             if (
                 !firebaseInitialized ||
@@ -614,11 +580,7 @@ app.post(
                 });
             }
 
-
-            if (
-                !transporter ||
-                !smtpVerified
-            ) {
+            if (!resendVerified) {
 
                 return res.status(503).json({
                     success: false,
@@ -627,7 +589,6 @@ app.post(
                 });
             }
 
-
             const otpRef =
                 db
                     .collection("emailOtps")
@@ -635,10 +596,8 @@ app.post(
                         `${purpose}_${email}`
                     );
 
-
             const existing =
                 await otpRef.get();
-
 
             if (existing.exists) {
 
@@ -653,7 +612,6 @@ app.post(
                     Date.now() -
                     lastSentAt;
 
-
                 if (
                     elapsed <
                     RESEND_COOLDOWN_MS
@@ -667,7 +625,6 @@ app.post(
                             ) / 1000
                         );
 
-
                     return res.status(429).json({
 
                         success: false,
@@ -679,14 +636,11 @@ app.post(
                 }
             }
 
-
             const otp =
                 generateOTP();
 
-
             const otpHash =
                 hashOTP(otp);
-
 
             const expiresAt =
                 admin.firestore.Timestamp.fromMillis(
@@ -694,6 +648,32 @@ app.post(
                     OTP_EXPIRY_MS
                 );
 
+            // --------------------------------------------------
+            // Send email FIRST.
+            // If Resend fails, we don't create a fresh
+            // cooldown record for an email that wasn't sent.
+            // --------------------------------------------------
+
+            const subject =
+                purpose ===
+                "password_reset"
+                    ? "MedZoneX Password Reset OTP"
+                    : "MedZoneX Email Verification OTP";
+
+            const emailResult =
+                await sendEmail({
+                    to: email,
+                    subject,
+                    html:
+                        createOTPEmail({
+                            otp,
+                            purpose
+                        })
+                });
+
+            // --------------------------------------------------
+            // Save OTP only after successful email submission
+            // --------------------------------------------------
 
             await otpRef.set({
 
@@ -715,43 +695,17 @@ app.post(
 
                 createdAt:
                     admin.firestore.FieldValue
-                        .serverTimestamp()
+                        .serverTimestamp(),
+
+                resendEmailId:
+                    emailResult?.id ||
+                    null
 
             });
-
-
-            const fromEmail =
-                process.env.SMTP_FROM ||
-                process.env.SMTP_USER;
-
-
-            await transporter.sendMail({
-
-                from:
-                    `"MedZoneX" <${fromEmail}>`,
-
-                to:
-                    email,
-
-                subject:
-                    purpose ===
-                    "password_reset"
-                        ? "MedZoneX Password Reset OTP"
-                        : "MedZoneX Email Verification OTP",
-
-                html:
-                    createOTPEmail({
-                        otp,
-                        purpose
-                    })
-
-            });
-
 
             console.log(
                 `OTP email sent successfully to ${email}`
             );
-
 
             return res.json({
 
@@ -762,14 +716,12 @@ app.post(
 
             });
 
-
         } catch (error) {
 
             console.error(
                 "SEND OTP ERROR:",
-                error
+                error.message
             );
-
 
             return res.status(500).json({
 
@@ -782,7 +734,6 @@ app.post(
         }
     }
 );
-
 
 // ======================================================
 // VERIFY EMAIL OTP
@@ -810,7 +761,6 @@ app.post(
                     ? "password_reset"
                     : "signup";
 
-
             if (
                 !email ||
                 !otp
@@ -826,7 +776,6 @@ app.post(
                 });
             }
 
-
             if (!db) {
 
                 return res.status(503).json({
@@ -839,7 +788,6 @@ app.post(
                 });
             }
 
-
             const otpRef =
                 db
                     .collection("emailOtps")
@@ -847,10 +795,8 @@ app.post(
                         `${purpose}_${email}`
                     );
 
-
             const snapshot =
                 await otpRef.get();
-
 
             if (!snapshot.exists) {
 
@@ -864,15 +810,12 @@ app.post(
                 });
             }
 
-
             const data =
                 snapshot.data();
-
 
             const expiresAt =
                 data.expiresAt?.toMillis?.() ||
                 0;
-
 
             if (
                 Date.now() >
@@ -891,12 +834,10 @@ app.post(
                 });
             }
 
-
             const attempts =
                 Number(
                     data.attempts || 0
                 );
-
 
             if (
                 attempts >=
@@ -915,10 +856,8 @@ app.post(
                 });
             }
 
-
             const submittedHash =
                 hashOTP(otp);
-
 
             if (
                 submittedHash !==
@@ -942,7 +881,6 @@ app.post(
                 });
             }
 
-
             await otpRef.update({
 
                 verified: true,
@@ -952,7 +890,6 @@ app.post(
                         .serverTimestamp()
 
             });
-
 
             return res.json({
 
@@ -965,14 +902,12 @@ app.post(
 
             });
 
-
         } catch (error) {
 
             console.error(
                 "VERIFY OTP ERROR:",
-                error
+                error.message
             );
-
 
             return res.status(500).json({
 
@@ -985,7 +920,6 @@ app.post(
         }
     }
 );
-
 
 // ======================================================
 // RESET PASSWORD
@@ -1007,7 +941,6 @@ app.post(
                     req.body.newPassword || ""
                 );
 
-
             if (
                 !email ||
                 !newPassword
@@ -1023,7 +956,6 @@ app.post(
                 });
             }
 
-
             if (
                 newPassword.length < 8
             ) {
@@ -1037,7 +969,6 @@ app.post(
 
                 });
             }
-
 
             if (
                 !db ||
@@ -1054,7 +985,6 @@ app.post(
                 });
             }
 
-
             const otpRef =
                 db
                     .collection("emailOtps")
@@ -1062,10 +992,8 @@ app.post(
                         `password_reset_${email}`
                     );
 
-
             const snapshot =
                 await otpRef.get();
-
 
             if (!snapshot.exists) {
 
@@ -1079,10 +1007,8 @@ app.post(
                 });
             }
 
-
             const data =
                 snapshot.data();
-
 
             if (
                 data.verified !== true
@@ -1098,11 +1024,9 @@ app.post(
                 });
             }
 
-
             const verifiedAt =
                 data.verifiedAt?.toMillis?.() ||
                 0;
-
 
             if (
                 Date.now() -
@@ -1122,9 +1046,7 @@ app.post(
                 });
             }
 
-
             let userRecord;
-
 
             try {
 
@@ -1154,7 +1076,6 @@ app.post(
                 throw error;
             }
 
-
             await firebaseAuth.updateUser(
                 userRecord.uid,
                 {
@@ -1163,9 +1084,7 @@ app.post(
                 }
             );
 
-
             await otpRef.delete();
-
 
             return res.json({
 
@@ -1176,14 +1095,12 @@ app.post(
 
             });
 
-
         } catch (error) {
 
             console.error(
                 "RESET PASSWORD ERROR:",
-                error
+                error.message
             );
-
 
             return res.status(500).json({
 
@@ -1196,7 +1113,6 @@ app.post(
         }
     }
 );
-
 
 // ======================================================
 // HEALTH CHECK
@@ -1219,8 +1135,8 @@ app.get(
             firebase:
                 firebaseInitialized,
 
-            smtp:
-                smtpVerified,
+            resend:
+                resendVerified,
 
             timestamp:
                 new Date().toISOString()
@@ -1228,7 +1144,6 @@ app.get(
         });
     }
 );
-
 
 // ======================================================
 // 404
@@ -1247,7 +1162,6 @@ app.use(
         });
     }
 );
-
 
 // ======================================================
 // ERROR HANDLER
@@ -1277,7 +1191,6 @@ app.use(
     }
 );
 
-
 // ======================================================
 // START
 // ======================================================
@@ -1285,13 +1198,11 @@ app.use(
 app.listen(
     PORT,
     "0.0.0.0",
-    async () => {
+    () => {
 
         console.log(
             `MedZoneX backend running on port ${PORT}`
         );
-
-        await verifySMTP();
 
         console.log(
             "Firebase status:",
@@ -1299,8 +1210,8 @@ app.listen(
         );
 
         console.log(
-            "SMTP status:",
-            smtpVerified
+            "Resend status:",
+            resendVerified
         );
     }
 );
