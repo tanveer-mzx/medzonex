@@ -30,13 +30,66 @@
             rel="stylesheet"
             href="css/style.css"
     >
+
+    <!-- =================================================
+         AUTH NAVIGATION FIX
+    ================================================== -->
+
+    <style>
+        /*
+         * app.js uses .form-section
+         * while the HTML uses .auth-section.
+         *
+         * Both classes are now present on auth sections.
+         */
+
+        .auth-section.form-section {
+            display: none;
+        }
+
+        .auth-section.form-section.active {
+            display: block;
+        }
+
+        /*
+         * Prevent hidden app pages from appearing together.
+         */
+        .app-page {
+            display: none;
+        }
+
+        #welcomePage.active {
+            display: flex;
+        }
+
+        #authPage.active,
+        #dashboardPage.active,
+        #billingPage.active,
+        #inventoryPage.active,
+        #purchasesPage.active,
+        #paymentPage.active {
+            display: flex;
+        }
+
+        /*
+         * OTP / password areas
+         */
+        .otp-area.hidden,
+        #newPasswordArea.hidden {
+            display: none !important;
+        }
+
+        /*
+         * Modal
+         */
+        .modal.hidden {
+            display: none !important;
+        }
+    </style>
 </head>
 
-<body>
 
-<!-- =====================================================
-     APP CONTAINER
-===================================================== -->
+<body>
 
 <div id="app">
 
@@ -54,8 +107,6 @@
 
         <div class="welcome-content">
 
-            <!-- LOGO -->
-
             <div class="welcome-logo-wrap">
 
                 <img
@@ -66,8 +117,6 @@
 
             </div>
 
-
-            <!-- BRAND -->
 
             <div class="welcome-brand">
 
@@ -82,12 +131,10 @@
             </div>
 
 
-            <!-- GET STARTED -->
-
             <button
                     type="button"
                     id="getStartedBtn"
-                    class="primary-btn get-started-btn"
+                    class="primary-btn"
             >
                 Get Started
             </button>
@@ -105,7 +152,6 @@
     <section
             id="authPage"
             class="app-page"
-            style="display:none;"
     >
 
         <div class="auth-wrapper">
@@ -113,7 +159,7 @@
             <div class="auth-card">
 
 
-                <!-- SMALL LOGO -->
+                <!-- LOGO -->
 
                 <div class="auth-logo-wrap">
 
@@ -133,7 +179,7 @@
 
                 <div
                         id="loginSection"
-                        class="auth-section"
+                        class="auth-section form-section active"
                 >
 
                     <div class="auth-heading">
@@ -148,8 +194,6 @@
 
                     </div>
 
-
-                    <!-- EMAIL -->
 
                     <div class="input-group">
 
@@ -168,8 +212,6 @@
                     </div>
 
 
-                    <!-- PASSWORD -->
-
                     <div class="input-group">
 
                         <label for="loginPassword">
@@ -187,8 +229,6 @@
                     </div>
 
 
-                    <!-- LOGIN BUTTON -->
-
                     <button
                             type="button"
                             id="loginBtn"
@@ -198,16 +238,12 @@
                     </button>
 
 
-                    <!-- LOGIN MESSAGE -->
-
                     <div
                             id="loginMessage"
                             class="form-message"
                             aria-live="polite"
                     ></div>
 
-
-                    <!-- FORGOT PASSWORD -->
 
                     <button
                             type="button"
@@ -217,8 +253,6 @@
                         Forgot Password?
                     </button>
 
-
-                    <!-- SIGN UP -->
 
                     <div class="auth-switch">
 
@@ -246,8 +280,7 @@
 
                 <div
                         id="signupSection"
-                        class="auth-section"
-                        style="display:none;"
+                        class="auth-section form-section"
                 >
 
                     <div class="auth-heading">
@@ -262,8 +295,6 @@
 
                     </div>
 
-
-                    <!-- STORE NAME -->
 
                     <div class="input-group">
 
@@ -282,8 +313,6 @@
                     </div>
 
 
-                    <!-- EMAIL -->
-
                     <div class="input-group">
 
                         <label for="signupEmail">
@@ -301,8 +330,6 @@
                     </div>
 
 
-                    <!-- SEND OTP -->
-
                     <button
                             type="button"
                             id="sendSignupOtpBtn"
@@ -312,12 +339,9 @@
                     </button>
 
 
-                    <!-- OTP AREA -->
-
                     <div
                             id="signupOtpArea"
-                            class="otp-area"
-                            style="display:none;"
+                            class="otp-area hidden"
                     >
 
                         <div class="otp-info">
@@ -359,8 +383,6 @@
                     </div>
 
 
-                    <!-- PASSWORD -->
-
                     <div class="input-group">
 
                         <label for="signupPassword">
@@ -378,8 +400,6 @@
                     </div>
 
 
-                    <!-- CONFIRM PASSWORD -->
-
                     <div class="input-group">
 
                         <label for="signupConfirmPassword">
@@ -396,8 +416,6 @@
 
                     </div>
 
-
-                    <!-- TERMS -->
 
                     <div class="terms-row">
 
@@ -434,8 +452,6 @@
                     </div>
 
 
-                    <!-- CREATE ACCOUNT -->
-
                     <button
                             type="button"
                             id="signupBtn"
@@ -445,16 +461,12 @@
                     </button>
 
 
-                    <!-- SIGNUP MESSAGE -->
-
                     <div
                             id="signupMessage"
                             class="form-message"
                             aria-live="polite"
                     ></div>
 
-
-                    <!-- BACK TO LOGIN -->
 
                     <div class="auth-switch">
 
@@ -482,8 +494,7 @@
 
                 <div
                         id="forgotSection"
-                        class="auth-section"
-                        style="display:none;"
+                        class="auth-section form-section"
                 >
 
                     <div class="auth-heading">
@@ -498,8 +509,6 @@
 
                     </div>
 
-
-                    <!-- EMAIL -->
 
                     <div class="input-group">
 
@@ -518,8 +527,6 @@
                     </div>
 
 
-                    <!-- SEND FORGOT OTP -->
-
                     <button
                             type="button"
                             id="sendForgotOtpBtn"
@@ -529,12 +536,9 @@
                     </button>
 
 
-                    <!-- FORGOT OTP -->
-
                     <div
                             id="forgotOtpArea"
-                            class="otp-area"
-                            style="display:none;"
+                            class="otp-area hidden"
                     >
 
                         <div class="otp-info">
@@ -576,11 +580,9 @@
                     </div>
 
 
-                    <!-- NEW PASSWORD -->
-
                     <div
                             id="newPasswordArea"
-                            style="display:none;"
+                            class="hidden"
                     >
 
                         <div class="input-group">
@@ -628,16 +630,12 @@
                     </div>
 
 
-                    <!-- FORGOT MESSAGE -->
-
                     <div
                             id="forgotMessage"
                             class="form-message"
                             aria-live="polite"
                     ></div>
 
-
-                    <!-- BACK -->
 
                     <button
                             type="button"
@@ -664,7 +662,6 @@
     <section
             id="dashboardPage"
             class="app-page"
-            style="display:none;"
     >
 
         <div class="dashboard-wrapper">
@@ -728,12 +725,23 @@
 
                 <div class="dashboard-grid">
 
+
+                    <!-- BILLING -->
+
                     <button
                             type="button"
                             class="dashboard-card"
                             id="openBillingDashboardBtn"
-                            onclick="window.MedZoneX && window.MedZoneX.openBilling && window.MedZoneX.openBilling()"
+                            onclick="
+                            if(window.MedZoneX && window.MedZoneX.showPage){
+                                window.MedZoneX.showPage('billingPage');
+                            }
+                            if(window.MedZoneX && window.MedZoneX.openBilling){
+                                window.MedZoneX.openBilling();
+                            }
+                        "
                     >
+
                         <strong>
                             Billing
                         </strong>
@@ -745,12 +753,22 @@
                     </button>
 
 
+                    <!-- INVENTORY -->
+
                     <button
                             type="button"
                             class="dashboard-card"
                             id="openInventoryDashboardBtn"
-                            onclick="window.MedZoneXInventory && window.MedZoneXInventory.loadInventory && window.MedZoneXInventory.loadInventory()"
+                            onclick="
+                            if(window.MedZoneX && window.MedZoneX.showPage){
+                                window.MedZoneX.showPage('inventoryPage');
+                            }
+                            if(window.MedZoneXInventory && window.MedZoneXInventory.loadInventory){
+                                window.MedZoneXInventory.loadInventory();
+                            }
+                        "
                     >
+
                         <strong>
                             Inventory
                         </strong>
@@ -762,12 +780,22 @@
                     </button>
 
 
+                    <!-- PURCHASE -->
+
                     <button
                             type="button"
                             class="dashboard-card"
                             id="openPurchasesDashboardBtn"
-                            onclick="window.MedZoneX && window.MedZoneX.openPurchases && window.MedZoneX.openPurchases()"
+                            onclick="
+                            if(window.MedZoneX && window.MedZoneX.showPage){
+                                window.MedZoneX.showPage('purchasesPage');
+                            }
+                            if(window.MedZoneX && window.MedZoneX.openPurchases){
+                                window.MedZoneX.openPurchases();
+                            }
+                        "
                     >
+
                         <strong>
                             Purchase / Stock In
                         </strong>
@@ -795,7 +823,6 @@
     <section
             id="billingPage"
             class="app-page"
-            style="display:none;"
     >
 
         <div class="module-wrapper">
@@ -818,6 +845,7 @@
                         type="button"
                         id="closeBillingBtn"
                         class="secondary-btn"
+                        onclick="MedZoneX.showPage('dashboardPage')"
                 >
                     ← Dashboard
                 </button>
@@ -906,6 +934,7 @@
                 <div class="billing-summary">
 
                     <div>
+
                         <span>
                             Subtotal
                         </span>
@@ -913,10 +942,12 @@
                         <strong id="billingSubtotal">
                             ₹0.00
                         </strong>
+
                     </div>
 
 
                     <div>
+
                         <span>
                             Discount
                         </span>
@@ -924,6 +955,7 @@
                         <strong id="billingDiscountAmount">
                             ₹0.00
                         </strong>
+
                     </div>
 
 
@@ -983,7 +1015,6 @@
     <section
             id="inventoryPage"
             class="app-page"
-            style="display:none;"
     >
 
         <div class="module-wrapper">
@@ -1256,9 +1287,8 @@
     ================================================== -->
 
     <section
-            id="purchasePage"
+            id="purchasesPage"
             class="app-page"
-            style="display:none;"
     >
 
         <div class="module-wrapper">
@@ -1303,9 +1333,11 @@
                     >
 
                     <select id="purchaseSupplier">
+
                         <option value="">
                             Select supplier
                         </option>
+
                     </select>
 
                 </div>
@@ -1380,6 +1412,7 @@
                 <div class="purchase-summary">
 
                     <div>
+
                         <span>
                             Subtotal
                         </span>
@@ -1387,9 +1420,12 @@
                         <strong id="purchaseSubtotal">
                             ₹0.00
                         </strong>
+
                     </div>
 
+
                     <div>
+
                         <span>
                             Discount
                         </span>
@@ -1397,9 +1433,12 @@
                         <strong id="purchaseDiscountAmount">
                             ₹0.00
                         </strong>
+
                     </div>
 
+
                     <div>
+
                         <span>
                             Grand Total
                         </span>
@@ -1407,9 +1446,12 @@
                         <strong id="purchaseGrandTotal">
                             ₹0.00
                         </strong>
+
                     </div>
 
+
                     <div>
+
                         <span>
                             Paid
                         </span>
@@ -1417,9 +1459,12 @@
                         <strong id="purchasePaidAmount">
                             ₹0.00
                         </strong>
+
                     </div>
 
+
                     <div>
+
                         <span>
                             Balance
                         </span>
@@ -1427,6 +1472,7 @@
                         <strong id="purchaseBalance">
                             ₹0.00
                         </strong>
+
                     </div>
 
                 </div>
@@ -1446,14 +1492,12 @@
 
 
     <!-- =================================================
-         PAYMENT REQUIRED
-         Hidden until trial expires.
+         PAYMENT PAGE
     ================================================== -->
 
     <section
             id="paymentPage"
             class="app-page"
-            style="display:none;"
     >
 
         <div class="payment-wrapper">
@@ -1505,8 +1549,7 @@
 
     <div
             id="termsModal"
-            class="modal"
-            style="display:none;"
+            class="modal hidden"
     >
 
         <div class="modal-overlay"></div>
@@ -1631,8 +1674,7 @@
 
     <div
             id="privacyModal"
-            class="modal"
-            style="display:none;"
+            class="modal hidden"
     >
 
         <div class="modal-overlay"></div>
@@ -1738,20 +1780,18 @@
 
     </div>
 
-
-
 </div>
 
 
+
 <!-- =====================================================
-     FIREBASE / APP SCRIPTS
+     FIREBASE / APP
 ===================================================== -->
 
 <script
         type="module"
         src="js/app.js"
 ></script>
-
 
 </body>
 </html>
