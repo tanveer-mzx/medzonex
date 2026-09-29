@@ -50,13 +50,16 @@ const allowedOrigins = [
     ])
 ];
 
-console.log("Allowed origins:", allowedOrigins);
+console.log(
+    "Allowed origins:",
+    allowedOrigins
+);
 
 app.use(
     cors({
         origin: function (origin, callback) {
 
-            // Allow server-to-server / Postman requests
+            // Allow Postman / server-to-server requests
             if (!origin) {
                 return callback(null, true);
             }
@@ -65,10 +68,15 @@ app.use(
                 return callback(null, true);
             }
 
-            console.error("CORS blocked:", origin);
+            console.error(
+                "CORS blocked:",
+                origin
+            );
 
             return callback(
-                new Error("CORS: Origin not allowed")
+                new Error(
+                    "CORS: Origin not allowed"
+                )
             );
         },
 
@@ -88,10 +96,10 @@ function initializeFirebase() {
 
     try {
 
-        // --------------------------------------------------
+        // ==================================================
         // PRIORITY 1
         // Render environment variables
-        // --------------------------------------------------
+        // ==================================================
 
         const projectId =
             process.env.FIREBASE_PROJECT_ID;
@@ -128,10 +136,10 @@ function initializeFirebase() {
             });
         }
 
-        // --------------------------------------------------
+        // ==================================================
         // PRIORITY 2
         // Complete service account JSON
-        // --------------------------------------------------
+        // ==================================================
 
         else if (
             process.env.FIREBASE_SERVICE_ACCOUNT_JSON
@@ -165,10 +173,10 @@ function initializeFirebase() {
             });
         }
 
-        // --------------------------------------------------
+        // ==================================================
         // PRIORITY 3
         // Local development
-        // --------------------------------------------------
+        // ==================================================
 
         else {
 
@@ -229,12 +237,12 @@ initializeFirebase();
 const RESEND_API_URL =
     "https://api.resend.com/emails";
 
-const resendApiKey =
+const RESEND_API_KEY =
     String(
         process.env.RESEND_API_KEY || ""
     ).trim();
 
-const emailFrom =
+const EMAIL_FROM =
     String(
         process.env.EMAIL_FROM ||
         "MedZoneX <support@medzonex.site>"
@@ -242,13 +250,13 @@ const emailFrom =
 
 let resendVerified = false;
 
-// ------------------------------------------------------
-// Validate Resend configuration
-// ------------------------------------------------------
+// ======================================================
+// RESEND CONFIGURATION CHECK
+// ======================================================
 
 function initializeResend() {
 
-    if (!resendApiKey) {
+    if (!RESEND_API_KEY) {
 
         console.error(
             "Resend configuration missing: RESEND_API_KEY"
@@ -259,7 +267,7 @@ function initializeResend() {
         return;
     }
 
-    if (!emailFrom) {
+    if (!EMAIL_FROM) {
 
         console.error(
             "Resend configuration missing: EMAIL_FROM"
@@ -278,7 +286,7 @@ function initializeResend() {
 
     console.log(
         "Email sender:",
-        emailFrom
+        EMAIL_FROM
     );
 }
 
@@ -294,7 +302,7 @@ async function sendEmail({
     html
 }) {
 
-    if (!resendApiKey) {
+    if (!RESEND_API_KEY) {
 
         throw new Error(
             "RESEND_API_KEY is not configured."
@@ -309,7 +317,7 @@ async function sendEmail({
 
                 headers: {
                     "Authorization":
-                        `Bearer ${resendApiKey}`,
+                        `Bearer ${RESEND_API_KEY}`,
 
                     "Content-Type":
                         "application/json"
@@ -317,8 +325,9 @@ async function sendEmail({
 
                 body:
                     JSON.stringify({
+
                         from:
-                            emailFrom,
+                            EMAIL_FROM,
 
                         to: [
                             to
@@ -550,23 +559,37 @@ app.post(
                     ? "password_reset"
                     : "signup";
 
+            // ----------------------------------------------
+            // Validate email
+            // ----------------------------------------------
+
             if (!email) {
 
                 return res.status(400).json({
+
                     success: false,
+
                     message:
                         "Email is required."
+
                 });
             }
 
             if (!isValidEmail(email)) {
 
                 return res.status(400).json({
+
                     success: false,
+
                     message:
                         "Enter a valid email address."
+
                 });
             }
+
+            // ----------------------------------------------
+            // Firebase check
+            // ----------------------------------------------
 
             if (
                 !firebaseInitialized ||
@@ -574,20 +597,34 @@ app.post(
             ) {
 
                 return res.status(503).json({
+
                     success: false,
+
                     message:
                         "Firebase service is not configured on the server."
+
                 });
             }
+
+            // ----------------------------------------------
+            // Resend check
+            // ----------------------------------------------
 
             if (!resendVerified) {
 
                 return res.status(503).json({
+
                     success: false,
+
                     message:
                         "Email service is currently unavailable. Please try again shortly."
+
                 });
             }
+
+            // ----------------------------------------------
+            // OTP document
+            // ----------------------------------------------
 
             const otpRef =
                 db
@@ -598,6 +635,10 @@ app.post(
 
             const existing =
                 await otpRef.get();
+
+            // ----------------------------------------------
+            // 60-second resend cooldown
+            // ----------------------------------------------
 
             if (existing.exists) {
 
@@ -636,6 +677,10 @@ app.post(
                 }
             }
 
+            // ----------------------------------------------
+            // Generate OTP
+            // ----------------------------------------------
+
             const otp =
                 generateOTP();
 
@@ -648,11 +693,9 @@ app.post(
                     OTP_EXPIRY_MS
                 );
 
-            // --------------------------------------------------
-            // Send email FIRST.
-            // If Resend fails, we don't create a fresh
-            // cooldown record for an email that wasn't sent.
-            // --------------------------------------------------
+            // ----------------------------------------------
+            // Subject
+            // ----------------------------------------------
 
             const subject =
                 purpose ===
@@ -660,20 +703,31 @@ app.post(
                     ? "MedZoneX Password Reset OTP"
                     : "MedZoneX Email Verification OTP";
 
+            // ----------------------------------------------
+            // SEND OTP USING RESEND
+            // ----------------------------------------------
+
             const emailResult =
                 await sendEmail({
+
                     to: email,
+
                     subject,
+
                     html:
                         createOTPEmail({
+
                             otp,
+
                             purpose
+
                         })
+
                 });
 
-            // --------------------------------------------------
-            // Save OTP only after successful email submission
-            // --------------------------------------------------
+            // ----------------------------------------------
+            // Save OTP AFTER successful Resend request
+            // ----------------------------------------------
 
             await otpRef.set({
 
@@ -761,6 +815,10 @@ app.post(
                     ? "password_reset"
                     : "signup";
 
+            // ----------------------------------------------
+            // Validate
+            // ----------------------------------------------
+
             if (
                 !email ||
                 !otp
@@ -788,6 +846,10 @@ app.post(
                 });
             }
 
+            // ----------------------------------------------
+            // Find OTP
+            // ----------------------------------------------
+
             const otpRef =
                 db
                     .collection("emailOtps")
@@ -813,6 +875,10 @@ app.post(
             const data =
                 snapshot.data();
 
+            // ----------------------------------------------
+            // Expiry
+            // ----------------------------------------------
+
             const expiresAt =
                 data.expiresAt?.toMillis?.() ||
                 0;
@@ -833,6 +899,10 @@ app.post(
 
                 });
             }
+
+            // ----------------------------------------------
+            // Attempts
+            // ----------------------------------------------
 
             const attempts =
                 Number(
@@ -855,6 +925,10 @@ app.post(
 
                 });
             }
+
+            // ----------------------------------------------
+            // Compare OTP hash
+            // ----------------------------------------------
 
             const submittedHash =
                 hashOTP(otp);
@@ -880,6 +954,10 @@ app.post(
 
                 });
             }
+
+            // ----------------------------------------------
+            // OTP verified
+            // ----------------------------------------------
 
             await otpRef.update({
 
@@ -941,6 +1019,10 @@ app.post(
                     req.body.newPassword || ""
                 );
 
+            // ----------------------------------------------
+            // Validate
+            // ----------------------------------------------
+
             if (
                 !email ||
                 !newPassword
@@ -970,6 +1052,10 @@ app.post(
                 });
             }
 
+            // ----------------------------------------------
+            // Firebase check
+            // ----------------------------------------------
+
             if (
                 !db ||
                 !firebaseAuth
@@ -984,6 +1070,10 @@ app.post(
 
                 });
             }
+
+            // ----------------------------------------------
+            // Get password-reset OTP
+            // ----------------------------------------------
 
             const otpRef =
                 db
@@ -1010,6 +1100,10 @@ app.post(
             const data =
                 snapshot.data();
 
+            // ----------------------------------------------
+            // OTP must be verified
+            // ----------------------------------------------
+
             if (
                 data.verified !== true
             ) {
@@ -1023,6 +1117,10 @@ app.post(
 
                 });
             }
+
+            // ----------------------------------------------
+            // Verification expiry
+            // ----------------------------------------------
 
             const verifiedAt =
                 data.verifiedAt?.toMillis?.() ||
@@ -1045,6 +1143,10 @@ app.post(
 
                 });
             }
+
+            // ----------------------------------------------
+            // Find Firebase user
+            // ----------------------------------------------
 
             let userRecord;
 
@@ -1076,6 +1178,10 @@ app.post(
                 throw error;
             }
 
+            // ----------------------------------------------
+            // Update password
+            // ----------------------------------------------
+
             await firebaseAuth.updateUser(
                 userRecord.uid,
                 {
@@ -1083,6 +1189,10 @@ app.post(
                         newPassword
                 }
             );
+
+            // ----------------------------------------------
+            // Delete used OTP
+            // ----------------------------------------------
 
             await otpRef.delete();
 
@@ -1192,7 +1302,7 @@ app.use(
 );
 
 // ======================================================
-// START
+// START SERVER
 // ======================================================
 
 app.listen(
