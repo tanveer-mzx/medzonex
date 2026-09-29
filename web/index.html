@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
 
@@ -12,11 +11,6 @@
     <meta
             name="theme-color"
             content="#05070d"
-    >
-
-    <meta
-            name="description"
-            content="MedZoneX Pharmacy Management System"
     >
 
     <title>MedZoneX</title>
@@ -36,863 +30,883 @@
 <body>
 
 <!-- =====================================================
-     WELCOME PAGE
-     ===================================================== -->
+     APP
+===================================================== -->
 
-<section
-        id="welcomePage"
-        class="app-page active"
->
+<div id="app">
 
-    <div class="welcome-container">
+    <!-- =================================================
+         WELCOME
+    ================================================== -->
 
-        <img
-                id="welcomeLogo"
-                class="welcome-logo"
-                src="assets/medzonex-logo.png"
-                alt="MedZoneX"
-        >
+    <section
+            id="welcomePage"
+            class="app-page active"
+    >
 
-        <button
-                type="button"
-                id="getStartedBtn"
-                class="primary-btn"
-        >
-            Get Started
-        </button>
+        <div class="welcome-background"></div>
 
-    </div>
+        <div class="welcome-content">
 
-</section>
-
-
-<!-- =====================================================
-     AUTH PAGE
-     ===================================================== -->
-
-<section
-        id="authPage"
-        class="app-page"
-        style="display:none;"
->
-
-    <div class="auth-card">
-
-        <!-- ================= LOGIN ================= -->
-
-        <div
-                id="loginSection"
-                class="auth-section active"
-        >
-
-            <h1>Welcome Back</h1>
-
-            <p class="auth-subtitle">
-                Login to your MedZoneX account
-            </p>
-
-            <form
-                    id="loginForm"
-                    class="auth-form"
-                    novalidate
+            <img
+                    src="assets/medzonex-logo.png"
+                    class="main-logo"
+                    alt="MedZoneX"
             >
 
-                <div class="form-group">
-
-                    <label for="loginEmail">
-                        Email
-                    </label>
-
-                    <input
-                            type="email"
-                            id="loginEmail"
-                            placeholder="Enter your email"
-                            autocomplete="email"
-                    >
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="loginPassword">
-                        Password
-                    </label>
-
-                    <input
-                            type="password"
-                            id="loginPassword"
-                            placeholder="Enter your password"
-                            autocomplete="current-password"
-                    >
-
-                </div>
-
-
-                <button
-                        type="submit"
-                        id="loginBtn"
-                        class="primary-btn"
-                >
-                    Login
-                </button>
-
-
-                <div
-                        id="loginMessage"
-                        class="form-message"
-                ></div>
-
-            </form>
-
-
-            <div class="auth-links">
-
-                <button
-                        type="button"
-                        id="showForgotBtn"
-                        class="text-btn"
-                >
-                    Forgot Password?
-                </button>
-
-                <button
-                        type="button"
-                        id="showSignupBtn"
-                        class="secondary-btn"
-                >
-                    Create Account
-                </button>
-
+            <div class="brand-name">
+                MedZoneX
             </div>
+
+            <p class="welcome-tagline">
+                Smart Pharmacy Management
+            </p>
+
+            <button
+                    type="button"
+                    id="getStartedBtn"
+                    class="primary-btn large-btn"
+            >
+                Get Started
+            </button>
 
         </div>
 
-
-        <!-- ================= SIGNUP ================= -->
-
-        <div
-                id="signupSection"
-                class="auth-section"
-                style="display:none;"
-        >
-
-            <h1>Create Account</h1>
-
-            <p class="auth-subtitle">
-                Start your MedZoneX 2-day free trial
-            </p>
+    </section>
 
 
-            <form
-                    id="signupForm"
-                    class="auth-form"
-                    novalidate
+    <!-- =================================================
+         AUTH PAGE
+    ================================================== -->
+
+    <section
+            id="authPage"
+            class="app-page"
+    >
+
+        <div class="auth-background"></div>
+
+        <div class="auth-wrapper">
+
+            <!-- BACK -->
+
+            <button
+                    type="button"
+                    id="backToWelcomeBtn"
+                    class="back-btn"
+            >
+                ← Back
+            </button>
+
+
+            <!-- =============================================
+                 LOGIN CARD
+            ============================================== -->
+
+            <div
+                    id="loginSection"
+                    class="auth-section active"
             >
 
-                <div class="form-group">
+                <div class="auth-card">
 
-                    <label for="storeName">
-                        Store Name
-                    </label>
+                    <div class="auth-logo-area">
 
-                    <input
-                            type="text"
-                            id="storeName"
-                            placeholder="Enter pharmacy/store name"
-                            autocomplete="organization"
-                    >
+                        <img
+                                src="assets/medzonex-logo.png"
+                                class="auth-logo"
+                                alt="MedZoneX"
+                        >
 
-                </div>
+                        <h1>
+                            Welcome Back
+                        </h1>
 
+                        <p>
+                            Login to your MedZoneX account
+                        </p>
 
-                <div class="form-group">
-
-                    <label for="signupEmail">
-                        Email
-                    </label>
-
-                    <input
-                            type="email"
-                            id="signupEmail"
-                            placeholder="Enter your email"
-                            autocomplete="email"
-                    >
-
-                </div>
+                    </div>
 
 
-                <button
-                        type="button"
-                        id="sendSignupOtpBtn"
-                        class="secondary-btn full-width"
-                >
-                    Send Email OTP
-                </button>
+                    <div class="form-group">
+
+                        <label for="loginEmail">
+                            Email
+                        </label>
+
+                        <input
+                                type="email"
+                                id="loginEmail"
+                                placeholder="Enter your email"
+                                autocomplete="email"
+                        >
+
+                    </div>
 
 
-                <div
-                        id="signupOtpArea"
-                        style="display:none;"
-                >
+                    <div class="form-group">
 
-                    <label for="signupOtp">
-                        Enter OTP
-                    </label>
+                        <label for="loginPassword">
+                            Password
+                        </label>
 
-                    <input
-                            type="text"
-                            id="signupOtp"
-                            inputmode="numeric"
-                            maxlength="6"
-                            placeholder="Enter 6-digit OTP"
-                    >
+                        <input
+                                type="password"
+                                id="loginPassword"
+                                placeholder="Enter your password"
+                                autocomplete="current-password"
+                        >
+
+                    </div>
+
+
+                    <div
+                            id="loginMessage"
+                            class="form-message"
+                    ></div>
+
 
                     <button
                             type="button"
-                            id="verifySignupOtpBtn"
+                            id="loginBtn"
                             class="primary-btn"
                     >
-                        Verify Email
+                        Login
                     </button>
 
+
+                    <button
+                            type="button"
+                            id="showForgotBtn"
+                            class="text-btn"
+                    >
+                        Forgot Password?
+                    </button>
+
+
+                    <div class="auth-divider">
+                        <span>OR</span>
+                    </div>
+
+
+                    <button
+                            type="button"
+                            id="showSignupBtn"
+                            class="secondary-btn"
+                    >
+                        Create New Account
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- =============================================
+                 SIGNUP CARD
+            ============================================== -->
+
+            <div
+                    id="signupSection"
+                    class="auth-section"
+            >
+
+                <div class="auth-card">
+
+                    <div class="auth-logo-area">
+
+                        <img
+                                src="assets/medzonex-logo.png"
+                                class="auth-logo"
+                                alt="MedZoneX"
+                        >
+
+                        <h1>
+                            Create Account
+                        </h1>
+
+                        <p>
+                            Start your MedZoneX journey
+                        </p>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="storeName">
+                            Store Name
+                        </label>
+
+                        <input
+                                type="text"
+                                id="storeName"
+                                placeholder="Enter pharmacy/store name"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="signupEmail">
+                            Email
+                        </label>
+
+                        <input
+                                type="email"
+                                id="signupEmail"
+                                placeholder="Enter your email"
+                                autocomplete="email"
+                        >
+
+                    </div>
+
+
+                    <!-- SEND OTP -->
+
+                    <button
+                            type="button"
+                            id="sendSignupOtpBtn"
+                            class="secondary-btn"
+                    >
+                        Send Email OTP
+                    </button>
+
+
+                    <!-- SIGNUP OTP -->
+
                     <div
-                            id="signupOtpStatus"
+                            id="signupOtpArea"
+                            class="otp-area"
+                    >
+
+                        <label for="signupOtp">
+                            Enter Email OTP
+                        </label>
+
+                        <input
+                                type="text"
+                                id="signupOtp"
+                                placeholder="Enter 6-digit OTP"
+                                maxlength="6"
+                                inputmode="numeric"
+                                autocomplete="one-time-code"
+                        >
+
+                        <button
+                                type="button"
+                                id="verifySignupOtpBtn"
+                                class="primary-btn"
+                        >
+                            Verify OTP
+                        </button>
+
+                        <div
+                                id="signupOtpStatus"
+                                class="otp-status"
+                        ></div>
+
+                        <div
+                                id="signupTimer"
+                                class="otp-timer"
+                        >
+                            Resend OTP available in 60 seconds
+                        </div>
+
+                        <button
+                                type="button"
+                                id="resendSignupOtpBtn"
+                                class="resend-btn"
+                                disabled
+                        >
+                            Resend OTP
+                        </button>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="signupPassword">
+                            Password
+                        </label>
+
+                        <input
+                                type="password"
+                                id="signupPassword"
+                                placeholder="Create password"
+                                autocomplete="new-password"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="signupConfirmPassword">
+                            Confirm Password
+                        </label>
+
+                        <input
+                                type="password"
+                                id="signupConfirmPassword"
+                                placeholder="Confirm password"
+                                autocomplete="new-password"
+                        >
+
+                    </div>
+
+
+                    <label class="checkbox-row">
+
+                        <input
+                                type="checkbox"
+                                id="signupTerms"
+                        >
+
+                        <span>
+                            I agree to the
+                            <button
+                                    type="button"
+                                    id="openTermsFromSignup"
+                                    class="inline-link"
+                            >
+                                Terms & Conditions
+                            </button>
+                            and
+                            <button
+                                    type="button"
+                                    id="openPrivacyFromSignup"
+                                    class="inline-link"
+                            >
+                                Privacy Policy
+                            </button>
+                        </span>
+
+                    </label>
+
+
+                    <div
+                            id="signupMessage"
+                            class="form-message"
                     ></div>
 
-                </div>
 
-
-                <div class="form-group">
-
-                    <label for="signupPassword">
-                        Password
-                    </label>
-
-                    <input
-                            type="password"
-                            id="signupPassword"
-                            placeholder="Create password"
-                            autocomplete="new-password"
+                    <button
+                            type="button"
+                            id="signupBtn"
+                            class="primary-btn"
                     >
+                        Create Account
+                    </button>
 
-                </div>
 
-
-                <div class="form-group">
-
-                    <label for="signupConfirmPassword">
-                        Confirm Password
-                    </label>
-
-                    <input
-                            type="password"
-                            id="signupConfirmPassword"
-                            placeholder="Confirm password"
-                            autocomplete="new-password"
+                    <button
+                            type="button"
+                            id="showLoginFromSignupBtn"
+                            class="text-btn"
                     >
+                        Already have an account? Login
+                    </button>
 
                 </div>
-
-
-                <div class="checkbox-row">
-
-                    <input
-                            type="checkbox"
-                            id="signupTerms"
-                    >
-
-                    <label for="signupTerms">
-                        I agree to the
-                        <a
-                                href="#"
-                                id="signupTermsLink"
-                        >
-                            Terms & Conditions
-                        </a>
-                        and
-                        <a
-                                href="#"
-                                id="signupPrivacyLink"
-                        >
-                            Privacy Policy
-                        </a>.
-                    </label>
-
-                </div>
-
-
-                <button
-                        type="submit"
-                        id="signupBtn"
-                        class="primary-btn"
-                >
-                    Create Account
-                </button>
-
-
-                <div
-                        id="signupMessage"
-                        class="form-message"
-                ></div>
-
-            </form>
-
-
-            <button
-                    type="button"
-                    id="showLoginFromSignupBtn"
-                    class="secondary-btn back-btn"
-            >
-                Back to Login
-            </button>
-
-        </div>
-
-
-        <!-- ================= FORGOT PASSWORD ================= -->
-
-        <div
-                id="forgotSection"
-                class="auth-section"
-                style="display:none;"
-        >
-
-            <h1>Reset Password</h1>
-
-            <p class="auth-subtitle">
-                Verify your email and create a new password
-            </p>
-
-
-            <div class="form-group">
-
-                <label for="forgotEmail">
-                    Email
-                </label>
-
-                <input
-                        type="email"
-                        id="forgotEmail"
-                        placeholder="Enter your registered email"
-                        autocomplete="email"
-                >
 
             </div>
 
 
-            <button
-                    type="button"
-                    id="sendForgotOtpBtn"
-                    class="primary-btn"
-            >
-                Send Email OTP
-            </button>
-
+            <!-- =============================================
+                 FORGOT PASSWORD
+            ============================================== -->
 
             <div
-                    id="forgotOtpArea"
-                    style="display:none;"
+                    id="forgotSection"
+                    class="auth-section"
             >
 
-                <label for="forgotOtp">
-                    Enter OTP
-                </label>
+                <div class="auth-card">
 
-                <input
-                        type="text"
-                        id="forgotOtp"
-                        inputmode="numeric"
-                        maxlength="6"
-                        placeholder="Enter 6-digit OTP"
-                >
+                    <div class="auth-logo-area">
+
+                        <img
+                                src="assets/medzonex-logo.png"
+                                class="auth-logo"
+                                alt="MedZoneX"
+                        >
+
+                        <h1>
+                            Reset Password
+                        </h1>
+
+                        <p>
+                            Verify your email to change your password
+                        </p>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="forgotEmail">
+                            Email
+                        </label>
+
+                        <input
+                                type="email"
+                                id="forgotEmail"
+                                placeholder="Enter your account email"
+                                autocomplete="email"
+                        >
+
+                    </div>
+
+
+                    <button
+                            type="button"
+                            id="sendForgotOtpBtn"
+                            class="secondary-btn"
+                    >
+                        Send Email OTP
+                    </button>
+
+
+                    <!-- FORGOT OTP -->
+
+                    <div
+                            id="forgotOtpArea"
+                            class="otp-area"
+                    >
+
+                        <label for="forgotOtp">
+                            Enter Email OTP
+                        </label>
+
+                        <input
+                                type="text"
+                                id="forgotOtp"
+                                placeholder="Enter 6-digit OTP"
+                                maxlength="6"
+                                inputmode="numeric"
+                                autocomplete="one-time-code"
+                        >
+
+                        <button
+                                type="button"
+                                id="verifyForgotOtpBtn"
+                                class="primary-btn"
+                        >
+                            Verify OTP
+                        </button>
+
+                        <div
+                                id="forgotOtpStatus"
+                                class="otp-status"
+                        ></div>
+
+                        <div
+                                id="forgotTimer"
+                                class="otp-timer"
+                        >
+                            Resend OTP available in 60 seconds
+                        </div>
+
+                        <button
+                                type="button"
+                                id="resendForgotOtpBtn"
+                                class="resend-btn"
+                                disabled
+                        >
+                            Resend OTP
+                        </button>
+
+                    </div>
+
+
+                    <!-- NEW PASSWORD -->
+
+                    <div
+                            id="newPasswordArea"
+                            class="new-password-area"
+                    >
+
+                        <div class="form-group">
+
+                            <label for="newPassword">
+                                New Password
+                            </label>
+
+                            <input
+                                    type="password"
+                                    id="newPassword"
+                                    placeholder="Enter new password"
+                                    autocomplete="new-password"
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="confirmNewPassword">
+                                Confirm New Password
+                            </label>
+
+                            <input
+                                    type="password"
+                                    id="confirmNewPassword"
+                                    placeholder="Confirm new password"
+                                    autocomplete="new-password"
+                            >
+
+                        </div>
+
+
+                        <button
+                                type="button"
+                                id="resetPasswordBtn"
+                                class="primary-btn"
+                        >
+                            Change Password
+                        </button>
+
+                    </div>
+
+
+                    <div
+                            id="forgotMessage"
+                            class="form-message"
+                    ></div>
+
+
+                    <button
+                            type="button"
+                            id="backToLoginBtn"
+                            class="text-btn"
+                    >
+                        ← Back to Login
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =================================================
+         DASHBOARD
+    ================================================== -->
+
+    <section
+            id="dashboardPage"
+            class="app-page"
+    >
+
+        <div class="dashboard">
+
+            <header class="dashboard-header">
+
+                <div>
+
+                    <img
+                            src="assets/medzonex-logo.png"
+                            class="dashboard-logo"
+                            alt="MedZoneX"
+                    >
+
+                    <div>
+
+                        <h1>
+                            MedZoneX
+                        </h1>
+
+                        <p id="dashboardStoreName">
+                            Your Pharmacy
+                        </p>
+
+                    </div>
+
+                </div>
 
                 <button
                         type="button"
-                        id="verifyForgotOtpBtn"
-                        class="primary-btn"
+                        id="logoutBtn"
+                        class="logout-btn"
                 >
-                    Verify OTP
+                    Logout
                 </button>
 
-                <div
-                        id="forgotOtpStatus"
-                ></div>
-
-            </div>
+            </header>
 
 
-            <div
-                    id="newPasswordArea"
-                    style="display:none;"
-            >
+            <main class="dashboard-content">
 
-                <div class="form-group">
+                <div class="dashboard-welcome">
 
-                    <label for="newPassword">
-                        New Password
-                    </label>
+                    <h2>
+                        Dashboard
+                    </h2>
 
-                    <input
-                            type="password"
-                            id="newPassword"
-                            placeholder="Enter new password"
-                            autocomplete="new-password"
-                    >
+                    <p id="trialStatus">
+                        Loading account status...
+                    </p>
 
                 </div>
 
 
-                <div class="form-group">
+                <div class="dashboard-grid">
 
-                    <label for="confirmNewPassword">
-                        Confirm New Password
-                    </label>
-
-                    <input
-                            type="password"
-                            id="confirmNewPassword"
-                            placeholder="Confirm new password"
-                            autocomplete="new-password"
+                    <button
+                            type="button"
+                            id="openBillingBtn"
+                            class="dashboard-card"
                     >
+                        <span>💳</span>
+                        <strong>Billing</strong>
+                        <small>Manage subscription</small>
+                    </button>
+
+
+                    <button
+                            type="button"
+                            id="openInventoryBtn"
+                            class="dashboard-card"
+                    >
+                        <span>📦</span>
+                        <strong>Inventory</strong>
+                        <small>Manage medicines</small>
+                    </button>
+
+
+                    <button
+                            type="button"
+                            id="openPurchaseBtn"
+                            class="dashboard-card"
+                    >
+                        <span>🛒</span>
+                        <strong>Purchases</strong>
+                        <small>Manage purchases</small>
+                    </button>
 
                 </div>
 
-
-                <button
-                        type="button"
-                        id="resetPasswordBtn"
-                        class="primary-btn"
-                >
-                    Change Password
-                </button>
-
-            </div>
-
-
-            <div
-                    id="forgotMessage"
-                    class="form-message"
-            ></div>
-
-
-            <button
-                    type="button"
-                    id="backToLoginBtn"
-                    class="secondary-btn back-btn"
-            >
-                Back to Login
-            </button>
+            </main>
 
         </div>
 
-    </div>
-
-</section>
+    </section>
 
 
-<!-- =====================================================
-     DASHBOARD
-     ===================================================== -->
+    <!-- =================================================
+         BILLING
+    ================================================== -->
 
-<section
-        id="dashboardPage"
-        class="app-page"
-        style="display:none;"
->
+    <section
+            id="billingPage"
+            class="app-page"
+    >
 
-    <header class="dashboard-header">
-
-        <div>
-
-            <h1>
-                MedZoneX
-            </h1>
-
-            <p>
-                Welcome,
-                <strong id="dashboardStoreName">
-                    Pharmacy
-                </strong>
-            </p>
-
-        </div>
-
-        <div class="dashboard-header-right">
-
-            <span id="trialStatus">
-                Loading trial...
-            </span>
-
-            <button
-                    type="button"
-                    id="logoutBtn"
-                    class="secondary-btn"
-            >
-                Logout
-            </button>
-
-        </div>
-
-    </header>
-
-
-    <main class="dashboard-grid">
-
-        <button
-                type="button"
-                class="dashboard-card"
-                id="billingDashboardBtn"
-        >
-
-            <strong>Billing</strong>
-
-            <span>
-                Manage billing and subscription
-            </span>
-
-        </button>
-
-
-        <button
-                type="button"
-                class="dashboard-card"
-                id="inventoryDashboardBtn"
-        >
-
-            <strong>Inventory</strong>
-
-            <span>
-                Manage your medicines and stock
-            </span>
-
-        </button>
-
-
-        <button
-                type="button"
-                class="dashboard-card"
-                id="purchaseDashboardBtn"
-        >
-
-            <strong>Purchases</strong>
-
-            <span>
-                Manage supplier purchases
-            </span>
-
-        </button>
-
-    </main>
-
-</section>
-
-
-<!-- =====================================================
-     BILLING PAGE
-     ===================================================== -->
-
-<section
-        id="billingPage"
-        class="app-page"
-        style="display:none;"
->
-
-    <div class="page-container">
-
-        <header class="page-header">
-
-            <div>
-                <h1>Billing</h1>
-                <p>
-                    Manage your MedZoneX subscription.
-                </p>
-            </div>
+        <div class="simple-page">
 
             <button
                     type="button"
                     id="closeBillingBtn"
-                    class="secondary-btn"
+                    class="back-btn"
             >
-                Back
+                ← Back
             </button>
 
-        </header>
+            <div class="simple-card">
 
+                <h1>
+                    Billing
+                </h1>
 
-        <div
-                id="billingMessage"
-                class="form-message"
-        ></div>
+                <p>
+                    Manage your MedZoneX subscription.
+                </p>
 
-
-        <div class="billing-card">
-
-            <h2>
-                MedZoneX Subscription
-            </h2>
-
-            <p>
-                Continue using MedZoneX after your free trial.
-            </p>
-
-            <button
-                    type="button"
-                    id="billingPayBtn"
-                    class="primary-btn"
-            >
-                Continue to Payment
-            </button>
+            </div>
 
         </div>
 
-    </div>
-
-</section>
+    </section>
 
 
-<!-- =====================================================
-     INVENTORY PAGE
-     ===================================================== -->
+    <!-- =================================================
+         INVENTORY
+    ================================================== -->
 
-<section
-        id="inventoryPage"
-        class="app-page"
-        style="display:none;"
->
+    <section
+            id="inventoryPage"
+            class="app-page"
+    >
 
-    <div class="page-container">
-
-        <header class="page-header">
-
-            <div>
-                <h1>Inventory</h1>
-                <p>
-                    Manage medicine stock.
-                </p>
-            </div>
+        <div class="simple-page">
 
             <button
                     type="button"
                     id="closeInventoryBtn"
-                    class="secondary-btn"
+                    class="back-btn"
             >
-                Back
+                ← Back
             </button>
 
-        </header>
+            <div class="simple-card">
 
+                <h1>
+                    Inventory
+                </h1>
 
-        <div
-                id="inventoryMessage"
-                class="form-message"
-        ></div>
+                <p>
+                    Inventory management will appear here.
+                </p>
 
-
-        <div
-                id="inventoryContainer"
-                class="table-container"
-        >
-
-            <p class="empty-state">
-                Loading inventory...
-            </p>
+            </div>
 
         </div>
 
-    </div>
-
-</section>
+    </section>
 
 
-<!-- =====================================================
-     PURCHASE PAGE
-     IMPORTANT: ID IS purchasePage
-     ===================================================== -->
+    <!-- =================================================
+         PURCHASE
+    ================================================== -->
 
-<section
-        id="purchasePage"
-        class="app-page"
-        style="display:none;"
->
+    <section
+            id="purchasePage"
+            class="app-page"
+    >
 
-    <div class="page-container">
-
-        <header class="page-header">
-
-            <div>
-                <h1>Purchases</h1>
-                <p>
-                    Manage supplier purchases.
-                </p>
-            </div>
+        <div class="simple-page">
 
             <button
                     type="button"
                     id="closePurchaseBtn"
-                    class="secondary-btn"
+                    class="back-btn"
             >
-                Back
+                ← Back
             </button>
 
-        </header>
+            <div class="simple-card">
+
+                <h1>
+                    Purchases
+                </h1>
+
+                <p>
+                    Purchase management will appear here.
+                </p>
+
+            </div>
+
+        </div>
+
+    </section>
 
 
-        <div
-                id="purchaseContainer"
-                class="table-container"
-        >
+    <!-- =================================================
+         TERMS MODAL
+    ================================================== -->
 
-            <p class="empty-state">
-                Purchases will appear here.
+    <div
+            id="termsModal"
+            class="modal"
+    >
+
+        <div class="modal-card">
+
+            <button
+                    type="button"
+                    class="modal-close"
+                    data-close-modal="termsModal"
+            >
+                ×
+            </button>
+
+            <h2>
+                Terms & Conditions
+            </h2>
+
+            <p>
+                By using MedZoneX, you agree to use the service
+                lawfully and responsibly.
+            </p>
+
+            <p>
+                MedZoneX is a software platform intended to assist
+                pharmacy and store management. Users remain
+                responsible for the accuracy of their business data
+                and compliance with applicable laws.
+            </p>
+
+            <p>
+                Subscription payments are subject to the applicable
+                billing terms. Payments are non-refundable unless
+                otherwise required by applicable law.
+            </p>
+
+            <p>
+                MedZoneX may update these terms when necessary.
             </p>
 
         </div>
 
     </div>
 
-</section>
 
+    <!-- =================================================
+         PRIVACY MODAL
+    ================================================== -->
 
-<!-- =====================================================
-     PAYMENT PAGE
-     ===================================================== -->
+    <div
+            id="privacyModal"
+            class="modal"
+    >
 
-<section
-        id="paymentPage"
-        class="app-page"
-        style="display:none;"
->
+        <div class="modal-card">
 
-    <div class="payment-card">
+            <button
+                    type="button"
+                    class="modal-close"
+                    data-close-modal="privacyModal"
+            >
+                ×
+            </button>
 
-        <h1>
-            Subscription Required
-        </h1>
+            <h2>
+                Privacy Policy
+            </h2>
 
-        <p>
-            Your free 2-day trial has ended.
-            Please complete your subscription payment
-            to continue using MedZoneX.
-        </p>
+            <p>
+                MedZoneX collects information necessary to provide
+                authentication and software services.
+            </p>
 
-        <button
-                type="button"
-                id="paymentBtn"
-                class="primary-btn"
-        >
-            Pay & Continue
-        </button>
+            <p>
+                Account information may include your email address,
+                store information and authentication-related data.
+            </p>
 
-        <button
-                type="button"
-                id="paymentBackBtn"
-                class="secondary-btn back-btn"
-        >
-            Back
-        </button>
+            <p>
+                Information is used to provide, secure and improve
+                the MedZoneX service.
+            </p>
 
-    </div>
+            <p>
+                MedZoneX handles personal information in accordance
+                with applicable privacy and data-protection laws.
+            </p>
 
-</section>
-
-
-<!-- =====================================================
-     TERMS MODAL
-     ===================================================== -->
-
-<div
-        id="termsModal"
-        class="modal"
-        style="display:none;"
->
-
-    <div class="modal-content">
-
-        <button
-                type="button"
-                class="modal-close"
-                data-close-modal="termsModal"
-        >
-            ×
-        </button>
-
-        <h2>
-            Terms & Conditions
-        </h2>
-
-        <p>
-            MedZoneX is a pharmacy management software platform.
-            The platform is intended to assist stores with
-            business and inventory management.
-        </p>
-
-        <p>
-            Users are responsible for the accuracy of information
-            entered into the system and for complying with all
-            applicable laws and regulations.
-        </p>
-
-        <p>
-            Subscription payments are non-refundable unless
-            otherwise required by applicable law.
-        </p>
+        </div>
 
     </div>
 
 </div>
 
-
-<!-- =====================================================
-     PRIVACY MODAL
-     ===================================================== -->
-
-<div
-        id="privacyModal"
-        class="modal"
-        style="display:none;"
->
-
-    <div class="modal-content">
-
-        <button
-                type="button"
-                class="modal-close"
-                data-close-modal="privacyModal"
-        >
-            ×
-        </button>
-
-        <h2>
-            Privacy Policy
-        </h2>
-
-        <p>
-            MedZoneX collects information required to provide
-            account, authentication and pharmacy-management
-            services.
-        </p>
-
-        <p>
-            Personal information is handled according to the
-            applicable privacy and data-protection requirements,
-            including applicable provisions of India's Digital
-            Personal Data Protection framework.
-        </p>
-
-        <p>
-            Users should review the complete privacy policy
-            before using the service.
-        </p>
-
-    </div>
-
-</div>
-
-
-<!-- =====================================================
-     APP SCRIPT
-     ===================================================== -->
 
 <script
         type="module"

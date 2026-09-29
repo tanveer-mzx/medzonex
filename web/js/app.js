@@ -1,7 +1,6 @@
-/* =========================================================
-   MEDZONEX
-   MAIN APPLICATION
-   ========================================================= */
+/* ======================================================
+   FIREBASE
+====================================================== */
 
 import {
     auth,
@@ -9,93 +8,178 @@ import {
 } from "./firebase.js";
 
 import {
-    onAuthStateChanged,
-    signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
     signOut,
-    updateProfile,
-    updatePassword
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+    onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 import {
     doc,
-    getDoc,
     setDoc,
+    getDoc,
     serverTimestamp
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 
-/* =========================================================
-   CONFIG
-   ========================================================= */
+/* ======================================================
+   API
+====================================================== */
 
 const API_BASE_URL =
-    (
-        location.hostname === "localhost" ||
-        location.hostname === "127.0.0.1"
-    )
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
         ? "http://localhost:5000"
         : "https://medzonex-backend.onrender.com";
-
-
-const TRIAL_DURATION_MS =
-    48 * 60 * 60 * 1000;
-
-
-/* =========================================================
-   HELPERS
-   ========================================================= */
-
-const $ = (id) =>
-    document.getElementById(id);
 
 
 function apiUrl(path) {
 
     return `${API_BASE_URL}${path}`;
-
 }
 
 
+/* ======================================================
+   DOM
+====================================================== */
+
+const $ = (id) =>
+    document.getElementById(id);
+
+
+/* ======================================================
+   PAGE SYSTEM
+====================================================== */
+
+let currentAuthSection = "loginSection";
+
+
+function showPage(pageId) {
+
+    document
+        .querySelectorAll(".app-page")
+        .forEach((page) => {
+
+            page.classList.remove("active");
+
+        });
+
+    const page = $(pageId);
+
+    if (!page) {
+        console.error(
+            "Page not found:",
+            pageId
+        );
+
+        return;
+    }
+
+    page.classList.add("active");
+}
+
+
+function showAuthSection(
+    sectionId,
+    direction = "right"
+) {
+
+    document
+        .querySelectorAll(".auth-section")
+        .forEach((section) => {
+
+            section.classList.remove(
+                "active",
+                "flip-in-right",
+                "flip-in-left"
+            );
+
+        });
+
+    const section = $(sectionId);
+
+    if (!section) {
+        return;
+    }
+
+    section.classList.add("active");
+
+    /*
+       Force browser to restart animation
+    */
+
+    void section.offsetWidth;
+
+    section.classList.add(
+        direction === "left"
+            ? "flip-in-left"
+            : "flip-in-right"
+    );
+
+    currentAuthSection =
+        sectionId;
+}
+
+
+/* ======================================================
+   MESSAGES
+====================================================== */
+
 function setMessage(
     id,
-    message = "",
+    message,
     type = ""
 ) {
 
     const element = $(id);
 
-    if (!element) return;
-
-    element.textContent = message;
-
-    element.className = "form-message";
-
-    if (type) {
-        element.classList.add(type);
+    if (!element) {
+        return;
     }
 
+    element.textContent =
+        message || "";
+
+    element.className =
+        `form-message ${type}`;
 }
 
 
-function clearMessage(id) {
-
-    setMessage(id, "");
-
-}
-
-
-function showElement(
+function setOtpStatus(
     id,
-    display = "block"
+    message,
+    type = ""
 ) {
 
     const element = $(id);
 
-    if (!element) return;
+    if (!element) {
+        return;
+    }
 
-    element.style.display = display;
+    element.textContent =
+        message || "";
 
+    element.className =
+        `otp-status ${type}`;
+}
+
+
+/* ======================================================
+   ELEMENT VISIBILITY
+====================================================== */
+
+function showElement(id) {
+
+    const element = $(id);
+
+    if (!element) {
+        return;
+    }
+
+    element.classList.add("visible");
+
+    element.style.display = "";
 }
 
 
@@ -103,1729 +187,2119 @@ function hideElement(id) {
 
     const element = $(id);
 
-    if (!element) return;
+    if (!element) {
+        return;
+    }
+
+    element.classList.remove("visible");
 
     element.style.display = "none";
-
 }
 
 
-/* =========================================================
-   PAGE NAVIGATION
-   ========================================================= */
-
-function showPage(pageId) {
-
-    const pages =
-        document.querySelectorAll(".app-page");
-
-
-    pages.forEach((page) => {
-
-        page.classList.remove("active");
-
-        page.style.display = "none";
-
-    });
-
-
-    const target =
-        $(pageId);
-
-
-    if (!target) {
-
-        console.error(
-            `MedZoneX: Page not found: ${pageId}`
-        );
-
-        return false;
-
-    }
-
-
-    target.classList.add("active");
-
-    target.style.display = "flex";
-
-
-    return true;
-
-}
-
-
-/* =========================================================
-   AUTH SECTION NAVIGATION
-   ========================================================= */
-
-function showAuthSection(sectionId) {
-
-    const sections =
-        document.querySelectorAll(".auth-section");
-
-
-    sections.forEach((section) => {
-
-        section.classList.remove("active");
-
-        section.style.display = "none";
-
-    });
-
-
-    const section =
-        $(sectionId);
-
-
-    if (!section) {
-
-        console.error(
-            `MedZoneX: Auth section not found: ${sectionId}`
-        );
-
-        return false;
-
-    }
-
-
-    section.classList.add("active");
-
-    section.style.display = "block";
-
-
-    return true;
-
-}
-
-
-/* =========================================================
-   GET STARTED
-   ========================================================= */
-
-function openGetStarted() {
-
-    console.log(
-        "MedZoneX: Get Started clicked"
-    );
-
-
-    showPage("authPage");
-
-    showAuthSection("signupSection");
-
-
-    clearMessage("signupMessage");
-
-}
-
-
-const getStartedBtn =
-    $("getStartedBtn");
-
-
-if (getStartedBtn) {
-
-    getStartedBtn.addEventListener(
-        "click",
-        openGetStarted
-    );
-
-}
-
-
-/* =========================================================
-   LOGIN / SIGNUP / FORGOT NAVIGATION
-   ========================================================= */
-
-$("showSignupBtn")?.addEventListener(
-    "click",
-    () => {
-
-        showPage("authPage");
-
-        showAuthSection("signupSection");
-
-        clearMessage("signupMessage");
-
-    }
-);
-
-
-$("showLoginFromSignupBtn")?.addEventListener(
-    "click",
-    () => {
-
-        showPage("authPage");
-
-        showAuthSection("loginSection");
-
-        clearMessage("loginMessage");
-
-    }
-);
-
-
-$("showForgotBtn")?.addEventListener(
-    "click",
-    () => {
-
-        showPage("authPage");
-
-        showAuthSection("forgotSection");
-
-        clearMessage("forgotMessage");
-
-    }
-);
-
-
-$("backToLoginBtn")?.addEventListener(
-    "click",
-    () => {
-
-        showPage("authPage");
-
-        showAuthSection("loginSection");
-
-        clearMessage("loginMessage");
-
-    }
-);
-
-
-/* =========================================================
-   SEND EMAIL OTP
-   ========================================================= */
-
-async function sendEmailOtp(
-    email,
-    purpose
+/* ======================================================
+   BACKEND REQUEST
+====================================================== */
+
+async function backendRequest(
+    path,
+    body
 ) {
 
-    const response =
-        await fetch(
-            apiUrl("/api/auth/send-email-otp"),
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body: JSON.stringify({
-                    email,
-                    purpose
-                })
-            }
-        );
-
-
-    const data =
-        await response.json()
-            .catch(() => ({}));
-
-
-    if (!response.ok) {
-
-        throw new Error(
-            data.message ||
-            "Unable to send OTP."
-        );
-
-    }
-
-
-    return data;
-
-}
-
-
-/* =========================================================
-   VERIFY EMAIL OTP
-   ========================================================= */
-
-async function verifyEmailOtp(
-    email,
-    otp,
-    purpose
-) {
-
-    const response =
-        await fetch(
-            apiUrl("/api/auth/verify-email-otp"),
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body: JSON.stringify({
-                    email,
-                    otp,
-                    purpose
-                })
-            }
-        );
-
-
-    const data =
-        await response.json()
-            .catch(() => ({}));
-
-
-    if (!response.ok) {
-
-        throw new Error(
-            data.message ||
-            "Invalid or expired OTP."
-        );
-
-    }
-
-
-    return data;
-
-}
-
-
-/* =========================================================
-   SIGNUP OTP
-   ========================================================= */
-
-let signupEmailVerified = false;
-
-
-$("sendSignupOtpBtn")?.addEventListener(
-    "click",
-    async () => {
-
-        const email =
-            $("signupEmail")?.value
-                .trim()
-                .toLowerCase();
-
-
-        if (!email) {
-
-            setMessage(
-                "signupMessage",
-                "Please enter your email.",
-                "error"
-            );
-
-            return;
-
-        }
-
-
-        try {
-
-            $("sendSignupOtpBtn").disabled =
-                true;
-
-
-            setMessage(
-                "signupMessage",
-                "Sending OTP..."
-            );
-
-
-            await sendEmailOtp(
-                email,
-                "signup"
-            );
-
-
-            signupEmailVerified =
-                false;
-
-
-            showElement(
-                "signupOtpArea",
-                "block"
-            );
-
-
-            setMessage(
-                "signupMessage",
-                "OTP sent to your email.",
-                "success"
-            );
-
-
-            if ($("signupOtpStatus")) {
-
-                $("signupOtpStatus")
-                    .textContent =
-                    "Enter the OTP sent to your email.";
-
-            }
-
-
-        } catch (error) {
-
-            console.error(error);
-
-
-            setMessage(
-                "signupMessage",
-                error.message ||
-                "Failed to send OTP.",
-                "error"
-            );
-
-
-        } finally {
-
-            $("sendSignupOtpBtn").disabled =
-                false;
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   VERIFY SIGNUP OTP
-   ========================================================= */
-
-$("verifySignupOtpBtn")?.addEventListener(
-    "click",
-    async () => {
-
-        const email =
-            $("signupEmail")?.value
-                .trim()
-                .toLowerCase();
-
-        const otp =
-            $("signupOtp")?.value
-                .trim();
-
-
-        if (!email || !otp) {
-
-            setMessage(
-                "signupMessage",
-                "Enter your email and OTP.",
-                "error"
-            );
-
-            return;
-
-        }
-
-
-        try {
-
-            $("verifySignupOtpBtn").disabled =
-                true;
-
-
-            if ($("signupOtpStatus")) {
-
-                $("signupOtpStatus")
-                    .textContent =
-                    "Verifying OTP...";
-
-            }
-
-
-            await verifyEmailOtp(
-                email,
-                otp,
-                "signup"
-            );
-
-
-            signupEmailVerified =
-                true;
-
-
-            if ($("signupOtpStatus")) {
-
-                $("signupOtpStatus")
-                    .textContent =
-                    "Email verified successfully.";
-
-                $("signupOtpStatus")
-                    .className =
-                    "success";
-
-            }
-
-
-            setMessage(
-                "signupMessage",
-                "Email verified. You can create your account now.",
-                "success"
-            );
-
-
-        } catch (error) {
-
-            console.error(error);
-
-
-            signupEmailVerified =
-                false;
-
-
-            if ($("signupOtpStatus")) {
-
-                $("signupOtpStatus")
-                    .textContent =
-                    error.message ||
-                    "Invalid OTP.";
-
-                $("signupOtpStatus")
-                    .className =
-                    "error";
-
-            }
-
-
-        } finally {
-
-            $("verifySignupOtpBtn").disabled =
-                false;
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   SIGNUP
-   ========================================================= */
-
-$("signupForm")?.addEventListener(
-    "submit",
-    async (event) => {
-
-        event.preventDefault();
-
-
-        const storeName =
-            $("storeName")?.value
-                .trim();
-
-        const email =
-            $("signupEmail")?.value
-                .trim()
-                .toLowerCase();
-
-        const password =
-            $("signupPassword")?.value;
-
-        const confirmPassword =
-            $("signupConfirmPassword")?.value;
-
-        const termsAccepted =
-            $("signupTerms")?.checked;
-
-
-        if (
-            !storeName ||
-            !email ||
-            !password ||
-            !confirmPassword
-        ) {
-
-            setMessage(
-                "signupMessage",
-                "All fields are required.",
-                "error"
-            );
-
-            return;
-
-        }
-
-
-        if (!signupEmailVerified) {
-
-            setMessage(
-                "signupMessage",
-                "Please verify your email with OTP first.",
-                "error"
-            );
-
-            return;
-
-        }
-
-
-        if (password.length < 6) {
-
-            setMessage(
-                "signupMessage",
-                "Password must contain at least 6 characters.",
-                "error"
-            );
-
-            return;
-
-        }
-
-
-        if (password !== confirmPassword) {
-
-            setMessage(
-                "signupMessage",
-                "Passwords do not match.",
-                "error"
-            );
-
-            return;
-
-        }
-
-
-        if (!termsAccepted) {
-
-            setMessage(
-                "signupMessage",
-                "Please accept the Terms & Conditions and Privacy Policy.",
-                "error"
-            );
-
-            return;
-
-        }
-
-
-        try {
-
-            $("signupBtn").disabled =
-                true;
-
-
-            setMessage(
-                "signupMessage",
-                "Creating your account..."
-            );
-
-
-            const credential =
-                await createUserWithEmailAndPassword(
-                    auth,
-                    email,
-                    password
-                );
-
-
-            const user =
-                credential.user;
-
-
-            await updateProfile(
-                user,
-                {
-                    displayName:
-                        storeName
-                }
-            );
-
-
-            const trialStart =
-                Date.now();
-
-
-            const trialEnd =
-                trialStart +
-                TRIAL_DURATION_MS;
-
-
-            await setDoc(
-                doc(
-                    db,
-                    "users",
-                    user.uid
-                ),
-                {
-                    uid: user.uid,
-
-                    email: email,
-
-                    storeName: storeName,
-
-                    trialStart:
-                        trialStart,
-
-                    trialExpiresAt:
-                        trialEnd,
-
-                    createdAt:
-                        serverTimestamp(),
-
-                    subscriptionStatus:
-                        "trial"
-                },
-                {
-                    merge: true
-                }
-            );
-
-
-            setMessage(
-                "signupMessage",
-                "Account created successfully. Opening dashboard...",
-                "success"
-            );
-
-
-            setTimeout(
-                () => {
-
-                    loadDashboard(user);
-
-                },
-                700
-            );
-
-
-        } catch (error) {
-
-            console.error(error);
-
-
-            let message =
-                "Unable to create account.";
-
-
-            if (
-                error.code ===
-                "auth/email-already-in-use"
-            ) {
-
-                message =
-                    "This email is already registered.";
-
-            }
-
-
-            if (
-                error.code ===
-                "auth/invalid-email"
-            ) {
-
-                message =
-                    "Please enter a valid email address.";
-
-            }
-
-
-            if (
-                error.code ===
-                "auth/weak-password"
-            ) {
-
-                message =
-                    "Password is too weak.";
-
-            }
-
-
-            setMessage(
-                "signupMessage",
-                message,
-                "error"
-            );
-
-
-        } finally {
-
-            $("signupBtn").disabled =
-                false;
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   LOGIN
-   ========================================================= */
-
-$("loginForm")?.addEventListener(
-    "submit",
-    async (event) => {
-
-        event.preventDefault();
-
-
-        const email =
-            $("loginEmail")?.value
-                .trim()
-                .toLowerCase();
-
-        const password =
-            $("loginPassword")?.value;
-
-
-        if (!email || !password) {
-
-            setMessage(
-                "loginMessage",
-                "All fields are required.",
-                "error"
-            );
-
-            return;
-
-        }
-
-
-        try {
-
-            $("loginBtn").disabled =
-                true;
-
-
-            setMessage(
-                "loginMessage",
-                "Logging in..."
-            );
-
-
-            const credential =
-                await signInWithEmailAndPassword(
-                    auth,
-                    email,
-                    password
-                );
-
-
-            await loadDashboard(
-                credential.user
-            );
-
-
-        } catch (error) {
-
-            console.error(error);
-
-
-            let message =
-                "Unable to login.";
-
-
-            if (
-                error.code ===
-                "auth/invalid-credential"
-            ) {
-
-                message =
-                    "Invalid email or password.";
-
-            }
-
-
-            if (
-                error.code ===
-                "auth/user-not-found"
-            ) {
-
-                message =
-                    "Account not found.";
-
-            }
-
-
-            if (
-                error.code ===
-                "auth/wrong-password"
-            ) {
-
-                message =
-                    "Invalid email or password.";
-
-            }
-
-
-            setMessage(
-                "loginMessage",
-                message,
-                "error"
-            );
-
-
-        } finally {
-
-            $("loginBtn").disabled =
-                false;
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   FORGOT PASSWORD OTP
-   ========================================================= */
-
-let forgotEmailVerified = false;
-
-
-$("sendForgotOtpBtn")?.addEventListener(
-    "click",
-    async () => {
-
-        const email =
-            $("forgotEmail")?.value
-                .trim()
-                .toLowerCase();
-
-
-        if (!email) {
-
-            setMessage(
-                "forgotMessage",
-                "Please enter your email.",
-                "error"
-            );
-
-            return;
-
-        }
-
-
-        try {
-
-            $("sendForgotOtpBtn").disabled =
-                true;
-
-
-            setMessage(
-                "forgotMessage",
-                "Sending OTP..."
-            );
-
-
-            await sendEmailOtp(
-                email,
-                "forgot-password"
-            );
-
-
-            forgotEmailVerified =
-                false;
-
-
-            showElement(
-                "forgotOtpArea",
-                "block"
-            );
-
-
-            setMessage(
-                "forgotMessage",
-                "OTP sent to your email.",
-                "success"
-            );
-
-
-        } catch (error) {
-
-            console.error(error);
-
-
-            setMessage(
-                "forgotMessage",
-                error.message ||
-                "Unable to send OTP.",
-                "error"
-            );
-
-
-        } finally {
-
-            $("sendForgotOtpBtn").disabled =
-                false;
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   VERIFY FORGOT OTP
-   ========================================================= */
-
-$("verifyForgotOtpBtn")?.addEventListener(
-    "click",
-    async () => {
-
-        const email =
-            $("forgotEmail")?.value
-                .trim()
-                .toLowerCase();
-
-        const otp =
-            $("forgotOtp")?.value
-                .trim();
-
-
-        if (!email || !otp) {
-
-            setMessage(
-                "forgotMessage",
-                "Enter your email and OTP.",
-                "error"
-            );
-
-            return;
-
-        }
-
-
-        try {
-
-            $("verifyForgotOtpBtn").disabled =
-                true;
-
-
-            if ($("forgotOtpStatus")) {
-
-                $("forgotOtpStatus")
-                    .textContent =
-                    "Verifying OTP...";
-
-            }
-
-
-            await verifyEmailOtp(
-                email,
-                otp,
-                "forgot-password"
-            );
-
-
-            forgotEmailVerified =
-                true;
-
-
-            if ($("forgotOtpStatus")) {
-
-                $("forgotOtpStatus")
-                    .textContent =
-                    "Email verified successfully.";
-
-                $("forgotOtpStatus")
-                    .className =
-                    "success";
-
-            }
-
-
-            showElement(
-                "newPasswordArea",
-                "block"
-            );
-
-
-            setMessage(
-                "forgotMessage",
-                "OTP verified. Create your new password.",
-                "success"
-            );
-
-
-        } catch (error) {
-
-            console.error(error);
-
-
-            forgotEmailVerified =
-                false;
-
-
-            if ($("forgotOtpStatus")) {
-
-                $("forgotOtpStatus")
-                    .textContent =
-                    error.message ||
-                    "Invalid OTP.";
-
-                $("forgotOtpStatus")
-                    .className =
-                    "error";
-
-            }
-
-
-        } finally {
-
-            $("verifyForgotOtpBtn").disabled =
-                false;
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   RESET PASSWORD
-   ========================================================= */
-
-$("resetPasswordBtn")?.addEventListener(
-    "click",
-    async () => {
-
-        const email =
-            $("forgotEmail")?.value
-                .trim()
-                .toLowerCase();
-
-        const newPassword =
-            $("newPassword")?.value;
-
-        const confirmPassword =
-            $("confirmNewPassword")?.value;
-
-
-        if (!forgotEmailVerified) {
-
-            setMessage(
-                "forgotMessage",
-                "Please verify your email first.",
-                "error"
-            );
-
-            return;
-
-        }
-
-
-        if (
-            !newPassword ||
-            !confirmPassword
-        ) {
-
-            setMessage(
-                "forgotMessage",
-                "Both password fields are required.",
-                "error"
-            );
-
-            return;
-
-        }
-
-
-        if (newPassword.length < 6) {
-
-            setMessage(
-                "forgotMessage",
-                "Password must contain at least 6 characters.",
-                "error"
-            );
-
-            return;
-
-        }
-
-
-        if (
-            newPassword !==
-            confirmPassword
-        ) {
-
-            setMessage(
-                "forgotMessage",
-                "Passwords do not match.",
-                "error"
-            );
-
-            return;
-
-        }
-
-
-        try {
-
-            $("resetPasswordBtn").disabled =
-                true;
-
-
-            setMessage(
-                "forgotMessage",
-                "Changing password..."
-            );
-
-
-            const response =
-                await fetch(
-                    apiUrl("/api/auth/reset-password"),
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body: JSON.stringify({
-                            email,
-                            newPassword
-                        })
-                    }
-                );
-
-
-            const data =
-                await response.json()
-                    .catch(() => ({}));
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    data.message ||
-                    "Unable to reset password."
-                );
-
-            }
-
-
-            setMessage(
-                "forgotMessage",
-                "Password changed successfully. You can now login.",
-                "success"
-            );
-
-
-            setTimeout(
-                () => {
-
-                    showPage("authPage");
-
-                    showAuthSection(
-                        "loginSection"
-                    );
-
-                    if ($("loginEmail")) {
-
-                        $("loginEmail").value =
-                            email;
-
-                    }
-
-                    if ($("loginPassword")) {
-
-                        $("loginPassword").value =
-                            "";
-
-                    }
-
-                    clearMessage(
-                        "forgotMessage"
-                    );
-
-                },
-                1200
-            );
-
-
-        } catch (error) {
-
-            console.error(error);
-
-
-            setMessage(
-                "forgotMessage",
-                error.message ||
-                "Unable to reset password.",
-                "error"
-            );
-
-
-        } finally {
-
-            $("resetPasswordBtn").disabled =
-                false;
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   DASHBOARD
-   ========================================================= */
-
-async function loadDashboard(user) {
-
-    if (!user) return;
-
-
-    let userData = {};
-
+    let response;
 
     try {
 
-        const snapshot =
-            await getDoc(
-                doc(
-                    db,
-                    "users",
-                    user.uid
-                )
+        response =
+            await fetch(
+                apiUrl(path),
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(body)
+                }
             );
-
-
-        if (snapshot.exists()) {
-
-            userData =
-                snapshot.data();
-
-        }
 
     } catch (error) {
 
         console.error(
-            "Unable to load user data:",
+            "Backend connection error:",
             error
         );
 
+        throw new Error(
+            "Failed to connect to MedZoneX server."
+        );
     }
 
 
-    const storeName =
-        userData.storeName ||
-        user.displayName ||
-        "Pharmacy";
+    let data = {};
 
+    try {
 
-    if ($("dashboardStoreName")) {
+        data =
+            await response.json();
 
-        $("dashboardStoreName")
-            .textContent =
-            storeName;
+    } catch {
+
+        data = {};
 
     }
 
 
-    showPage("dashboardPage");
+    if (!response.ok) {
+
+        throw new Error(
+            data.message ||
+            data.error ||
+            `Server error (${response.status})`
+        );
+    }
 
 
-    updateTrialStatus(
-        userData
-    );
-
+    return data;
 }
 
 
-/* =========================================================
-   TRIAL
-   ========================================================= */
+/* ======================================================
+   OTP STATE
+====================================================== */
 
-let trialTimer = null;
+let signupOtpVerified =
+    false;
+
+let forgotOtpVerified =
+    false;
 
 
-function updateTrialStatus(
-    userData
+let signupTimerInterval =
+    null;
+
+let forgotTimerInterval =
+    null;
+
+
+/* ======================================================
+   60 SECOND OTP TIMER
+====================================================== */
+
+function startOtpTimer(
+    timerId,
+    resendButtonId,
+    seconds = 60
 ) {
 
-    if (trialTimer) {
+    const timer =
+        $(timerId);
 
-        clearInterval(trialTimer);
+    const resendButton =
+        $(resendButtonId);
 
-        trialTimer = null;
-
+    if (!timer || !resendButton) {
+        return;
     }
 
 
-    const status =
-        $("trialStatus");
+    if (
+        timerId ===
+        "signupTimer"
+    ) {
 
-
-    if (!status) return;
-
-
-    let expiresAt =
-        Number(
-            userData?.trialExpiresAt || 0
+        clearInterval(
+            signupTimerInterval
         );
 
+    } else {
 
-    /*
-       Existing accounts without a trial date
-       get a 48-hour trial starting now.
-    */
-
-    if (!expiresAt) {
-
-        expiresAt =
-            Date.now() +
-            TRIAL_DURATION_MS;
+        clearInterval(
+            forgotTimerInterval
+        );
 
     }
+
+
+    resendButton.disabled =
+        true;
+
+    let remaining =
+        seconds;
+
+
+    timer.classList.remove(
+        "ready"
+    );
 
 
     function update() {
 
-        const remaining =
-            expiresAt -
-            Date.now();
-
-
         if (remaining <= 0) {
 
-            status.textContent =
-                "Trial expired";
+            clearInterval(
+                timerId ===
+                    "signupTimer"
+                    ? signupTimerInterval
+                    : forgotTimerInterval
+            );
 
-            status.className =
-                "warning";
+            timer.textContent =
+                "You can resend OTP now.";
 
+            timer.classList.add(
+                "ready"
+            );
 
-            if (trialTimer) {
-
-                clearInterval(trialTimer);
-
-                trialTimer = null;
-
-            }
-
+            resendButton.disabled =
+                false;
 
             return;
-
         }
 
 
-        const totalSeconds =
-            Math.floor(
-                remaining / 1000
-            );
+        timer.textContent =
+            `Resend OTP available in ${remaining} seconds`;
 
-
-        const days =
-            Math.floor(
-                totalSeconds / 86400
-            );
-
-        const hours =
-            Math.floor(
-                (totalSeconds % 86400) /
-                3600
-            );
-
-        const minutes =
-            Math.floor(
-                (totalSeconds % 3600) /
-                60
-            );
-
-
-        status.textContent =
-            `Free Trial: ${days}d ${hours}h ${minutes}m`;
-
+        remaining--;
     }
 
 
     update();
 
 
-    trialTimer =
+    const interval =
         setInterval(
             update,
-            60000
+            1000
         );
+
+
+    if (
+        timerId ===
+        "signupTimer"
+    ) {
+
+        signupTimerInterval =
+            interval;
+
+    } else {
+
+        forgotTimerInterval =
+            interval;
+
+    }
 
 }
 
 
-/* =========================================================
-   LOGOUT
-   ========================================================= */
+/* ======================================================
+   RESET OTP TIMER
+====================================================== */
 
-$("logoutBtn")?.addEventListener(
-    "click",
-    async () => {
+function resetSignupOtpState() {
 
-        try {
+    signupOtpVerified =
+        false;
 
-            await signOut(auth);
+    clearInterval(
+        signupTimerInterval
+    );
 
+    const button =
+        $("resendSignupOtpBtn");
+
+    if (button) {
+        button.disabled =
+            true;
+    }
+
+    setOtpStatus(
+        "signupOtpStatus",
+        ""
+    );
+
+    const timer =
+        $("signupTimer");
+
+    if (timer) {
+
+        timer.textContent =
+            "Resend OTP available in 60 seconds";
+
+        timer.classList.remove(
+            "ready"
+        );
+
+    }
+
+}
+
+
+function resetForgotOtpState() {
+
+    forgotOtpVerified =
+        false;
+
+    clearInterval(
+        forgotTimerInterval
+    );
+
+    const button =
+        $("resendForgotOtpBtn");
+
+    if (button) {
+        button.disabled =
+            true;
+    }
+
+    setOtpStatus(
+        "forgotOtpStatus",
+        ""
+    );
+
+    const timer =
+        $("forgotTimer");
+
+    if (timer) {
+
+        timer.textContent =
+            "Resend OTP available in 60 seconds";
+
+        timer.classList.remove(
+            "ready"
+        );
+
+    }
+
+}
+
+
+/* ======================================================
+   GET STARTED
+====================================================== */
+
+$("getStartedBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            showPage(
+                "authPage"
+            );
+
+            showAuthSection(
+                "loginSection",
+                "right"
+            );
+
+        }
+    );
+
+
+/* ======================================================
+   BACK TO WELCOME
+====================================================== */
+
+$("backToWelcomeBtn")
+    ?.addEventListener(
+        "click",
+        () => {
 
             showPage(
                 "welcomePage"
             );
 
-
-        } catch (error) {
-
-            console.error(
-                "Logout failed:",
-                error
-            );
-
         }
-
-    }
-);
-
-
-/* =========================================================
-   BILLING
-   ========================================================= */
-
-function openBilling() {
-
-    showPage("billingPage");
-
-
-    clearMessage(
-        "billingMessage"
     );
 
 
-    /*
-       Existing billing.js can handle
-       additional billing functionality.
-    */
+/* ======================================================
+   LOGIN → SIGNUP
+====================================================== */
 
-    if (
-        window.MedZoneXBilling &&
-        typeof
-        window.MedZoneXBilling.loadBilling
-        === "function"
-    ) {
-
-        window.MedZoneXBilling
-            .loadBilling();
-
-    }
-
-}
-
-
-function closeBilling() {
-
-    showPage("dashboardPage");
-
-}
-
-
-$("billingDashboardBtn")?.addEventListener(
-    "click",
-    openBilling
-);
-
-
-$("closeBillingBtn")?.addEventListener(
-    "click",
-    closeBilling
-);
-
-
-$("billingPayBtn")?.addEventListener(
-    "click",
-    () => {
-
-        showPage("paymentPage");
-
-    }
-);
-
-
-/* =========================================================
-   INVENTORY
-   ========================================================= */
-
-function openInventory() {
-
-    showPage("inventoryPage");
-
-
-    if (
-        window.MedZoneXInventory &&
-        typeof
-        window.MedZoneXInventory.loadInventory
-        === "function"
-    ) {
-
-        window.MedZoneXInventory
-            .loadInventory();
-
-    }
-
-}
-
-
-$("inventoryDashboardBtn")?.addEventListener(
-    "click",
-    openInventory
-);
-
-
-$("closeInventoryBtn")?.addEventListener(
-    "click",
-    () => {
-
-        showPage("dashboardPage");
-
-    }
-);
-
-
-/* =========================================================
-   PURCHASES
-   ========================================================= */
-
-function openPurchases() {
-
-    /*
-       IMPORTANT:
-       HTML uses purchasePage,
-       not purchasesPage.
-    */
-
-    showPage("purchasePage");
-
-
-    if (
-        window.MedZoneXPurchases &&
-        typeof
-        window.MedZoneXPurchases.loadPurchases
-        === "function"
-    ) {
-
-        window.MedZoneXPurchases
-            .loadPurchases();
-
-    }
-
-}
-
-
-$("purchaseDashboardBtn")?.addEventListener(
-    "click",
-    openPurchases
-);
-
-
-$("closePurchaseBtn")?.addEventListener(
-    "click",
-    () => {
-
-        showPage("dashboardPage");
-
-    }
-);
-
-
-/* =========================================================
-   PAYMENT
-   ========================================================= */
-
-$("paymentBackBtn")?.addEventListener(
-    "click",
-    () => {
-
-        showPage("dashboardPage");
-
-    }
-);
-
-
-$("paymentBtn")?.addEventListener(
-    "click",
-    () => {
-
-        /*
-           Keep payment integration here.
-           Razorpay/payment module can attach
-           its own logic to this button.
-        */
-
-        if (
-            window.MedZoneXBilling &&
-            typeof
-            window.MedZoneXBilling.openPayment
-            === "function"
-        ) {
-
-            window.MedZoneXBilling
-                .openPayment();
-
-        } else {
+$("showSignupBtn")
+    ?.addEventListener(
+        "click",
+        () => {
 
             setMessage(
-                "billingMessage",
-                "Payment system is not available yet.",
-                "warning"
+                "loginMessage",
+                ""
             );
+
+            showAuthSection(
+                "signupSection",
+                "right"
+            );
+
+        }
+    );
+
+
+/* ======================================================
+   SIGNUP → LOGIN
+====================================================== */
+
+$("showLoginFromSignupBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            setMessage(
+                "signupMessage",
+                ""
+            );
+
+            showAuthSection(
+                "loginSection",
+                "left"
+            );
+
+        }
+    );
+
+
+/* ======================================================
+   LOGIN → FORGOT
+====================================================== */
+
+$("showForgotBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            setMessage(
+                "loginMessage",
+                ""
+            );
+
+            showAuthSection(
+                "forgotSection",
+                "right"
+            );
+
+        }
+    );
+
+
+/* ======================================================
+   FORGOT → LOGIN
+====================================================== */
+
+$("backToLoginBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            resetForgotOtpState();
+
+            hideElement(
+                "forgotOtpArea"
+            );
+
+            hideElement(
+                "newPasswordArea"
+            );
+
+            setMessage(
+                "forgotMessage",
+                ""
+            );
+
+            showAuthSection(
+                "loginSection",
+                "left"
+            );
+
+        }
+    );
+
+
+/* ======================================================
+   SEND SIGNUP OTP
+====================================================== */
+
+async function sendSignupOtp() {
+
+    const email =
+        $("signupEmail")
+            ?.value
+            .trim()
+            .toLowerCase();
+
+
+    if (!email) {
+
+        setMessage(
+            "signupMessage",
+            "Please enter your email.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        const button =
+            $("sendSignupOtpBtn");
+
+        if (button) {
+            button.disabled =
+                true;
+
+            button.textContent =
+                "Sending OTP...";
+        }
+
+
+        await backendRequest(
+            "/api/auth/send-email-otp",
+            {
+                email,
+                purpose: "signup"
+            }
+        );
+
+
+        resetSignupOtpState();
+
+        showElement(
+            "signupOtpArea"
+        );
+
+        setOtpStatus(
+            "signupOtpStatus",
+            "OTP sent to your email.",
+            "success"
+        );
+
+        setMessage(
+            "signupMessage",
+            ""
+        );
+
+        startOtpTimer(
+            "signupTimer",
+            "resendSignupOtpBtn",
+            60
+        );
+
+
+        $("signupOtp")
+            ?.focus();
+
+
+    } catch (error) {
+
+        console.error(
+            "SIGNUP OTP ERROR:",
+            error
+        );
+
+        setMessage(
+            "signupMessage",
+            error.message,
+            "error"
+        );
+
+    } finally {
+
+        const button =
+            $("sendSignupOtpBtn");
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+            button.textContent =
+                "Send Email OTP";
 
         }
 
     }
-);
-
-
-/* =========================================================
-   LEGAL MODALS
-   ========================================================= */
-
-function openModal(id) {
-
-    const modal =
-        $(id);
-
-    if (!modal) return;
-
-    modal.style.display =
-        "flex";
 
 }
 
 
-function closeModal(id) {
+$("sendSignupOtpBtn")
+    ?.addEventListener(
+        "click",
+        sendSignupOtp
+    );
 
-    const modal =
-        $(id);
 
-    if (!modal) return;
+/* ======================================================
+   RESEND SIGNUP OTP
+====================================================== */
 
-    modal.style.display =
-        "none";
+$("resendSignupOtpBtn")
+    ?.addEventListener(
+        "click",
+        async () => {
+
+            if (
+                $("resendSignupOtpBtn")
+                    ?.disabled
+            ) {
+                return;
+            }
+
+            await sendSignupOtp();
+
+        }
+    );
+
+
+/* ======================================================
+   VERIFY SIGNUP OTP
+====================================================== */
+
+$("verifySignupOtpBtn")
+    ?.addEventListener(
+        "click",
+        async () => {
+
+            const email =
+                $("signupEmail")
+                    ?.value
+                    .trim()
+                    .toLowerCase();
+
+            const otp =
+                $("signupOtp")
+                    ?.value
+                    .trim();
+
+
+            if (!email) {
+
+                setOtpStatus(
+                    "signupOtpStatus",
+                    "Please enter your email.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            if (!/^\d{6}$/.test(otp)) {
+
+                setOtpStatus(
+                    "signupOtpStatus",
+                    "Enter the 6-digit OTP.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            try {
+
+                const button =
+                    $("verifySignupOtpBtn");
+
+                if (button) {
+
+                    button.disabled =
+                        true;
+
+                    button.textContent =
+                        "Verifying...";
+                }
+
+
+                await backendRequest(
+                    "/api/auth/verify-email-otp",
+                    {
+                        email,
+                        otp,
+                        purpose: "signup"
+                    }
+                );
+
+
+                signupOtpVerified =
+                    true;
+
+
+                setOtpStatus(
+                    "signupOtpStatus",
+                    "Email verified successfully.",
+                    "success"
+                );
+
+
+                clearInterval(
+                    signupTimerInterval
+                );
+
+
+                const resendButton =
+                    $("resendSignupOtpBtn");
+
+                if (resendButton) {
+
+                    resendButton.disabled =
+                        true;
+
+                }
+
+
+                const timer =
+                    $("signupTimer");
+
+                if (timer) {
+
+                    timer.textContent =
+                        "Email verified ✓";
+
+                    timer.classList.add(
+                        "ready"
+                    );
+
+                }
+
+
+            } catch (error) {
+
+                signupOtpVerified =
+                    false;
+
+                setOtpStatus(
+                    "signupOtpStatus",
+                    error.message,
+                    "error"
+                );
+
+            } finally {
+
+                const button =
+                    $("verifySignupOtpBtn");
+
+                if (button) {
+
+                    button.disabled =
+                        false;
+
+                    button.textContent =
+                        "Verify OTP";
+
+                }
+
+            }
+
+        }
+    );
+
+
+/* ======================================================
+   SIGNUP
+====================================================== */
+
+$("signupBtn")
+    ?.addEventListener(
+        "click",
+        async () => {
+
+            const storeName =
+                $("storeName")
+                    ?.value
+                    .trim();
+
+            const email =
+                $("signupEmail")
+                    ?.value
+                    .trim()
+                    .toLowerCase();
+
+            const password =
+                $("signupPassword")
+                    ?.value || "";
+
+            const confirmPassword =
+                $("signupConfirmPassword")
+                    ?.value || "";
+
+            const terms =
+                $("signupTerms")
+                    ?.checked;
+
+
+            setMessage(
+                "signupMessage",
+                ""
+            );
+
+
+            if (!storeName) {
+
+                setMessage(
+                    "signupMessage",
+                    "Please enter your store name.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            if (!email) {
+
+                setMessage(
+                    "signupMessage",
+                    "Please enter your email.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            if (!signupOtpVerified) {
+
+                setMessage(
+                    "signupMessage",
+                    "Please verify OTP first.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            /*
+               EXACT PASSWORD MATCH
+            */
+
+            if (
+                password !==
+                confirmPassword
+            ) {
+
+                setMessage(
+                    "signupMessage",
+                    "Password did not match",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            if (
+                password.length < 8
+            ) {
+
+                setMessage(
+                    "signupMessage",
+                    "Password must contain at least 8 characters.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            if (!terms) {
+
+                setMessage(
+                    "signupMessage",
+                    "Please accept the Terms & Conditions and Privacy Policy.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            try {
+
+                const button =
+                    $("signupBtn");
+
+                if (button) {
+
+                    button.disabled =
+                        true;
+
+                    button.textContent =
+                        "Creating Account...";
+
+                }
+
+
+                /*
+                   Firebase creates the actual account.
+                */
+
+                const credential =
+                    await createUserWithEmailAndPassword(
+                        auth,
+                        email,
+                        password
+                    );
+
+
+                const user =
+                    credential.user;
+
+
+                /*
+                   Store pharmacy information
+                   in Firestore.
+                */
+
+                await setDoc(
+                    doc(
+                        db,
+                        "users",
+                        user.uid
+                    ),
+                    {
+                        uid:
+                            user.uid,
+
+                        email:
+                            email,
+
+                        storeName:
+                            storeName,
+
+                        createdAt:
+                            serverTimestamp(),
+
+                        trialStartedAt:
+                            serverTimestamp(),
+
+                        trialDays:
+                            2,
+
+                        subscriptionStatus:
+                            "trial"
+                    },
+                    {
+                        merge: true
+                    }
+                );
+
+
+                setMessage(
+                    "signupMessage",
+                    "Account created successfully.",
+                    "success"
+                );
+
+
+                /*
+                   Small delay so user sees success.
+                */
+
+                setTimeout(
+                    () => {
+
+                        showPage(
+                            "dashboardPage"
+                        );
+
+                        loadDashboard(
+                            user
+                        );
+
+                    },
+                    500
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "SIGNUP ERROR:",
+                    error
+                );
+
+
+                let message =
+                    "Unable to create account.";
+
+
+                if (
+                    error.code ===
+                    "auth/email-already-in-use"
+                ) {
+
+                    message =
+                        "An account with this email already exists.";
+
+                } else if (
+                    error.code ===
+                    "auth/invalid-email"
+                ) {
+
+                    message =
+                        "Please enter a valid email address.";
+
+                } else if (
+                    error.code ===
+                    "auth/weak-password"
+                ) {
+
+                    message =
+                        "Password is too weak.";
+
+                } else {
+
+                    message =
+                        error.message ||
+                        message;
+
+                }
+
+
+                setMessage(
+                    "signupMessage",
+                    message,
+                    "error"
+                );
+
+
+            } finally {
+
+                const button =
+                    $("signupBtn");
+
+                if (button) {
+
+                    button.disabled =
+                        false;
+
+                    button.textContent =
+                        "Create Account";
+
+                }
+
+            }
+
+        }
+    );
+
+
+/* ======================================================
+   SEND FORGOT OTP
+====================================================== */
+
+async function sendForgotOtp() {
+
+    const email =
+        $("forgotEmail")
+            ?.value
+            .trim()
+            .toLowerCase();
+
+
+    if (!email) {
+
+        setMessage(
+            "forgotMessage",
+            "Please enter your email.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        const button =
+            $("sendForgotOtpBtn");
+
+        if (button) {
+
+            button.disabled =
+                true;
+
+            button.textContent =
+                "Sending OTP...";
+
+        }
+
+
+        await backendRequest(
+            "/api/auth/send-email-otp",
+            {
+                email,
+                purpose: "password_reset"
+            }
+        );
+
+
+        resetForgotOtpState();
+
+
+        showElement(
+            "forgotOtpArea"
+        );
+
+        hideElement(
+            "newPasswordArea"
+        );
+
+
+        setOtpStatus(
+            "forgotOtpStatus",
+            "OTP sent to your email.",
+            "success"
+        );
+
+
+        setMessage(
+            "forgotMessage",
+            ""
+        );
+
+
+        startOtpTimer(
+            "forgotTimer",
+            "resendForgotOtpBtn",
+            60
+        );
+
+
+        $("forgotOtp")
+            ?.focus();
+
+
+    } catch (error) {
+
+        console.error(
+            "FORGOT OTP ERROR:",
+            error
+        );
+
+        setMessage(
+            "forgotMessage",
+            error.message,
+            "error"
+        );
+
+    } finally {
+
+        const button =
+            $("sendForgotOtpBtn");
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+            button.textContent =
+                "Send Email OTP";
+
+        }
+
+    }
 
 }
 
 
-$("signupTermsLink")?.addEventListener(
-    "click",
-    (event) => {
+$("sendForgotOtpBtn")
+    ?.addEventListener(
+        "click",
+        sendForgotOtp
+    );
 
-        event.preventDefault();
 
-        openModal("termsModal");
+/* ======================================================
+   RESEND FORGOT OTP
+====================================================== */
+
+$("resendForgotOtpBtn")
+    ?.addEventListener(
+        "click",
+        async () => {
+
+            if (
+                $("resendForgotOtpBtn")
+                    ?.disabled
+            ) {
+                return;
+            }
+
+            await sendForgotOtp();
+
+        }
+    );
+
+
+/* ======================================================
+   VERIFY FORGOT OTP
+====================================================== */
+
+$("verifyForgotOtpBtn")
+    ?.addEventListener(
+        "click",
+        async () => {
+
+            const email =
+                $("forgotEmail")
+                    ?.value
+                    .trim()
+                    .toLowerCase();
+
+            const otp =
+                $("forgotOtp")
+                    ?.value
+                    .trim();
+
+
+            if (!email) {
+
+                setOtpStatus(
+                    "forgotOtpStatus",
+                    "Please enter your email.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            if (!/^\d{6}$/.test(otp)) {
+
+                setOtpStatus(
+                    "forgotOtpStatus",
+                    "Enter the 6-digit OTP.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            try {
+
+                const button =
+                    $("verifyForgotOtpBtn");
+
+                if (button) {
+
+                    button.disabled =
+                        true;
+
+                    button.textContent =
+                        "Verifying...";
+
+                }
+
+
+                await backendRequest(
+                    "/api/auth/verify-email-otp",
+                    {
+                        email,
+                        otp,
+                        purpose: "password_reset"
+                    }
+                );
+
+
+                forgotOtpVerified =
+                    true;
+
+
+                setOtpStatus(
+                    "forgotOtpStatus",
+                    "Email verified successfully.",
+                    "success"
+                );
+
+
+                clearInterval(
+                    forgotTimerInterval
+                );
+
+
+                const resendButton =
+                    $("resendForgotOtpBtn");
+
+                if (resendButton) {
+
+                    resendButton.disabled =
+                        true;
+
+                }
+
+
+                const timer =
+                    $("forgotTimer");
+
+                if (timer) {
+
+                    timer.textContent =
+                        "Email verified ✓";
+
+                    timer.classList.add(
+                        "ready"
+                    );
+
+                }
+
+
+                showElement(
+                    "newPasswordArea"
+                );
+
+
+                $("newPassword")
+                    ?.focus();
+
+
+            } catch (error) {
+
+                forgotOtpVerified =
+                    false;
+
+                setOtpStatus(
+                    "forgotOtpStatus",
+                    error.message,
+                    "error"
+                );
+
+            } finally {
+
+                const button =
+                    $("verifyForgotOtpBtn");
+
+                if (button) {
+
+                    button.disabled =
+                        false;
+
+                    button.textContent =
+                        "Verify OTP";
+
+                }
+
+            }
+
+        }
+    );
+
+
+/* ======================================================
+   RESET PASSWORD
+====================================================== */
+
+$("resetPasswordBtn")
+    ?.addEventListener(
+        "click",
+        async () => {
+
+            const email =
+                $("forgotEmail")
+                    ?.value
+                    .trim()
+                    .toLowerCase();
+
+            const newPassword =
+                $("newPassword")
+                    ?.value || "";
+
+            const confirmPassword =
+                $("confirmNewPassword")
+                    ?.value || "";
+
+
+            /*
+               OTP FIRST
+            */
+
+            if (!forgotOtpVerified) {
+
+                setMessage(
+                    "forgotMessage",
+                    "Please verify OTP first",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            /*
+               EXACT PASSWORD MATCH
+            */
+
+            if (
+                newPassword !==
+                confirmPassword
+            ) {
+
+                setMessage(
+                    "forgotMessage",
+                    "Password did not match",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            if (
+                newPassword.length < 8
+            ) {
+
+                setMessage(
+                    "forgotMessage",
+                    "Password must contain at least 8 characters.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            try {
+
+                const button =
+                    $("resetPasswordBtn");
+
+                if (button) {
+
+                    button.disabled =
+                        true;
+
+                    button.textContent =
+                        "Changing Password...";
+
+                }
+
+
+                await backendRequest(
+                    "/api/auth/reset-password",
+                    {
+                        email,
+                        newPassword
+                    }
+                );
+
+
+                setMessage(
+                    "forgotMessage",
+                    "Password changed successfully. You can now login.",
+                    "success"
+                );
+
+
+                forgotOtpVerified =
+                    false;
+
+
+                setTimeout(
+                    () => {
+
+                        $("forgotEmail").value =
+                            "";
+
+                        $("forgotOtp").value =
+                            "";
+
+                        $("newPassword").value =
+                            "";
+
+                        $("confirmNewPassword").value =
+                            "";
+
+                        hideElement(
+                            "forgotOtpArea"
+                        );
+
+                        hideElement(
+                            "newPasswordArea"
+                        );
+
+                        resetForgotOtpState();
+
+                        showAuthSection(
+                            "loginSection",
+                            "left"
+                        );
+
+                    },
+                    1200
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "RESET PASSWORD ERROR:",
+                    error
+                );
+
+                setMessage(
+                    "forgotMessage",
+                    error.message,
+                    "error"
+                );
+
+
+            } finally {
+
+                const button =
+                    $("resetPasswordBtn");
+
+                if (button) {
+
+                    button.disabled =
+                        false;
+
+                    button.textContent =
+                        "Change Password";
+
+                }
+
+            }
+
+        }
+    );
+
+
+/* ======================================================
+   LOGIN
+====================================================== */
+
+$("loginBtn")
+    ?.addEventListener(
+        "click",
+        async () => {
+
+            const email =
+                $("loginEmail")
+                    ?.value
+                    .trim()
+                    .toLowerCase();
+
+            const password =
+                $("loginPassword")
+                    ?.value || "";
+
+
+            if (!email || !password) {
+
+                setMessage(
+                    "loginMessage",
+                    "All fields are required.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            try {
+
+                const button =
+                    $("loginBtn");
+
+                if (button) {
+
+                    button.disabled =
+                        true;
+
+                    button.textContent =
+                        "Logging in...";
+
+                }
+
+
+                const credential =
+                    await signInWithEmailAndPassword(
+                        auth,
+                        email,
+                        password
+                    );
+
+
+                setMessage(
+                    "loginMessage",
+                    ""
+                );
+
+
+                showPage(
+                    "dashboardPage"
+                );
+
+
+                await loadDashboard(
+                    credential.user
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "LOGIN ERROR:",
+                    error
+                );
+
+
+                let message =
+                    "Unable to login.";
+
+
+                if (
+                    error.code ===
+                    "auth/invalid-credential"
+                ) {
+
+                    message =
+                        "Invalid email or password.";
+
+                } else if (
+                    error.code ===
+                    "auth/user-not-found"
+                ) {
+
+                    message =
+                        "No account found with this email.";
+
+                } else if (
+                    error.code ===
+                    "auth/wrong-password"
+                ) {
+
+                    message =
+                        "Incorrect password.";
+
+                } else if (
+                    error.code ===
+                    "auth/too-many-requests"
+                ) {
+
+                    message =
+                        "Too many attempts. Please try again later.";
+
+                } else {
+
+                    message =
+                        error.message ||
+                        message;
+
+                }
+
+
+                setMessage(
+                    "loginMessage",
+                    message,
+                    "error"
+                );
+
+
+            } finally {
+
+                const button =
+                    $("loginBtn");
+
+                if (button) {
+
+                    button.disabled =
+                        false;
+
+                    button.textContent =
+                        "Login";
+
+                }
+
+            }
+
+        }
+    );
+
+
+/* ======================================================
+   ENTER KEY LOGIN
+====================================================== */
+
+$("loginPassword")
+    ?.addEventListener(
+        "keydown",
+        (event) => {
+
+            if (
+                event.key ===
+                "Enter"
+            ) {
+
+                $("loginBtn")
+                    ?.click();
+
+            }
+
+        }
+    );
+
+
+/* ======================================================
+   PASSWORD MATCH LIVE CHECK
+====================================================== */
+
+$("signupConfirmPassword")
+    ?.addEventListener(
+        "input",
+        () => {
+
+            const password =
+                $("signupPassword")
+                    ?.value || "";
+
+            const confirm =
+                $("signupConfirmPassword")
+                    ?.value || "";
+
+
+            if (
+                confirm &&
+                password !==
+                confirm
+            ) {
+
+                setMessage(
+                    "signupMessage",
+                    "Password did not match",
+                    "error"
+                );
+
+            } else {
+
+                setMessage(
+                    "signupMessage",
+                    ""
+                );
+
+            }
+
+        }
+    );
+
+
+$("confirmNewPassword")
+    ?.addEventListener(
+        "input",
+        () => {
+
+            const password =
+                $("newPassword")
+                    ?.value || "";
+
+            const confirm =
+                $("confirmNewPassword")
+                    ?.value || "";
+
+
+            if (
+                confirm &&
+                password !==
+                confirm
+            ) {
+
+                setMessage(
+                    "forgotMessage",
+                    "Password did not match",
+                    "error"
+                );
+
+            } else {
+
+                setMessage(
+                    "forgotMessage",
+                    ""
+                );
+
+            }
+
+        }
+    );
+
+
+/* ======================================================
+   DASHBOARD
+====================================================== */
+
+async function loadDashboard(
+    user
+) {
+
+    if (!user) {
+        return;
+    }
+
+
+    let storeName =
+        "Your Pharmacy";
+
+
+    try {
+
+        const userRef =
+            doc(
+                db,
+                "users",
+                user.uid
+            );
+
+
+        const snapshot =
+            await getDoc(
+                userRef
+            );
+
+
+        if (
+            snapshot.exists()
+        ) {
+
+            const data =
+                snapshot.data();
+
+
+            if (
+                data.storeName
+            ) {
+
+                storeName =
+                    data.storeName;
+
+            }
+
+
+            const trialText =
+                calculateTrialStatus(
+                    data
+                );
+
+
+            const trialElement =
+                $("trialStatus");
+
+
+            if (trialElement) {
+
+                trialElement.textContent =
+                    trialText;
+
+            }
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "DASHBOARD ERROR:",
+            error
+        );
 
     }
-);
 
 
-$("signupPrivacyLink")?.addEventListener(
-    "click",
-    (event) => {
+    const storeElement =
+        $("dashboardStoreName");
 
-        event.preventDefault();
 
-        openModal("privacyModal");
+    if (storeElement) {
+
+        storeElement.textContent =
+            storeName;
 
     }
-);
+
+}
+
+
+function calculateTrialStatus(
+    data
+) {
+
+    if (
+        data.subscriptionStatus ===
+        "active"
+    ) {
+
+        return "Subscription active";
+
+    }
+
+
+    let startTime =
+        null;
+
+
+    if (
+        data.trialStartedAt
+    ) {
+
+        if (
+            typeof data.trialStartedAt.toMillis ===
+            "function"
+        ) {
+
+            startTime =
+                data.trialStartedAt.toMillis();
+
+        } else if (
+            data.trialStartedAt.seconds
+        ) {
+
+            startTime =
+                data.trialStartedAt.seconds *
+                1000;
+
+        }
+
+    }
+
+
+    if (!startTime) {
+
+        return "Free trial active";
+
+    }
+
+
+    const trialDuration =
+        2 *
+        24 *
+        60 *
+        60 *
+        1000;
+
+
+    const remaining =
+        (
+            startTime +
+            trialDuration
+        ) -
+        Date.now();
+
+
+    if (
+        remaining <= 0
+    ) {
+
+        return "Free trial expired. Please subscribe.";
+
+    }
+
+
+    const days =
+        Math.floor(
+            remaining /
+            (
+                24 *
+                60 *
+                60 *
+                1000
+            )
+        );
+
+
+    const hours =
+        Math.floor(
+            (
+                remaining %
+                (
+                    24 *
+                    60 *
+                    60 *
+                    1000
+                )
+            ) /
+            (
+                60 *
+                60 *
+                1000
+            )
+        );
+
+
+    return `Free trial: ${days} day(s), ${hours} hour(s) remaining`;
+
+}
+
+
+/* ======================================================
+   LOGOUT
+====================================================== */
+
+$("logoutBtn")
+    ?.addEventListener(
+        "click",
+        async () => {
+
+            try {
+
+                await signOut(
+                    auth
+                );
+
+                showPage(
+                    "welcomePage"
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "LOGOUT ERROR:",
+                    error
+                );
+
+            }
+
+        }
+    );
+
+
+/* ======================================================
+   DASHBOARD NAVIGATION
+====================================================== */
+
+$("openBillingBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            showPage(
+                "billingPage"
+            );
+
+        }
+    );
+
+
+$("openInventoryBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            showPage(
+                "inventoryPage"
+            );
+
+        }
+    );
+
+
+$("openPurchaseBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            showPage(
+                "purchasePage"
+            );
+
+        }
+    );
+
+
+$("closeBillingBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            showPage(
+                "dashboardPage"
+            );
+
+        }
+    );
+
+
+$("closeInventoryBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            showPage(
+                "dashboardPage"
+            );
+
+        }
+    );
+
+
+$("closePurchaseBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            showPage(
+                "dashboardPage"
+            );
+
+        }
+    );
+
+
+/* ======================================================
+   TERMS / PRIVACY
+====================================================== */
+
+function openModal(
+    id
+) {
+
+    $(id)
+        ?.classList
+        .add("active");
+
+}
+
+
+function closeModal(
+    id
+) {
+
+    $(id)
+        ?.classList
+        .remove("active");
+
+}
+
+
+$("openTermsFromSignup")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            openModal(
+                "termsModal"
+            );
+
+        }
+    );
+
+
+$("openPrivacyFromSignup")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            openModal(
+                "privacyModal"
+            );
+
+        }
+    );
 
 
 document
@@ -1860,11 +2334,12 @@ document
                 (event) => {
 
                     if (
-                        event.target === modal
+                        event.target ===
+                        modal
                     ) {
 
-                        modal.style.display =
-                            "none";
+                        modal.classList
+                            .remove("active");
 
                     }
 
@@ -1875,21 +2350,24 @@ document
     );
 
 
-/* =========================================================
+/* ======================================================
    FIREBASE AUTH STATE
-   ========================================================= */
+====================================================== */
 
 onAuthStateChanged(
     auth,
     async (user) => {
 
+        /*
+           If Firebase already has a logged-in user,
+           directly open dashboard.
+        */
+
         if (user) {
 
-            console.log(
-                "MedZoneX: User logged in:",
-                user.email
+            showPage(
+                "dashboardPage"
             );
-
 
             await loadDashboard(
                 user
@@ -1897,14 +2375,24 @@ onAuthStateChanged(
 
         } else {
 
-            console.log(
-                "MedZoneX: User signed out"
-            );
+            /*
+               Don't automatically force user away
+               from welcome page unless dashboard is active.
+            */
 
+            const dashboard =
+                $("dashboardPage");
 
-            showPage(
-                "welcomePage"
-            );
+            if (
+                dashboard?.classList
+                    .contains("active")
+            ) {
+
+                showPage(
+                    "welcomePage"
+                );
+
+            }
 
         }
 
@@ -1912,9 +2400,26 @@ onAuthStateChanged(
 );
 
 
-/* =========================================================
+/* ======================================================
+   INITIAL UI STATE
+====================================================== */
+
+hideElement(
+    "signupOtpArea"
+);
+
+hideElement(
+    "forgotOtpArea"
+);
+
+hideElement(
+    "newPasswordArea"
+);
+
+
+/* ======================================================
    GLOBAL API
-   ========================================================= */
+====================================================== */
 
 window.MedZoneX = {
 
@@ -1928,27 +2433,6 @@ window.MedZoneX = {
 
     showAuthSection,
 
-    openGetStarted,
-
-    openBilling,
-
-    closeBilling,
-
-    openInventory,
-
-    openPurchases,
-
-    getCurrentUser: () =>
-        auth.currentUser
+    backendRequest
 
 };
-
-
-console.log(
-    "MedZoneX application loaded."
-);
-
-console.log(
-    "API:",
-    API_BASE_URL
-);
