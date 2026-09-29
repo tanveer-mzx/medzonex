@@ -50,38 +50,65 @@ const allowedOrigins = [
     ])
 ];
 
-console.log(
-    "Allowed origins:",
-    allowedOrigins
-);
+const allowedOrigins = [
+  "https://medzonex.site",
+  "https://www.medzonex.site",
+  "http://localhost:3000",
+  "http://localhost:5000",
+  "http://localhost:5500",
+  "http://localhost:63342",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:5000",
+  "http://127.0.0.1:5500",
+  "http://127.0.0.1:63342"
+];
+
+const extraOrigins = String(process.env.ALLOWED_ORIGINS || "")
+  .split(",")
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
+const allAllowedOrigins = [
+  ...new Set([...allowedOrigins, ...extraOrigins])
+];
 
 app.use(
-    cors({
-        origin: function (origin, callback) {
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests without an Origin header
+      // such as some server-to-server requests.
+      if (!origin) {
+        return callback(null, true);
+      }
 
-            // Allow Postman / server-to-server requests
-            if (!origin) {
-                return callback(null, true);
-            }
+      // Exact allowed origins
+      if (allAllowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
 
-            if (allowedOrigins.includes(origin)) {
-                return callback(null, true);
-            }
+      // Allow localhost / 127.0.0.1 on any port during development
+      try {
+        const url = new URL(origin);
 
-            console.error(
-                "CORS blocked:",
-                origin
-            );
+        if (
+          (url.protocol === "http:" || url.protocol === "https:") &&
+          (url.hostname === "localhost" ||
+            url.hostname === "127.0.0.1")
+        ) {
+          return callback(null, true);
+        }
+      } catch (error) {
+        // Invalid origin
+      }
 
-            return callback(
-                new Error(
-                    "CORS: Origin not allowed"
-                )
-            );
-        },
-
-        credentials: true
-    })
+      return callback(
+        new Error(`CORS blocked origin: ${origin}`)
+      );
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+  })
 );
 
 // ======================================================
