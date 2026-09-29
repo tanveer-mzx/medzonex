@@ -20,7 +20,7 @@ import {
 const firebaseConfig = {
 
     apiKey:
-        "AIzaSyBlu8NE_YftR8waBycLoXnpDcdxL9whECw",
+        "AIzaSyBlu8NE_Yft8RwaBycLoXnpDcdxL9whECw",
 
     authDomain:
         "data-2c37b.firebaseapp.com",
