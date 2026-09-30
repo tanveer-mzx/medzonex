@@ -1315,24 +1315,106 @@ app.post(
                 });
             }
 
-            /*
-             * OpenAI API key ONLY backend environment
-             *
-             * RESEND_API_KEY jaisa:
-             * OPENAI_API_KEY=re_...
-             */
+            if (!process.env.OPENAI_API_KEY) {
+                return res.status(500).json({
+                    success: false,
+                    message: "OpenAI API key is not configured."
+                });
+            }
 
-            // Yahan OpenAI vision request lagega.
+            const base64Image =
+                req.file.buffer.toString("base64");
+
+            const mimeType =
+                req.file.mimetype || "image/jpeg";
+
+            const response = await openai.responses.create({
+
+                model: "gpt-5.6-luna",
+
+                input: [
+                    {
+                        role: "user",
+
+                        content: [
+
+                            {
+                                type: "input_text",
+
+                                text: `
+You are a medicine packaging recognition assistant.
+
+Analyze the uploaded medicine package carefully.
+
+Extract only information that is actually visible or reasonably readable from the package.
+
+Return ONLY valid JSON.
+Do not use markdown.
+Do not add explanations.
+
+Use exactly this structure:
+
+{
+  "name": "",
+  "genericName": "",
+  "strength": "",
+  "manufacturer": "",
+  "dosageForm": "",
+  "packSize": ""
+}
+
+Important:
+- Do not invent missing information.
+- If a field cannot be determined, return an empty string.
+- Do not guess a medicine name from unclear text.
+- This is identification assistance only, not medical advice.
+`
+                            },
+
+                            {
+                                type: "input_image",
+
+                                image_url:
+                                    `data:${mimeType};base64,${base64Image}`
+                            }
+
+                        ]
+                    }
+                ]
+            });
+
+            const output =
+                response.output_text?.trim() || "";
+
+            let medicine;
+
+            try {
+
+                medicine = JSON.parse(output);
+
+            } catch (parseError) {
+
+                console.error(
+                    "OpenAI returned invalid JSON:",
+                    output
+                );
+
+                return res.status(502).json({
+                    success: false,
+                    message:
+                        "Medicine information could not be read reliably."
+                });
+            }
 
             return res.json({
                 success: true,
                 medicine: {
-                    name: "",
-                    genericName: "",
-                    strength: "",
-                    manufacturer: "",
-                    dosageForm: "",
-                    packSize: ""
+                    name: medicine.name || "",
+                    genericName: medicine.genericName || "",
+                    strength: medicine.strength || "",
+                    manufacturer: medicine.manufacturer || "",
+                    dosageForm: medicine.dosageForm || "",
+                    packSize: medicine.packSize || ""
                 }
             });
 
@@ -1348,9 +1430,7 @@ app.post(
                 message:
                     "Medicine recognition failed."
             });
-
         }
-
     }
 );
 
