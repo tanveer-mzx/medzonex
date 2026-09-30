@@ -4,6 +4,11 @@ const express = require("express");
 const cors = require("cors");
 const crypto = require("crypto");
 const admin = require("firebase-admin");
+const OpenAI = require("openai");
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
 
 // ======================================================
 // APP
@@ -1285,6 +1290,59 @@ app.get(
                 new Date().toISOString()
 
         });
+    }
+);
+
+app.post(
+    "/api/inventory/recognize-medicine",
+    upload.single("medicineImage"),
+    async (req, res) => {
+
+        try {
+
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Medicine image is required."
+                });
+            }
+
+            /*
+             * OpenAI API key ONLY backend environment
+             *
+             * RESEND_API_KEY jaisa:
+             * OPENAI_API_KEY=re_...
+             */
+
+            // Yahan OpenAI vision request lagega.
+
+            return res.json({
+                success: true,
+                medicine: {
+                    name: "",
+                    genericName: "",
+                    strength: "",
+                    manufacturer: "",
+                    dosageForm: "",
+                    packSize: ""
+                }
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Medicine recognition error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Medicine recognition failed."
+            });
+
+        }
+
     }
 );
 
