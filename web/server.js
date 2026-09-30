@@ -5,9 +5,17 @@ const cors = require("cors");
 const crypto = require("crypto");
 const admin = require("firebase-admin");
 const OpenAI = require("openai");
+const multer = require("multer");
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
+});
+
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 10 * 1024 * 1024
+    }
 });
 
 // ======================================================
