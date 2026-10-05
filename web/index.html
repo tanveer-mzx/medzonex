@@ -595,139 +595,542 @@
 
     </section>
 
+    <!-- =========================
+         MEDZONEX DASHBOARD
+    ========================= -->
+    <section id="dashboardPage" class="app-page">
 
-    <!-- =================================================
-         DASHBOARD
-    ================================================== -->
+        <div class="dashboard-shell">
 
-    <section
-            id="dashboardPage"
-            class="app-page"
-    >
+            <!-- SIDEBAR -->
+            <aside class="dashboard-sidebar">
 
-        <div class="dashboard">
-
-            <header class="dashboard-header">
-
-                <div>
-
+                <div class="sidebar-brand">
                     <img
                             src="assets/medzonex-logo.png"
-                            class="dashboard-logo"
                             alt="MedZoneX"
+                            class="sidebar-logo"
                     >
 
+                    <div class="sidebar-brand-text">
+                        <strong>MedZoneX</strong>
+                        <span id="sidebarStoreName">Medical Store</span>
+                    </div>
+                </div>
+
+                <nav class="sidebar-nav">
+
+                    <button
+                            class="sidebar-item active"
+                            id="dashboardNavBtn"
+                            type="button"
+                    >
+                        <span class="sidebar-icon">⌂</span>
+                        <span>Dashboard</span>
+                    </button>
+
+                    <button
+                            class="sidebar-item"
+                            id="openBillingBtn"
+                            type="button"
+                    >
+                        <span class="sidebar-icon">▣</span>
+                        <span>Billing</span>
+                    </button>
+
+                    <button
+                            class="sidebar-item"
+                            id="openInventoryBtn"
+                            type="button"
+                    >
+                        <span class="sidebar-icon">▦</span>
+                        <span>Inventory</span>
+                    </button>
+
+                    <button
+                            class="sidebar-item"
+                            id="openPurchaseBtn"
+                            type="button"
+                    >
+                        <span class="sidebar-icon">🛒</span>
+                        <span>Purchases</span>
+                    </button>
+
+                    <button
+                            class="sidebar-item"
+                            id="openCustomersBtn"
+                            type="button"
+                    >
+                        <span class="sidebar-icon">♙</span>
+                        <span>Customers</span>
+                    </button>
+
+                    <button
+                            class="sidebar-item"
+                            id="openProfileBtn"
+                            type="button"
+                    >
+                        <span class="sidebar-icon">◉</span>
+                        <span>Profile</span>
+                    </button>
+
+                    <button
+                            class="sidebar-item"
+                            id="openSettingsBtn"
+                            type="button"
+                    >
+                        <span class="sidebar-icon">⚙</span>
+                        <span>Settings</span>
+                    </button>
+
+                </nav>
+
+                <div class="sidebar-bottom">
+
+                    <button
+                            class="sidebar-item support-item"
+                            id="openCustomerCareBtn"
+                            type="button"
+                    >
+                        <span class="sidebar-icon">?</span>
+                        <span>Customer Care</span>
+                    </button>
+
+                    <button
+                            class="sidebar-item logout-item"
+                            id="logoutBtn"
+                            type="button"
+                    >
+                        <span class="sidebar-icon">↪</span>
+                        <span>Logout</span>
+                    </button>
+
+                </div>
+
+            </aside>
+
+
+            <!-- MAIN DASHBOARD -->
+            <main class="dashboard-main">
+
+                <!-- TOP BAR -->
+                <header class="dashboard-topbar">
+
                     <div>
+                        <p class="dashboard-small-title">
+                            Welcome back
+                        </p>
 
                         <h1>
-                            MedZoneX
+                            Dashboard
                         </h1>
+                    </div>
 
-                        <p id="dashboardStoreName">
-                            Your Pharmacy
-                        </p>
+                    <div class="dashboard-user">
+
+                        <div class="dashboard-user-info">
+                            <strong id="dashboardStoreName">
+                                Medical Store
+                            </strong>
+
+                            <span id="dashboardUserEmail">
+                            —
+                        </span>
+                        </div>
+
+                        <div class="dashboard-avatar">
+                            <span>♙</span>
+                        </div>
 
                     </div>
 
-                </div>
-
-                <button
-                        type="button"
-                        id="logoutBtn"
-                        class="logout-btn"
-                >
-                    Logout
-                </button>
-
-            </header>
+                </header>
 
 
-            <main class="dashboard-content">
+                <!-- ADVERTISEMENT / MEDIA -->
+                <section class="dashboard-ad-section">
 
-                <div class="dashboard-welcome">
+                    <div class="section-heading">
 
-                    <h2>
-                        Dashboard
-                    </h2>
+                        <div>
+                        <span class="section-kicker">
+                            MEDZONEX UPDATES
+                        </span>
 
-                    <p id="trialStatus">
-                        Loading account status...
-                    </p>
+                            <h2>
+                                Latest Updates
+                            </h2>
+                        </div>
 
-                </div>
+                        <div class="ad-controls">
+                            <button
+                                    type="button"
+                                    id="prevAdBtn"
+                            >
+                                ‹
+                            </button>
+
+                            <button
+                                    type="button"
+                                    id="nextAdBtn"
+                            >
+                                ›
+                            </button>
+                        </div>
+
+                    </div>
 
 
-                <div class="dashboard-grid">
-
-                    <button
-                            type="button"
-                            id="openBillingBtn"
-                            class="dashboard-card"
+                    <div
+                            class="ad-carousel"
+                            id="dashboardAdCarousel"
                     >
-                        <span>💳</span>
-                        <strong>Billing</strong>
-                        <small>Manage subscription</small>
-                    </button>
+
+                        <!-- IMAGE AD -->
+                        <article class="ad-slide active">
+
+                            <img
+                                    src="assets/ads/ad-1.jpg"
+                                    alt="MedZoneX Update"
+                            >
+
+                            <div class="ad-overlay">
+                                <span>MedZoneX</span>
+                                <h3>
+                                    Manage your pharmacy smarter.
+                                </h3>
+                            </div>
+
+                        </article>
 
 
-                    <button
-                            type="button"
-                            id="openInventoryBtn"
-                            class="dashboard-card"
-                    >
-                        <span>📦</span>
-                        <strong>Inventory</strong>
-                        <small>Manage medicines</small>
-                    </button>
+                        <!-- VIDEO AD -->
+                        <article class="ad-slide">
+
+                            <video
+                                    src="assets/ads/ad-2.mp4"
+                                    muted
+                                    loop
+                                    playsinline
+                            ></video>
+
+                            <div class="ad-overlay">
+                                <span>MedZoneX</span>
+                                <h3>
+                                    Faster billing. Better inventory.
+                                </h3>
+                            </div>
+
+                        </article>
 
 
-                    <button
-                            type="button"
-                            id="openPurchaseBtn"
-                            class="dashboard-card"
-                    >
-                        <span>🛒</span>
-                        <strong>Purchases</strong>
-                        <small>Manage purchases</small>
-                    </button>
+                        <!-- IMAGE AD -->
+                        <article class="ad-slide">
 
-                </div>
+                            <img
+                                    src="assets/ads/ad-3.jpg"
+                                    alt="MedZoneX"
+                            >
+
+                            <div class="ad-overlay">
+                                <span>MedZoneX</span>
+                                <h3>
+                                    Everything your medical store needs.
+                                </h3>
+                            </div>
+
+                        </article>
+
+                    </div>
+
+                    <div
+                            class="ad-dots"
+                            id="adDots"
+                    ></div>
+
+                </section>
+
+
+                <!-- TODAY SALES -->
+                <section class="today-sales-section">
+
+                    <div class="section-heading">
+
+                        <div>
+                        <span class="section-kicker">
+                            TODAY
+                        </span>
+
+                            <h2>
+                                Today's Sales
+                            </h2>
+                        </div>
+
+                        <button
+                                class="primary-small-btn"
+                                id="createBillDashboardBtn"
+                                type="button"
+                        >
+                            + New Bill
+                        </button>
+
+                    </div>
+
+
+                    <div class="stats-grid">
+
+                        <div class="stat-card sales-card">
+                        <span class="stat-label">
+                            Today's Sales
+                        </span>
+
+                            <strong
+                                    id="todaySalesAmount"
+                                    class="stat-value"
+                            >
+                                ₹0
+                            </strong>
+
+                            <small>
+                                Total revenue today
+                            </small>
+                        </div>
+
+
+                        <div class="stat-card">
+                        <span class="stat-label">
+                            Bills
+                        </span>
+
+                            <strong
+                                    id="todayBillsCount"
+                                    class="stat-value"
+                            >
+                                0
+                            </strong>
+
+                            <small>
+                                Bills generated today
+                            </small>
+                        </div>
+
+
+                        <div class="stat-card">
+                        <span class="stat-label">
+                            Customers
+                        </span>
+
+                            <strong
+                                    id="todayCustomersCount"
+                                    class="stat-value"
+                            >
+                                0
+                            </strong>
+
+                            <small>
+                                Customers served today
+                            </small>
+                        </div>
+
+
+                        <div class="stat-card warning-stat">
+                        <span class="stat-label">
+                            Low Stock
+                        </span>
+
+                            <strong
+                                    id="lowStockCount"
+                                    class="stat-value"
+                            >
+                                0
+                            </strong>
+
+                            <small>
+                                Medicines need attention
+                            </small>
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- LOWER DASHBOARD -->
+                <section class="dashboard-lower-grid">
+
+                    <!-- RECENT SALES -->
+                    <div class="dashboard-panel">
+
+                        <div class="panel-heading">
+
+                            <div>
+                            <span class="section-kicker">
+                                SALES
+                            </span>
+
+                                <h2>
+                                    Recent Sales
+                                </h2>
+                            </div>
+
+                            <button
+                                    type="button"
+                                    id="viewAllSalesBtn"
+                                    class="text-btn"
+                            >
+                                View All
+                            </button>
+
+                        </div>
+
+
+                        <div
+                                id="recentSalesList"
+                                class="recent-sales-list"
+                        >
+
+                            <div class="empty-dashboard">
+                                <span>▤</span>
+                                <p>No sales yet</p>
+                                <small>
+                                    Your recent bills will appear here.
+                                </small>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- QUICK ACTIONS -->
+                    <div class="dashboard-panel">
+
+                        <div class="panel-heading">
+
+                            <div>
+                            <span class="section-kicker">
+                                QUICK ACTIONS
+                            </span>
+
+                                <h2>
+                                    Get Started
+                                </h2>
+                            </div>
+
+                        </div>
+
+
+                        <div class="quick-actions">
+
+                            <button
+                                    type="button"
+                                    id="quickBillingBtn"
+                                    class="quick-action"
+                            >
+                                <span>▣</span>
+                                <div>
+                                    <strong>Create Bill</strong>
+                                    <small>
+                                        Sell medicines to a customer
+                                    </small>
+                                </div>
+                            </button>
+
+
+                            <button
+                                    type="button"
+                                    id="quickInventoryBtn"
+                                    class="quick-action"
+                            >
+                                <span>▦</span>
+                                <div>
+                                    <strong>Add Medicine</strong>
+                                    <small>
+                                        Update your inventory
+                                    </small>
+                                </div>
+                            </button>
+
+
+                            <button
+                                    type="button"
+                                    id="quickCustomerBtn"
+                                    class="quick-action"
+                            >
+                                <span>♙</span>
+                                <div>
+                                    <strong>Add Customer</strong>
+                                    <small>
+                                        Save customer details
+                                    </small>
+                                </div>
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </section>
 
             </main>
 
         </div>
 
-    </section>
 
+        <!-- CUSTOMER CARE MODAL -->
+        <div
+                class="dashboard-modal"
+                id="customerCareModal"
+        >
 
-    <!-- =================================================
-         BILLING
-    ================================================== -->
+            <div class="dashboard-modal-card">
 
-    <section
-            id="billingPage"
-            class="app-page"
-    >
+                <button
+                        type="button"
+                        class="modal-close"
+                        id="closeCustomerCareBtn"
+                >
+                    ×
+                </button>
 
-        <div class="simple-page">
+                <div class="care-icon">
+                    ?
+                </div>
 
-            <button
-                    type="button"
-                    id="closeBillingBtn"
-                    class="back-btn"
-            >
-                ← Back
-            </button>
+                <span class="section-kicker">
+                MEDZONEX SUPPORT
+            </span>
 
-            <div class="simple-card">
-
-                <h1>
-                    Billing
-                </h1>
+                <h2>
+                    Customer Care
+                </h2>
 
                 <p>
-                    Manage your MedZoneX subscription.
+                    Need help with billing, inventory or your account?
+                    Contact MedZoneX support.
                 </p>
+
+                <a
+                        href="tel:9108526149"
+                        class="care-contact"
+                >
+                    <span>☎</span>
+                    <div>
+                        <small>Call Us</small>
+                        <strong>9108526149</strong>
+                    </div>
+                </a>
+
+                <a
+                        href="mailto:support@medzonex.site"
+                        class="care-contact"
+                >
+                    <span>✉</span>
+                    <div>
+                        <small>Email</small>
+                        <strong>support@medzonex.site</strong>
+                    </div>
+                </a>
 
             </div>
 
@@ -735,35 +1138,624 @@
 
     </section>
 
-
     <!-- =================================================
-         INVENTORY
-    ================================================== -->
+     INVENTORY PAGE
+================================================== -->
 
     <section
             id="inventoryPage"
             class="app-page"
     >
 
-        <div class="simple-page">
+        <div class="inventory-shell">
 
-            <button
-                    type="button"
-                    id="closeInventoryBtn"
-                    class="back-btn"
+            <!-- INVENTORY HEADER -->
+            <header class="inventory-header">
+
+                <div>
+
+                    <p class="dashboard-small-title">
+                        MEDICINE MANAGEMENT
+                    </p>
+
+                    <h1>
+                        Inventory
+                    </h1>
+
+                    <p class="inventory-subtitle">
+                        Manage your medicines, stock and expiry.
+                    </p>
+
+                </div>
+
+                <div class="inventory-header-actions">
+
+                    <button
+                            type="button"
+                            id="refreshInventoryBtn"
+                            class="secondary-btn"
+                    >
+                        ↻ Refresh
+                    </button>
+
+                    <button
+                            type="button"
+                            id="addMedicineBtn"
+                            class="primary-btn"
+                    >
+                        + Add Medicine
+                    </button>
+
+                </div>
+
+            </header>
+
+
+            <!-- INVENTORY MESSAGE -->
+
+            <div
+                    id="inventoryMessage"
+                    class="form-message"
+            ></div>
+
+
+            <!-- INVENTORY SUMMARY -->
+
+            <section class="inventory-summary-grid">
+
+                <div class="inventory-summary-card">
+
+                    <span class="inventory-summary-label">
+                        Total Medicines
+                    </span>
+
+                    <strong
+                            id="totalMedicines"
+                            class="inventory-summary-value"
+                    >
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div class="inventory-summary-card">
+
+                    <span class="inventory-summary-label">
+                        Stock Units
+                    </span>
+
+                    <strong
+                            id="totalStockUnits"
+                            class="inventory-summary-value"
+                    >
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div class="inventory-summary-card">
+
+                    <span class="inventory-summary-label">
+                        Stock Value
+                    </span>
+
+                    <strong
+                            id="totalStockValue"
+                            class="inventory-summary-value"
+                    >
+                        ₹0
+                    </strong>
+
+                </div>
+
+
+                <div class="inventory-summary-card warning">
+
+                    <span class="inventory-summary-label">
+                        Low Stock
+                    </span>
+
+                    <strong
+                            id="inventoryLowStockCount"
+                            class="inventory-summary-value"
+                    >
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div class="inventory-summary-card danger">
+
+                    <span class="inventory-summary-label">
+                        Expired
+                    </span>
+
+                    <strong
+                            id="expiredStockCount"
+                            class="inventory-summary-value"
+                    >
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div class="inventory-summary-card">
+
+                    <span class="inventory-summary-label">
+                        Expiring Soon
+                    </span>
+
+                    <strong
+                            id="expiringSoonCount"
+                            class="inventory-summary-value"
+                    >
+                        0
+                    </strong>
+
+                </div>
+
+            </section>
+
+
+            <!-- ADD / EDIT MEDICINE -->
+
+            <section
+                    id="inventoryFormSection"
+                    class="inventory-form-section"
             >
-                ← Back
-            </button>
 
-            <div class="simple-card">
+                <div class="inventory-section-header">
 
-                <h1>
-                    Inventory
-                </h1>
+                    <div>
 
-                <p>
-                    Inventory management will appear here.
-                </p>
+                        <span class="section-kicker">
+                            MEDICINE
+                        </span>
+
+                        <h2 id="inventoryFormTitle">
+                            Add Medicine
+                        </h2>
+
+                    </div>
+
+                    <button
+                            type="button"
+                            id="cancelMedicineBtn"
+                            class="text-btn"
+                    >
+                        Cancel
+                    </button>
+
+                </div>
+
+
+                <!-- OPENAI MEDICINE SCANNER -->
+
+                <div class="medicine-scanner-box">
+
+                    <div class="medicine-scanner-content">
+
+                        <div class="medicine-scanner-icon">
+                            📷
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Scan Medicine Package
+                            </strong>
+
+                            <p>
+                                Upload a clear photo of the medicine
+                                package and MedZoneX will read the
+                                visible medicine information.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <input
+                            type="file"
+                            id="medicineImageInput"
+                            accept="image/*"
+                            capture="environment"
+                            hidden
+                    >
+
+
+                    <button
+                            type="button"
+                            id="recognizeMedicineBtn"
+                            class="secondary-btn"
+                    >
+                        📷 Scan Medicine
+                    </button>
+
+
+                    <div
+                            id="medicineRecognitionStatus"
+                            class="otp-status"
+                    ></div>
+
+                </div>
+
+
+                <!-- MEDICINE FORM -->
+
+                <div class="inventory-form-grid">
+
+
+                    <!-- MEDICINE NAME -->
+
+                    <div class="form-group">
+
+                        <label for="medicineName">
+                            Medicine Name *
+                        </label>
+
+                        <input
+                                type="text"
+                                id="medicineName"
+                                placeholder="Enter medicine name"
+                                autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <!-- SALT / GENERIC NAME -->
+
+                    <div class="form-group">
+
+                        <label for="medicineSalt">
+                            Salt / Generic Name
+                        </label>
+
+                        <input
+                                type="text"
+                                id="medicineSalt"
+                                placeholder="e.g. Paracetamol"
+                                autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <!-- STRENGTH -->
+
+                    <div class="form-group">
+
+                        <label for="medicineStrength">
+                            Strength
+                        </label>
+
+                        <input
+                                type="text"
+                                id="medicineStrength"
+                                placeholder="e.g. 500 mg"
+                                autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <!-- MANUFACTURER -->
+
+                    <div class="form-group">
+
+                        <label for="medicineManufacturer">
+                            Manufacturer
+                        </label>
+
+                        <input
+                                type="text"
+                                id="medicineManufacturer"
+                                placeholder="Enter manufacturer"
+                                autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <!-- DOSAGE FORM -->
+
+                    <div class="form-group">
+
+                        <label for="medicineDosageForm">
+                            Dosage Form
+                        </label>
+
+                        <input
+                                type="text"
+                                id="medicineDosageForm"
+                                placeholder="e.g. Tablet, Syrup, Capsule"
+                                autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <!-- PACK SIZE -->
+
+                    <div class="form-group">
+
+                        <label for="medicinePackSize">
+                            Pack Size
+                        </label>
+
+                        <input
+                                type="text"
+                                id="medicinePackSize"
+                                placeholder="e.g. 10 tablets"
+                                autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <!-- BATCH -->
+
+                    <div class="form-group">
+
+                        <label for="medicineBatch">
+                            Batch Number
+                        </label>
+
+                        <input
+                                type="text"
+                                id="medicineBatch"
+                                placeholder="Enter batch number"
+                                autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <!-- EXPIRY -->
+
+                    <div class="form-group">
+
+                        <label for="medicineExpiry">
+                            Expiry Date *
+                        </label>
+
+                        <input
+                                type="date"
+                                id="medicineExpiry"
+                        >
+
+                    </div>
+
+
+                    <!-- PURCHASE PRICE -->
+
+                    <div class="form-group">
+
+                        <label for="medicinePurchasePrice">
+                            Purchase Price *
+                        </label>
+
+                        <input
+                                type="number"
+                                id="medicinePurchasePrice"
+                                placeholder="0.00"
+                                min="0"
+                                step="0.01"
+                        >
+
+                    </div>
+
+
+                    <!-- SELLING PRICE -->
+
+                    <div class="form-group">
+
+                        <label for="medicineSellingPrice">
+                            Selling Price *
+                        </label>
+
+                        <input
+                                type="number"
+                                id="medicineSellingPrice"
+                                placeholder="0.00"
+                                min="0"
+                                step="0.01"
+                        >
+
+                    </div>
+
+
+                    <!-- QUANTITY -->
+
+                    <div class="form-group">
+
+                        <label for="medicineQuantity">
+                            Quantity *
+                        </label>
+
+                        <input
+                                type="number"
+                                id="medicineQuantity"
+                                placeholder="0"
+                                min="0"
+                                step="1"
+                        >
+
+                    </div>
+
+
+                    <!-- MINIMUM STOCK -->
+
+                    <div class="form-group">
+
+                        <label for="medicineMinimumStock">
+                            Minimum Stock
+                        </label>
+
+                        <input
+                                type="number"
+                                id="medicineMinimumStock"
+                                placeholder="10"
+                                min="0"
+                                step="1"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- SAVE BUTTON -->
+
+                <div class="inventory-form-actions">
+
+                    <button
+                            type="button"
+                            id="saveMedicineBtn"
+                            class="primary-btn"
+                    >
+                        Save Medicine
+                    </button>
+
+                    <button
+                            type="button"
+                            id="cancelMedicineBtnBottom"
+                            class="secondary-btn"
+                    >
+                        Cancel
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- INVENTORY LIST -->
+
+            <section class="inventory-list-section">
+
+                <div class="inventory-section-header">
+
+                    <div>
+
+                        <span class="section-kicker">
+                            STOCK
+                        </span>
+
+                        <h2>
+                            Medicine Inventory
+                        </h2>
+
+                    </div>
+
+                </div>
+
+
+                <!-- SEARCH -->
+
+                <div class="inventory-toolbar">
+
+                    <div class="inventory-search-box">
+
+                        <span>
+                            🔍
+                        </span>
+
+                        <input
+                                type="search"
+                                id="inventorySearch"
+                                placeholder="Search medicine, salt, batch or manufacturer..."
+                                autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <div class="inventory-filters">
+
+                        <button
+                                type="button"
+                                id="showAllInventoryBtn"
+                                class="inventory-filter-btn active"
+                        >
+                            All
+                        </button>
+
+                        <button
+                                type="button"
+                                id="showLowStockBtn"
+                                class="inventory-filter-btn"
+                        >
+                            Low Stock
+                        </button>
+
+                        <button
+                                type="button"
+                                id="showExpiredStockBtn"
+                                class="inventory-filter-btn"
+                        >
+                            Expired
+                        </button>
+
+                        <button
+                                type="button"
+                                id="showExpiringSoonBtn"
+                                class="inventory-filter-btn"
+                        >
+                            Expiring Soon
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- LIST -->
+
+                <div
+                        id="inventoryList"
+                        class="inventory-list"
+                >
+
+                    <div class="empty-dashboard">
+
+                        <span>
+                            ▦
+                        </span>
+
+                        <p>
+                            No medicines in inventory
+                        </p>
+
+                        <small>
+                            Add your first medicine to start managing
+                            your pharmacy stock.
+                        </small>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- BACK TO DASHBOARD -->
+
+            <div class="inventory-back-area">
+
+                <button
+                        type="button"
+                        id="backToDashboardFromInventoryBtn"
+                        class="secondary-btn"
+                >
+                    ← Back to Dashboard
+                </button>
 
             </div>
 
@@ -771,9 +1763,522 @@
 
     </section>
 
+    <!-- =================================================
+     BILLING PAGE
+================================================== -->
+
+    <section
+            id="billingPage"
+            class="app-page"
+    >
+
+        <div class="inventory-shell">
+
+            <header class="inventory-header">
+
+                <div>
+
+                    <p class="dashboard-small-title">
+                        SALES MANAGEMENT
+                    </p>
+
+                    <h1>
+                        Billing
+                    </h1>
+
+                    <p class="inventory-subtitle">
+                        Create and manage customer bills.
+                    </p>
+
+                </div>
+
+            </header>
+
+
+            <!-- =================================================
+                 BILLING MESSAGE
+            ================================================== -->
+
+            <div
+                    id="billingMessage"
+                    class="inventory-message"
+                    style="display:none;"
+            ></div>
+
+
+            <!-- =================================================
+                 CUSTOMER DETAILS
+            ================================================== -->
+
+            <section class="dashboard-panel">
+
+                <div class="panel-heading">
+
+                    <div>
+
+                    <span class="section-kicker">
+                        CUSTOMER
+                    </span>
+
+                        <h2>
+                            Customer Details
+                        </h2>
+
+                    </div>
+
+                </div>
+
+
+                <div class="inventory-form-grid">
+
+                    <div class="inventory-form-field">
+
+                        <label for="billingCustomerName">
+                            Customer Name
+                        </label>
+
+                        <input
+                                type="text"
+                                id="billingCustomerName"
+                                placeholder="Enter customer name"
+                        >
+
+                    </div>
+
+
+                    <div class="inventory-form-field">
+
+                        <label for="billingCustomerMobile">
+                            Mobile Number
+                        </label>
+
+                        <input
+                                type="tel"
+                                id="billingCustomerMobile"
+                                placeholder="Enter mobile number"
+                                maxlength="10"
+                        >
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 MEDICINE SEARCH
+            ================================================== -->
+
+            <section class="dashboard-panel">
+
+                <div class="panel-heading">
+
+                    <div>
+
+                    <span class="section-kicker">
+                        MEDICINES
+                    </span>
+
+                        <h2>
+                            Add Medicines
+                        </h2>
+
+                    </div>
+
+                </div>
+
+
+                <div class="inventory-form-grid">
+
+                    <div
+                            class="inventory-form-field"
+                            style="grid-column: 1 / -1;"
+                    >
+
+                        <label for="billingMedicineSearch">
+                            Search Medicine
+                        </label>
+
+                        <input
+                                type="text"
+                                id="billingMedicineSearch"
+                                placeholder="Search medicine by name, salt, manufacturer or batch..."
+                                autocomplete="off"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- Search Results -->
+
+                <div
+                        id="billingMedicineResults"
+                        class="inventory-list"
+                        style="margin-top:20px;"
+                ></div>
+
+
+                <!-- Selected Medicine -->
+
+                <div
+                        id="billingSelectedMedicine"
+                        style="display:none; margin-top:24px;"
+                >
+
+                    <div class="panel-heading">
+
+                        <div>
+
+                        <span class="section-kicker">
+                            SELECTED MEDICINE
+                        </span>
+
+                            <h3 id="billingSelectedMedicineName">
+                                Medicine
+                            </h3>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="inventory-form-grid">
+
+                        <div class="inventory-form-field">
+
+                            <label>
+                                Available Stock
+                            </label>
+
+                            <input
+                                    type="text"
+                                    id="billingAvailableStock"
+                                    readonly
+                            >
+
+                        </div>
+
+
+                        <div class="inventory-form-field">
+
+                            <label>
+                                Selling Price
+                            </label>
+
+                            <input
+                                    type="number"
+                                    id="billingMedicinePrice"
+                                    min="0"
+                                    step="0.01"
+                                    readonly
+                            >
+
+                        </div>
+
+
+                        <div class="inventory-form-field">
+
+                            <label for="billingMedicineQuantity">
+                                Quantity
+                            </label>
+
+                            <input
+                                    type="number"
+                                    id="billingMedicineQuantity"
+                                    min="1"
+                                    step="1"
+                                    value="1"
+                            >
+
+                        </div>
+
+
+                        <div class="inventory-form-field">
+
+                            <label>
+                                Total
+                            </label>
+
+                            <input
+                                    type="text"
+                                    id="billingMedicineTotal"
+                                    readonly
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                            style="
+                            display:flex;
+                            gap:12px;
+                            flex-wrap:wrap;
+                            margin-top:20px;
+                        "
+                    >
+
+                        <button
+                                type="button"
+                                id="addMedicineToBillBtn"
+                                class="primary-btn"
+                        >
+                            + Add to Bill
+                        </button>
+
+                        <button
+                                type="button"
+                                id="cancelSelectedMedicineBtn"
+                                class="secondary-btn"
+                        >
+                            Cancel
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 BILL ITEMS
+            ================================================== -->
+
+            <section class="dashboard-panel">
+
+                <div class="panel-heading">
+
+                    <div>
+
+                    <span class="section-kicker">
+                        BILL
+                    </span>
+
+                        <h2>
+                            Bill Items
+                        </h2>
+
+                    </div>
+
+                    <div>
+
+                    <span
+                            id="billingItemCount"
+                            class="section-kicker"
+                    >
+                        0 ITEMS
+                    </span>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                        id="billingItemsContainer"
+                        class="inventory-list"
+                >
+
+                    <div class="inventory-empty">
+
+                        <div class="inventory-empty-icon">
+                            🧾
+                        </div>
+
+                        <h3>
+                            No medicines added
+                        </h3>
+
+                        <p>
+                            Search and add medicines to create this bill.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 BILL SUMMARY
+            ================================================== -->
+
+            <section class="dashboard-panel">
+
+                <div class="panel-heading">
+
+                    <div>
+
+                    <span class="section-kicker">
+                        PAYMENT
+                    </span>
+
+                        <h2>
+                            Bill Summary
+                        </h2>
+
+                    </div>
+
+                </div>
+
+
+                <div class="inventory-form-grid">
+
+                    <div class="inventory-form-field">
+
+                        <label for="billingDiscount">
+                            Discount (₹)
+                        </label>
+
+                        <input
+                                type="number"
+                                id="billingDiscount"
+                                min="0"
+                                step="0.01"
+                                value="0"
+                                placeholder="0.00"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <div
+                        style="
+                        margin-top:25px;
+                        display:flex;
+                        flex-direction:column;
+                        gap:12px;
+                        max-width:500px;
+                        margin-left:auto;
+                    "
+                >
+
+                    <div
+                            style="
+                            display:flex;
+                            justify-content:space-between;
+                            gap:20px;
+                        "
+                    >
+
+                    <span>
+                        Subtotal
+                    </span>
+
+                        <strong id="billingSubtotal">
+                            ₹0.00
+                        </strong>
+
+                    </div>
+
+
+                    <div
+                            style="
+                            display:flex;
+                            justify-content:space-between;
+                            gap:20px;
+                        "
+                    >
+
+                    <span>
+                        Discount
+                    </span>
+
+                        <strong id="billingDiscountAmount">
+                            ₹0.00
+                        </strong>
+
+                    </div>
+
+
+                    <hr>
+
+
+                    <div
+                            style="
+                            display:flex;
+                            justify-content:space-between;
+                            gap:20px;
+                            font-size:20px;
+                        "
+                    >
+
+                        <strong>
+                            Grand Total
+                        </strong>
+
+                        <strong id="billingGrandTotal">
+                            ₹0.00
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Bill Actions -->
+
+                <div
+                        style="
+                        display:flex;
+                        gap:12px;
+                        flex-wrap:wrap;
+                        margin-top:30px;
+                    "
+                >
+
+                    <button
+                            type="button"
+                            id="saveBillBtn"
+                            class="primary-btn"
+                    >
+                        Save Bill
+                    </button>
+
+
+                    <button
+                            type="button"
+                            id="clearBillBtn"
+                            class="secondary-btn"
+                    >
+                        Clear Bill
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 BACK
+            ================================================== -->
+
+            <div class="inventory-back-area">
+
+                <button
+                        type="button"
+                        id="closeBillingBtn"
+                        class="secondary-btn"
+                >
+                    ← Back to Dashboard
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
 
     <!-- =================================================
-         PURCHASE
+         PURCHASES PAGE
     ================================================== -->
 
     <section
@@ -781,25 +2286,69 @@
             class="app-page"
     >
 
-        <div class="simple-page">
+        <div class="inventory-shell">
 
-            <button
-                    type="button"
-                    id="closePurchaseBtn"
-                    class="back-btn"
-            >
-                ← Back
-            </button>
+            <header class="inventory-header">
 
-            <div class="simple-card">
+                <div>
+                    <p class="dashboard-small-title">
+                        STOCK MANAGEMENT
+                    </p>
 
-                <h1>
-                    Purchases
-                </h1>
+                    <h1>
+                        Purchases
+                    </h1>
 
-                <p>
-                    Purchase management will appear here.
-                </p>
+                    <p class="inventory-subtitle">
+                        Manage medicine purchases and supplier stock.
+                    </p>
+                </div>
+
+            </header>
+
+
+            <section class="dashboard-panel">
+
+                <div class="panel-heading">
+
+                    <div>
+                        <span class="section-kicker">
+                            PURCHASES
+                        </span>
+
+                        <h2>
+                            Purchase Management
+                        </h2>
+                    </div>
+
+                </div>
+
+                <div class="empty-dashboard">
+
+                    <span>🛒</span>
+
+                    <p>
+                        Purchase Management
+                    </p>
+
+                    <small>
+                        Your purchase workspace will appear here.
+                    </small>
+
+                </div>
+
+            </section>
+
+
+            <div class="inventory-back-area">
+
+                <button
+                        type="button"
+                        id="closePurchaseBtn"
+                        class="secondary-btn"
+                >
+                    ← Back to Dashboard
+                </button>
 
             </div>
 
@@ -807,6 +2356,450 @@
 
     </section>
 
+
+    <!-- =================================================
+         CUSTOMERS PAGE
+    ================================================== -->
+
+    <section
+            id="customersPage"
+            class="app-page"
+    >
+
+        <div class="inventory-shell">
+
+            <header class="inventory-header">
+
+                <div>
+                    <p class="dashboard-small-title">
+                        CUSTOMER MANAGEMENT
+                    </p>
+
+                    <h1>
+                        Customers
+                    </h1>
+
+                    <p class="inventory-subtitle">
+                        Manage your pharmacy customers.
+                    </p>
+                </div>
+
+            </header>
+
+
+            <section class="dashboard-panel">
+
+                <div class="panel-heading">
+
+                    <div>
+                        <span class="section-kicker">
+                            CUSTOMERS
+                        </span>
+
+                        <h2>
+                            Customer Management
+                        </h2>
+                    </div>
+
+                </div>
+
+                <div class="empty-dashboard">
+
+                    <span>♙</span>
+
+                    <p>
+                        Customer Management
+                    </p>
+
+                    <small>
+                        Your customer workspace will appear here.
+                    </small>
+
+                </div>
+
+            </section>
+
+
+            <div class="inventory-back-area">
+
+                <button
+                        type="button"
+                        id="closeCustomersBtn"
+                        class="secondary-btn"
+                >
+                    ← Back to Dashboard
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =================================================
+         PROFILE PAGE
+    ================================================== -->
+
+    <section
+            id="profilePage"
+            class="app-page"
+    >
+
+        <div class="inventory-shell">
+
+            <header class="inventory-header">
+
+                <div>
+                    <p class="dashboard-small-title">
+                        ACCOUNT
+                    </p>
+
+                    <h1>
+                        Profile
+                    </h1>
+
+                    <p class="inventory-subtitle">
+                        Manage your MedZoneX account profile.
+                    </p>
+                </div>
+
+            </header>
+
+
+            <section class="dashboard-panel">
+
+                <div class="panel-heading">
+
+                    <div>
+                        <span class="section-kicker">
+                            PROFILE
+                        </span>
+
+                        <h2>
+                            Account Profile
+                        </h2>
+                    </div>
+
+                </div>
+
+                <div class="empty-dashboard">
+
+                    <span>◉</span>
+
+                    <p>
+                        Profile
+                    </p>
+
+                    <small>
+                        Your profile settings will appear here.
+                    </small>
+
+                </div>
+
+            </section>
+
+
+            <div class="inventory-back-area">
+
+                <button
+                        type="button"
+                        id="closeProfileBtn"
+                        class="secondary-btn"
+                >
+                    ← Back to Dashboard
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =================================================
+         SETTINGS PAGE
+    ================================================== -->
+
+    <section
+            id="settingsPage"
+            class="app-page"
+    >
+
+        <div class="inventory-shell">
+
+            <header class="inventory-header">
+
+                <div>
+                    <p class="dashboard-small-title">
+                        MEDZONEX
+                    </p>
+
+                    <h1>
+                        Settings
+                    </h1>
+
+                    <p class="inventory-subtitle">
+                        Manage your MedZoneX preferences.
+                    </p>
+                </div>
+
+            </header>
+
+
+            <section class="dashboard-panel">
+
+                <div class="panel-heading">
+
+                    <div>
+                        <span class="section-kicker">
+                            SETTINGS
+                        </span>
+
+                        <h2>
+                            Application Settings
+                        </h2>
+                    </div>
+
+                </div>
+
+                <div class="empty-dashboard">
+
+                    <span>⚙</span>
+
+                    <p>
+                        Settings
+                    </p>
+
+                    <small>
+                        Your application settings will appear here.
+                    </small>
+
+                </div>
+
+            </section>
+
+
+            <div class="inventory-back-area">
+
+                <button
+                        type="button"
+                        id="closeSettingsBtn"
+                        class="secondary-btn"
+                >
+                    ← Back to Dashboard
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- =================================================
+         SUBSCRIPTION PAGE
+    ================================================== -->
+
+    <section
+            id="subscriptionPage"
+            class="app-page"
+    >
+
+        <div class="inventory-shell">
+
+            <header class="inventory-header">
+
+                <div>
+
+                    <p class="dashboard-small-title">
+                        MEDZONEX SUBSCRIPTION
+                    </p>
+
+                    <h1>
+                        Choose Your Plan
+                    </h1>
+
+                    <p class="inventory-subtitle">
+                        Continue using MedZoneX by selecting a subscription plan.
+                    </p>
+
+                </div>
+
+            </header>
+
+
+            <!-- CUSTOMER PHONE -->
+
+            <section class="dashboard-panel">
+
+                <div class="panel-heading">
+
+                    <div>
+
+                    <span class="section-kicker">
+                        CUSTOMER DETAILS
+                    </span>
+
+                        <h2>
+                            Payment Information
+                        </h2>
+
+                    </div>
+
+                </div>
+
+
+                <div class="input-group">
+
+                    <label for="subscriptionPhone">
+                        Mobile Number
+                    </label>
+
+                    <input
+                            type="tel"
+                            id="subscriptionPhone"
+                            maxlength="10"
+                            inputmode="numeric"
+                            placeholder="Enter 10-digit mobile number"
+                    >
+
+                </div>
+
+
+                <div
+                        id="subscriptionMessage"
+                        class="form-message"
+                        aria-live="polite"
+                ></div>
+
+            </section>
+
+
+            <!-- PLANS -->
+
+            <section class="dashboard-panel">
+
+                <div class="panel-heading">
+
+                    <div>
+
+                    <span class="section-kicker">
+                        SUBSCRIPTION PLANS
+                    </span>
+
+                        <h2>
+                            Select a Plan
+                        </h2>
+
+                    </div>
+
+                </div>
+
+
+                <div class="quick-actions-grid">
+
+
+                    <!-- MONTHLY -->
+
+                    <div class="dashboard-panel">
+
+                    <span class="section-kicker">
+                        MONTHLY
+                    </span>
+
+                        <h2>
+                            ₹449
+                        </h2>
+
+                        <p>
+                            Per month
+                        </p>
+
+                        <button
+                                type="button"
+                                class="primary-btn full-btn subscription-plan-btn"
+                                data-plan="monthly"
+                        >
+                            Subscribe
+                        </button>
+
+                    </div>
+
+
+                    <!-- 3 MONTHS -->
+
+                    <div class="dashboard-panel">
+
+                    <span class="section-kicker">
+                        3 MONTHS
+                    </span>
+
+                        <h2>
+                            ₹1,200
+                        </h2>
+
+                        <p>
+                            ₹400/month
+                        </p>
+
+                        <button
+                                type="button"
+                                class="primary-btn full-btn subscription-plan-btn"
+                                data-plan="threeMonth"
+                        >
+                            Subscribe
+                        </button>
+
+                    </div>
+
+
+                    <!-- 6 MONTHS -->
+
+                    <div class="dashboard-panel">
+
+                    <span class="section-kicker">
+                        6 MONTHS
+                    </span>
+
+                        <h2>
+                            ₹2,274
+                        </h2>
+
+                        <p>
+                            ₹379/month
+                        </p>
+
+                        <button
+                                type="button"
+                                class="primary-btn full-btn subscription-plan-btn"
+                                data-plan="sixMonth"
+                        >
+                            Subscribe
+                        </button>
+
+                    </div>
+
+
+                </div>
+
+            </section>
+
+
+            <div class="inventory-back-area">
+
+                <button
+                        type="button"
+                        id="closeSubscriptionBtn"
+                        class="secondary-btn"
+                >
+                    ← Back to Dashboard
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
 
     <!-- =================================================
          TERMS MODAL
@@ -907,11 +2900,28 @@
 
 </div>
 
+<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 
 <script
         type="module"
         src="js/app.js"
 ></script>
+
+<script
+        type="module"
+        src="js/inventory.js"
+></script>
+
+<script
+        type="module"
+        src="js/billing.js"
+></script>
+
+<script
+        type="module"
+        src="js/subscription.js"
+></script>
+
 
 </body>
 </html>

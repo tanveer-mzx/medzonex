@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const admin = require("firebase-admin");
 const OpenAI = require("openai");
 const multer = require("multer");
+const path = require("path");
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
@@ -17,6 +18,57 @@ const upload = multer({
         fileSize: 10 * 1024 * 1024
     }
 });
+
+const CASHFREE_APP_ID =
+    String(process.env.CASHFREE_APP_ID || "").trim();
+
+const CASHFREE_SECRET_KEY =
+    String(process.env.CASHFREE_SECRET_KEY || "").trim();
+
+const CASHFREE_ENV =
+    String(process.env.CASHFREE_ENV || "sandbox")
+        .trim()
+        .toLowerCase();
+
+const CASHFREE_API_BASE =
+    CASHFREE_ENV === "production"
+        ? "https://api.cashfree.com/pg"
+        : "https://sandbox.cashfree.com/pg";
+
+const CASHFREE_API_VERSION =
+    "2025-01-01";
+
+// ======================================================
+// MEDZONEX SUBSCRIPTION PLANS
+// ======================================================
+
+const MEDZONEX_PLANS = {
+
+    monthly: {
+        name: "MedZoneX Monthly",
+        amount: 449,
+        interval: 1,
+        intervalUnit: "MONTH",
+        cashfreePlanId:"plan_1791216285370_d5kaox"
+    },
+
+    threeMonth: {
+        name: "MedZoneX 3 Months",
+        amount: 1200,
+        interval: 3,
+        intervalUnit: "MONTH",
+        cashfreePlanId:"plan_1791216662487_31i150"
+    },
+
+    sixMonth: {
+        name: "MedZoneX 6 Months",
+        amount: 2274,
+        interval: 6,
+        intervalUnit: "MONTH",
+        cashfreePlanId:"plan_1791216743771_85gt6d"
+    }
+
+};
 
 // ======================================================
 // APP
@@ -128,6 +180,30 @@ app.use(
 
         credentials: true
     })
+);
+
+// ======================================================
+// FRONTEND
+// ======================================================
+
+app.use(
+    express.static(
+        path.join(__dirname)
+    )
+);
+
+app.get(
+    "/",
+    (req, res) => {
+
+        res.sendFile(
+            path.join(
+                __dirname,
+                "index.html"
+            )
+        );
+
+    }
 );
 
 // ======================================================
@@ -1433,6 +1509,552 @@ Important:
         }
     }
 );
+
+// ======================================================
+// CASHFREE SUBSCRIPTION
+// CREATE SUBSCRIPTION
+// ======================================================
+
+app.post(
+    "/api/subscription/create",
+    async (req, res) => {
+
+        try {
+
+            // ------------------------------------------------
+            // Cashfree configuration
+            // ------------------------------------------------
+
+            if (
+                !CASHFREE_APP_ID ||
+                !CASHFREE_SECRET_KEY
+            ) {
+
+                return res.status(503).json({
+
+                    success: false,
+
+                    message:
+                        "Cashfree is not configured on the server."
+
+                });
+            }
+
+            // ------------------------------------------------
+            // Firebase authentication
+            // ------------------------------------------------
+
+            if (
+                !firebaseInitialized ||
+                !firebaseAuth
+            ) {
+
+                return res.status(503).json({
+
+                    success: false,
+
+                    message:
+                        "Firebase authentication is unavailable."
+
+                });
+            }
+
+            const authorization =
+                req.headers.authorization || "";
+
+            if (
+                !authorization.startsWith("Bearer ")
+            ) {
+
+                return res.status(401).json({
+
+                    success: false,
+
+                    message:
+                        "Authentication required."
+
+                });
+            }
+
+            const idToken =
+                authorization.substring(7).trim();
+
+            if (!idToken) {
+
+                return res.status(401).json({
+
+                    success: false,
+
+                    message:
+                        "Authentication token is missing."
+
+                });
+            }
+
+            // ------------------------------------------------
+            // Verify Firebase user
+            // ------------------------------------------------
+
+            const decodedToken =
+                await firebaseAuth.verifyIdToken(
+                    idToken
+                );
+
+            const uid =
+                decodedToken.uid;
+
+            const email =
+                decodedToken.email || "";
+
+            const customerName =
+                decodedToken.name ||
+                decodedToken.email ||
+                "MedZoneX Customer";
+
+            // ------------------------------------------------
+            // Request data
+            // ------------------------------------------------
+
+            const planKey =
+                String(
+                    req.body.planKey || ""
+                ).trim();
+
+            const customerPhone =
+                String(
+                    req.body.customerPhone || ""
+                ).trim();
+
+            // ------------------------------------------------
+            // Validate plan
+            // ------------------------------------------------
+
+            const selectedPlan =
+                MEDZONEX_PLANS[planKey];
+
+            if (!selectedPlan) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    message:
+                        "Invalid MedZoneX subscription plan."
+
+                });
+            }
+
+            // ------------------------------------------------
+            // Validate email
+            // ------------------------------------------------
+
+            if (!email) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    message:
+                        "Your Firebase account does not have an email address."
+
+                });
+            }
+
+            // ------------------------------------------------
+            // Validate phone
+            // ------------------------------------------------
+
+            if (
+                !/^[6-9]\d{9}$/.test(
+                    customerPhone
+                )
+            ) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    message:
+                        "Enter a valid 10-digit Indian mobile number."
+
+                });
+            }
+
+            // ------------------------------------------------
+            // Generate unique Cashfree subscription ID
+            // ------------------------------------------------
+
+            const subscriptionId =
+                `mzx_${uid}_${Date.now()}`;
+
+            // ------------------------------------------------
+            // Create Cashfree subscription
+            // ------------------------------------------------
+
+            const cashfreeResponse =
+                await fetch(
+                    `${CASHFREE_API_BASE}/subscriptions`,
+                    {
+
+                        method: "POST",
+
+                        headers: {
+
+                            "x-client-id":
+                                CASHFREE_APP_ID,
+
+                            "x-client-secret":
+                                CASHFREE_SECRET_KEY,
+
+                            "x-api-version":
+                                CASHFREE_API_VERSION,
+
+                            "Accept":
+                                "application/json",
+
+                            "Content-Type":
+                                "application/json"
+
+                        },
+
+                        body:
+                            JSON.stringify({
+
+                                subscription_id:
+                                    subscriptionId,
+
+                                customer_details: {
+
+                                    customer_name:
+                                        customerName,
+
+                                    customer_email:
+                                        email,
+
+                                    customer_phone:
+                                        customerPhone
+
+                                },
+
+                                plan_details: {
+
+                                    plan_id:
+                                        selectedPlan
+                                            .cashfreePlanId
+
+                                },
+
+                                subscription_meta: {
+
+                                    return_url:
+                                        "https://medzonex-backend.onrender.com/api/subscription/return"
+
+                                },
+
+                                subscription_note:
+                                    `MedZoneX ${selectedPlan.name}`,
+
+                                subscription_tags: {
+
+                                    uid,
+
+                                    plan:
+                                        planKey,
+
+                                    product:
+                                        "MedZoneX"
+
+                                }
+
+                            })
+
+                    }
+                );
+
+            // ------------------------------------------------
+            // Read Cashfree response
+            // ------------------------------------------------
+
+            let cashfreeData = null;
+
+            try {
+
+                cashfreeData =
+                    await cashfreeResponse.json();
+
+            } catch {
+
+                cashfreeData = null;
+
+            }
+
+            // ------------------------------------------------
+            // Cashfree error
+            // ------------------------------------------------
+
+            if (!cashfreeResponse.ok) {
+
+                console.error(
+                    "Cashfree subscription creation failed:",
+                    cashfreeData
+                );
+
+                return res.status(
+                    cashfreeResponse.status
+                ).json({
+
+                    success: false,
+
+                    message:
+                        cashfreeData?.message ||
+                        "Cashfree subscription creation failed.",
+
+                    cashfree:
+                        cashfreeData
+
+                });
+
+            }
+
+            // ------------------------------------------------
+            // Save subscription record in Firestore
+            // ------------------------------------------------
+
+            const subscriptionSessionId =
+                cashfreeData
+                    ?.subscription_session_id ||
+                null;
+
+
+            if (!db) {
+
+                console.error(
+                    "Firebase Firestore is unavailable."
+                );
+
+                return res.status(503).json({
+
+                    success: false,
+
+                    message:
+                        "Subscription database is unavailable."
+
+                });
+
+            }
+
+
+            await db
+                .collection("cashfreeSubscriptions")
+                .doc(subscriptionId)
+                .set({
+
+                    subscriptionId:
+                        subscriptionId,
+
+                    uid:
+                        uid,
+
+                    email:
+                        email,
+
+                    customerName:
+                        customerName,
+
+                    customerPhone:
+                        customerPhone,
+
+                    planKey:
+                        planKey,
+
+                    planName:
+                        selectedPlan.name,
+
+                    amount:
+                        selectedPlan.amount,
+
+                    cashfreePlanId:
+                        selectedPlan.cashfreePlanId,
+
+                    subscriptionSessionId:
+                        subscriptionSessionId,
+
+                    status:
+                        "pending",
+
+                    authorizationStatus:
+                        "PENDING",
+
+                    environment:
+                        CASHFREE_ENV,
+
+                    createdAt:
+                        new Date(),
+
+                    updatedAt:
+                        new Date()
+
+                });
+
+
+            console.log(
+                "Cashfree subscription created and saved:",
+                subscriptionId
+            );
+
+
+            // ------------------------------------------------
+            // Success response
+            // ------------------------------------------------
+
+            return res.json({
+
+                success: true,
+
+                subscriptionId:
+
+                    subscriptionId,
+
+                planKey:
+
+                    planKey,
+
+                planName:
+
+                    selectedPlan.name,
+
+                amount:
+
+                    selectedPlan.amount,
+
+                subscriptionSessionId:
+
+                    subscriptionSessionId,
+
+                data:
+
+                    cashfreeData
+
+            });
+
+// ======================================================
+// CASHFREE SUBSCRIPTION RETURN
+// ======================================================
+
+app.post("/api/subscription/return", async (req, res) => {
+
+    try {
+
+        const subscriptionId =
+            req.body?.subscriptionId ||
+            req.body?.subscription_id;
+
+        if (!subscriptionId) {
+            return res.status(400).send(`
+                <h2>Subscription ID missing</h2>
+                <p>Cashfree did not provide a subscription ID.</p>
+            `);
+        }
+
+        if (
+            !CASHFREE_APP_ID ||
+            !CASHFREE_SECRET_KEY
+        ) {
+            return res.status(500).send(`
+                <h2>Payment Configuration Error</h2>
+                <p>Cashfree credentials are not configured.</p>
+            `);
+        }
+
+        // Fetch subscription status from Cashfree
+        const cashfreeResponse = await fetch(
+            `${CASHFREE_API_BASE}/subscriptions/${encodeURIComponent(subscriptionId)}`,
+            {
+                method: "GET",
+                headers: {
+                    "x-client-id": CASHFREE_APP_ID,
+                    "x-client-secret": CASHFREE_SECRET_KEY,
+                    "x-api-version": CASHFREE_API_VERSION,
+                    "Accept": "application/json"
+                }
+            }
+        );
+
+        const cashfreeData =
+            await cashfreeResponse.json();
+
+        if (!cashfreeResponse.ok) {
+
+            console.error(
+                "Cashfree subscription fetch failed:",
+                cashfreeData
+            );
+
+            return res.status(502).send(`
+                <h2>Unable to verify subscription</h2>
+                <p>Please contact MedZoneX support.</p>
+            `);
+        }
+
+        const authorizationStatus =
+            cashfreeData
+                ?.authorization_details
+                ?.authorization_status;
+
+        console.log(
+            "Cashfree Subscription:",
+            subscriptionId
+        );
+
+        console.log(
+            "Authorization Status:",
+            authorizationStatus
+        );
+
+        // ============================================
+        // SUCCESS
+        // ============================================
+
+        if (authorizationStatus === "ACTIVE") {
+
+            return res.redirect(
+                `https://medzonex.site/?subscription=success&subscriptionId=${encodeURIComponent(subscriptionId)}`
+            );
+        }
+
+        // ============================================
+        // FAILURE
+        // ============================================
+
+        if (authorizationStatus === "FAILURE") {
+
+            return res.redirect(
+                `https://medzonex.site/?subscription=failed&subscriptionId=${encodeURIComponent(subscriptionId)}`
+            );
+        }
+
+        // ============================================
+        // PENDING
+        // ============================================
+
+        return res.redirect(
+            `https://medzonex.site/?subscription=pending&subscriptionId=${encodeURIComponent(subscriptionId)}`
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Cashfree subscription return error:",
+            error
+        );
+
+        return res.status(500).send(`
+            <h2>Subscription Verification Error</h2>
+            <p>Please contact MedZoneX support.</p>
+        `);
+    }
+
+});
 
 // ======================================================
 // 404

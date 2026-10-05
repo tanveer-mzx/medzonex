@@ -892,7 +892,7 @@ function openAddMedicine() {
 function showInventoryForm() {
 
     const form =
-        $("inventoryForm");
+        $("inventoryFormSection");
 
     if (!form) {
         return;
@@ -916,7 +916,7 @@ function showInventoryForm() {
 function closeInventoryForm() {
 
     const form =
-        $("inventoryForm");
+        $("inventoryFormSection");
 
     if (form) {
 
@@ -974,6 +974,171 @@ function clearMedicineForm() {
 
         $("medicineMinimumStock").value =
             "5";
+
+    }
+
+}
+
+
+// ============================================================
+// OPENAI MEDICINE RECOGNITION
+// ============================================================
+
+async function recognizeMedicineFromImage(file) {
+
+    if (!file) {
+
+        showInventoryMessage(
+            "Please select a medicine image."
+        );
+
+        return;
+
+    }
+
+
+    const status =
+        $("medicineRecognitionStatus");
+
+    const button =
+        $("recognizeMedicineBtn");
+
+
+    try {
+
+        if (status) {
+
+            status.textContent =
+                "Reading medicine package...";
+
+            status.className =
+                "otp-status";
+
+        }
+
+
+        if (button) {
+
+            button.disabled =
+                true;
+
+            button.dataset.originalText =
+                button.textContent;
+
+            button.textContent =
+                "🔄 Reading...";
+
+        }
+
+
+        const formData =
+            new FormData();
+
+        formData.append(
+            "medicineImage",
+            file
+        );
+
+
+        const response =
+            await fetch(
+                "https://medzonex-backend.onrender.com/api/inventory/recognize-medicine",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        if (!response.ok || !result.success) {
+
+            throw new Error(
+                result.message ||
+                "Medicine recognition failed."
+            );
+
+        }
+
+
+        const medicine =
+            result.medicine || {};
+
+
+        // --------------------------------------------
+        // FILL MEDICINE FORM
+        // --------------------------------------------
+
+        if ($("medicineName")) {
+
+            $("medicineName").value =
+                medicine.name || "";
+
+        }
+
+
+        if ($("medicineSalt")) {
+
+            $("medicineSalt").value =
+                medicine.genericName || "";
+
+        }
+
+
+        if ($("medicineManufacturer")) {
+
+            $("medicineManufacturer").value =
+                medicine.manufacturer || "";
+
+        }
+
+
+        if (status) {
+
+            status.textContent =
+                "Medicine information detected. Please verify the details before saving.";
+
+            status.className =
+                "otp-status success";
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Medicine recognition error:",
+            error
+        );
+
+
+        if (status) {
+
+            status.textContent =
+                error.message ||
+                "Unable to recognize medicine.";
+
+            status.className =
+                "otp-status error";
+
+        }
+
+
+    } finally {
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+            button.textContent =
+                button.dataset.originalText ||
+                "📷 Scan Medicine";
+
+        }
 
     }
 
@@ -1861,6 +2026,48 @@ $("inventorySearch")?.addEventListener(
         searchInventory(
             event.target.value
         );
+
+    }
+);
+
+
+// Medicine image recognition
+
+$("recognizeMedicineBtn")?.addEventListener(
+    "click",
+    () => {
+
+        const input =
+            $("medicineImageInput");
+
+        if (!input) {
+            return;
+        }
+
+        input.click();
+
+    }
+);
+
+
+$("medicineImageInput")?.addEventListener(
+    "change",
+    async (event) => {
+
+        const file =
+            event.target.files?.[0];
+
+        if (!file) {
+            return;
+        }
+
+        await recognizeMedicineFromImage(
+            file
+        );
+
+        // Allow selecting the same image again
+        event.target.value =
+            "";
 
     }
 );

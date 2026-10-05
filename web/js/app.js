@@ -2248,6 +2248,62 @@ $("closePurchaseBtn")
 
 
 /* ======================================================
+   ADDITIONAL PAGE BACK NAVIGATION
+====================================================== */
+
+$("backToDashboardFromInventoryBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            showPage(
+                "dashboardPage"
+            );
+
+        }
+    );
+
+
+$("closeCustomersBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            showPage(
+                "dashboardPage"
+            );
+
+        }
+    );
+
+
+$("closeProfileBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            showPage(
+                "dashboardPage"
+            );
+
+        }
+    );
+
+
+$("closeSettingsBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            showPage(
+                "dashboardPage"
+            );
+
+        }
+    );
+
+
+/* ======================================================
    TERMS / PRIVACY
 ====================================================== */
 
@@ -2357,18 +2413,206 @@ onAuthStateChanged(
 
         /*
            If Firebase already has a logged-in user,
-           directly open dashboard.
+           check the MedZoneX trial/subscription status.
         */
 
         if (user) {
 
-            showPage(
-                "dashboardPage"
-            );
+            try {
 
-            await loadDashboard(
-                user
-            );
+                const userRef =
+                    doc(
+                        db,
+                        "users",
+                        user.uid
+                    );
+
+
+                const userSnap =
+                    await getDoc(
+                        userRef
+                    );
+
+
+                /*
+                   If user document does not exist,
+                   keep the normal dashboard behavior.
+                */
+
+                if (!userSnap.exists()) {
+
+                    showPage(
+                        "dashboardPage"
+                    );
+
+                    await loadDashboard(
+                        user
+                    );
+
+                    return;
+                }
+
+
+                const userData =
+                    userSnap.data();
+
+
+                /*
+                   ------------------------------------------------
+                   SUBSCRIPTION ACTIVE
+                   ------------------------------------------------
+
+                   If user already has an active subscription,
+                   directly open dashboard.
+                */
+
+                if (
+                    userData.subscriptionStatus ===
+                    "active"
+                ) {
+
+                    showPage(
+                        "dashboardPage"
+                    );
+
+                    await loadDashboard(
+                        user
+                    );
+
+                    return;
+                }
+
+
+                /*
+                   ------------------------------------------------
+                   TRIAL CHECK
+                   ------------------------------------------------
+                */
+
+                const trialStartedAt =
+                    userData.trialStartedAt;
+
+
+                /*
+                   If trial date is missing,
+                   keep normal dashboard behavior.
+                */
+
+                if (!trialStartedAt) {
+
+                    showPage(
+                        "dashboardPage"
+                    );
+
+                    await loadDashboard(
+                        user
+                    );
+
+                    return;
+                }
+
+
+                let trialStartTime;
+
+
+                /*
+                   Firestore Timestamp
+                */
+
+                if (
+                    typeof trialStartedAt.toMillis ===
+                    "function"
+                ) {
+
+                    trialStartTime =
+                        trialStartedAt.toMillis();
+
+                } else {
+
+                    trialStartTime =
+                        new Date(
+                            trialStartedAt
+                        ).getTime();
+
+                }
+
+
+                const now =
+                    Date.now();
+
+
+                const trialDuration =
+                    2 *
+                    24 *
+                    60 *
+                    60 *
+                    1000;
+
+
+                const trialEndTime =
+                    trialStartTime +
+                    trialDuration;
+
+
+                /*
+                   ------------------------------------------------
+                   TRIAL STILL ACTIVE
+                   ------------------------------------------------
+                */
+
+                if (
+                    now <
+                    trialEndTime
+                ) {
+
+                    showPage(
+                        "dashboardPage"
+                    );
+
+                    await loadDashboard(
+                        user
+                    );
+
+                    return;
+                }
+
+
+                /*
+                   ------------------------------------------------
+                   TRIAL EXPIRED
+                   ------------------------------------------------
+
+                   Open subscription page.
+                */
+
+                showPage(
+                    "subscriptionPage"
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "TRIAL / SUBSCRIPTION CHECK ERROR:",
+                    error
+                );
+
+
+                /*
+                   In case of a temporary Firestore
+                   error, do not break the existing app.
+                */
+
+                showPage(
+                    "dashboardPage"
+                );
+
+                await loadDashboard(
+                    user
+                );
+
+            }
+
 
         } else {
 
@@ -2433,3 +2677,278 @@ window.MedZoneX = {
     backendRequest
 
 };
+
+/* =========================================================
+   MEDZONEX DASHBOARD UI
+========================================================= */
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    /* -------------------------
+       AD CAROUSEL
+    ------------------------- */
+
+    const slides = Array.from(
+        document.querySelectorAll(".ad-slide")
+    );
+
+    const dotsContainer =
+        document.getElementById("adDots");
+
+    const prevAdBtn =
+        document.getElementById("prevAdBtn");
+
+    const nextAdBtn =
+        document.getElementById("nextAdBtn");
+
+    let currentAd = 0;
+    let adInterval = null;
+
+    function buildAdDots() {
+
+        if (!dotsContainer) return;
+
+        dotsContainer.innerHTML = "";
+
+        slides.forEach((_, index) => {
+
+            const dot =
+                document.createElement("span");
+
+            dot.className = "ad-dot";
+
+            if (index === currentAd) {
+                dot.classList.add("active");
+            }
+
+            dot.addEventListener("click", () => {
+                showAd(index);
+            });
+
+            dotsContainer.appendChild(dot);
+        });
+    }
+
+
+    function showAd(index) {
+
+        if (!slides.length) return;
+
+        currentAd =
+            (index + slides.length) % slides.length;
+
+        slides.forEach((slide, i) => {
+
+            slide.classList.toggle(
+                "active",
+                i === currentAd
+            );
+
+            const video =
+                slide.querySelector("video");
+
+            if (video) {
+
+                if (i === currentAd) {
+                    video.play().catch(() => {});
+                } else {
+                    video.pause();
+                }
+
+            }
+
+        });
+
+        buildAdDots();
+    }
+
+
+    function startAdRotation() {
+
+        clearInterval(adInterval);
+
+        adInterval = setInterval(() => {
+            showAd(currentAd + 1);
+        }, 7000);
+    }
+
+
+    prevAdBtn?.addEventListener(
+        "click",
+        () => {
+            showAd(currentAd - 1);
+            startAdRotation();
+        }
+    );
+
+
+    nextAdBtn?.addEventListener(
+        "click",
+        () => {
+            showAd(currentAd + 1);
+            startAdRotation();
+        }
+    );
+
+
+    if (slides.length) {
+
+        buildAdDots();
+        showAd(0);
+        startAdRotation();
+
+    }
+
+
+    /* -------------------------
+       CUSTOMER CARE
+    ------------------------- */
+
+    const careModal =
+        document.getElementById(
+            "customerCareModal"
+        );
+
+    const openCare =
+        document.getElementById(
+            "openCustomerCareBtn"
+        );
+
+    const closeCare =
+        document.getElementById(
+            "closeCustomerCareBtn"
+        );
+
+
+    openCare?.addEventListener(
+        "click",
+        () => {
+            careModal?.classList.add("visible");
+        }
+    );
+
+
+    closeCare?.addEventListener(
+        "click",
+        () => {
+            careModal?.classList.remove("visible");
+        }
+    );
+
+
+    careModal?.addEventListener(
+        "click",
+        (event) => {
+
+            if (
+                event.target === careModal
+            ) {
+                careModal.classList.remove(
+                    "visible"
+                );
+            }
+
+        }
+    );
+
+
+    /* -------------------------
+       QUICK ACTIONS
+    ------------------------- */
+
+    document
+        .getElementById("quickBillingBtn")
+        ?.addEventListener("click", () => {
+
+            document
+                .getElementById("openBillingBtn")
+                ?.click();
+
+        });
+
+
+    document
+        .getElementById("quickInventoryBtn")
+        ?.addEventListener("click", () => {
+
+            document
+                .getElementById("openInventoryBtn")
+                ?.click();
+
+        });
+
+
+    document
+        .getElementById("quickCustomerBtn")
+        ?.addEventListener("click", () => {
+
+            document
+                .getElementById("openCustomersBtn")
+                ?.click();
+
+        });
+
+
+    document
+        .getElementById("createBillDashboardBtn")
+        ?.addEventListener("click", () => {
+
+            document
+                .getElementById("openBillingBtn")
+                ?.click();
+
+        });
+
+
+    /* -------------------------
+       DASHBOARD NAV
+    ------------------------- */
+
+    document
+        .getElementById("dashboardNavBtn")
+        ?.addEventListener("click", () => {
+
+            showPage("dashboardPage");
+
+        });
+
+
+    /* -------------------------
+       CUSTOMER PAGE
+    ------------------------- */
+
+    document
+        .getElementById("openCustomersBtn")
+        ?.addEventListener("click", () => {
+
+            showPage("customersPage");
+
+        });
+
+
+    /* -------------------------
+       PROFILE
+    ------------------------- */
+
+    document
+        .getElementById("openProfileBtn")
+        ?.addEventListener("click", () => {
+
+            showPage("profilePage");
+
+        });
+
+
+    /* -------------------------
+       SETTINGS
+    ------------------------- */
+
+    document
+        .getElementById("openSettingsBtn")
+        ?.addEventListener("click", () => {
+
+            showPage("settingsPage");
+
+        });
+
+});
