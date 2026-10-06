@@ -90,6 +90,99 @@ app.use(
 );
 
 // ======================================================
+// WHATSAPP CLOUD API WEBHOOK
+// ======================================================
+
+const WHATSAPP_VERIFY_TOKEN =
+    String(
+        process.env.WHATSAPP_VERIFY_TOKEN || ""
+    ).trim();
+
+
+// ------------------------------------------------------
+// META WEBHOOK VERIFICATION
+// ------------------------------------------------------
+
+app.get(
+    "/api/whatsapp/webhook",
+    (req, res) => {
+
+        const mode =
+            req.query["hub.mode"];
+
+        const token =
+            req.query["hub.verify_token"];
+
+        const challenge =
+            req.query["hub.challenge"];
+
+
+        if (
+            mode === "subscribe" &&
+            token === WHATSAPP_VERIFY_TOKEN
+        ) {
+
+            console.log(
+                "WhatsApp webhook verified successfully."
+            );
+
+            return res
+                .status(200)
+                .send(challenge);
+        }
+
+
+        console.error(
+            "WhatsApp webhook verification failed."
+        );
+
+        return res
+            .sendStatus(403);
+    }
+);
+
+
+// ------------------------------------------------------
+// RECEIVE WHATSAPP WEBHOOK EVENTS
+// ------------------------------------------------------
+
+app.post(
+    "/api/whatsapp/webhook",
+    (req, res) => {
+
+        try {
+
+            console.log(
+                "WhatsApp webhook received:"
+            );
+
+            console.log(
+                JSON.stringify(
+                    req.body,
+                    null,
+                    2
+                )
+            );
+
+
+            // Always acknowledge Meta quickly
+            return res
+                .sendStatus(200);
+
+        } catch (error) {
+
+            console.error(
+                "WhatsApp webhook error:",
+                error
+            );
+
+            return res
+                .sendStatus(500);
+        }
+    }
+);
+
+// ======================================================
 // CORS
 // ======================================================
 
@@ -1936,6 +2029,32 @@ app.post(
                     cashfreeData
 
             });
+
+            } catch (error) {
+
+                console.error(
+                    "Cashfree subscription creation error:",
+                    error
+                );
+
+                return res.status(500).json({
+
+                    success: false,
+
+                    message:
+                        "Unable to create Cashfree subscription.",
+
+                    error:
+                        error?.message || "Unknown server error."
+
+                });
+
+            }
+
+        }
+        
+);
+
 
 // ======================================================
 // CASHFREE SUBSCRIPTION RETURN
