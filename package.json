@@ -1,8 +1,8 @@
 {
   "dependencies": {
-    "cashfree-pg": "^6.0.6",
     "multer": "^2.4.0",
     "nodemailer": "^10.0.10",
-    "openai": "^7.25.0"
+    "openai": "^7.25.0",
+    "razorpay": "^2.9.8"
   }
 }
