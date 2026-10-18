@@ -3461,20 +3461,53 @@ app.post("/api/razorpay/webhook", async (req, res) => {
                     canChangeAccess &&
                     !isOlderOrUnverifiableFailure
                 ) {
+                    // Preserve the customer's already-paid period.
+                    const userExpiry =
+                        currentSubscription.currentPeriodEnd
+                            ?.toMillis?.() || 0;
+
+                    const recordExpiry =
+                        subscriptionRecord.currentPeriodEnd
+                            ?.toMillis?.() || 0;
+
+                    const existingExpiry =
+                        userExpiry > 0 ? userExpiry : recordExpiry;
+
+                    const paidPeriodStillValid = existingExpiry > now;
+
                     transaction.set(
                         userRef,
                         {
                             subscription: {
                                 ...currentSubscription,
                                 provider: "razorpay",
-                                status: "payment_failed",
+
+                                // Keep access active only while the existing
+                                // paid period is still valid.
+                                status: paidPeriodStillValid
+                                    ? "active"
+                                    : "payment_failed",
+
+                                lastPaymentFailureAt:
+                                    admin.firestore.FieldValue.serverTimestamp(),
+
+                                lastFailedPaymentId:
+                                    paymentEntity?.id || null,
+
                                 lastPaymentEventCreatedAt:
                                     failedPaymentCreatedAt,
+
                                 razorpaySubscriptionId: subscriptionId,
-                                currentPeriodEnd: nowTimestamp,
+
+                                // Never shorten an existing valid paid period.
+                                currentPeriodEnd: existingExpiry > 0
+                                    ? admin.firestore.Timestamp.fromMillis(
+                                        existingExpiry
+                                    )
+                                    : nowTimestamp,
+
                                 updatedAt:
-                                    admin.firestore.FieldValue
-                                        .serverTimestamp()
+                                    admin.firestore.FieldValue.serverTimestamp()
                             }
                         },
                         { merge: true }
@@ -3484,16 +3517,20 @@ app.post("/api/razorpay/webhook", async (req, res) => {
                         subscriptionRef,
                         {
                             status: "payment_failed",
+
                             lastFailedPaymentId:
                                 paymentEntity?.id || null,
+
                             lastFailedPaymentCreatedAt:
                                 failedPaymentCreatedAt,
+
                             lastPaymentEventCreatedAt:
                                 failedPaymentCreatedAt,
+
                             lastWebhookEvent: eventType,
+
                             updatedAt:
-                                admin.firestore.FieldValue
-                                    .serverTimestamp()
+                                admin.firestore.FieldValue.serverTimestamp()
                         },
                         { merge: true }
                     );
