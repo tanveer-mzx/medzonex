@@ -19,55 +19,54 @@ const upload = multer({
     }
 });
 
-const CASHFREE_APP_ID =
-    String(process.env.CASHFREE_APP_ID || "").trim();
+// ======================================================
+// RAZORPAY CONFIGURATION
+// ======================================================
 
-const CASHFREE_SECRET_KEY =
-    String(process.env.CASHFREE_SECRET_KEY || "").trim();
+const Razorpay = require("razorpay");
 
-const CASHFREE_ENV =
-    String(process.env.CASHFREE_ENV || "sandbox")
-        .trim()
-        .toLowerCase();
+const RAZORPAY_KEY_ID =
+    String(process.env.RAZORPAY_KEY_ID || "").trim();
 
-const CASHFREE_API_BASE =
-    CASHFREE_ENV === "production"
-        ? "https://api.cashfree.com/pg"
-        : "https://sandbox.cashfree.com/pg";
+const RAZORPAY_KEY_SECRET =
+    String(process.env.RAZORPAY_KEY_SECRET || "").trim();
 
-const CASHFREE_API_VERSION =
-    "2025-01-01";
+const RAZORPAY_WEBHOOK_SECRET =
+    String(process.env.RAZORPAY_WEBHOOK_SECRET || "").trim();
+
+const razorpay =
+    RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET
+        ? new Razorpay({
+            key_id: RAZORPAY_KEY_ID,
+            key_secret: RAZORPAY_KEY_SECRET
+        })
+        : null;
 
 // ======================================================
 // MEDZONEX SUBSCRIPTION PLANS
 // ======================================================
 
 const MEDZONEX_PLANS = {
-
     monthly: {
         name: "MedZoneX Monthly",
         amount: 449,
-        interval: 1,
-        intervalUnit: "MONTH",
-        cashfreePlanId:"plan_1791216285370_d5kaox"
+        razorpayPlanId: "plan_Tl0KLrhyvsBqQL",
+        totalCount: 120
     },
 
     threeMonth: {
         name: "MedZoneX 3 Months",
         amount: 1200,
-        interval: 3,
-        intervalUnit: "MONTH",
-        cashfreePlanId:"plan_1791216662487_31i150"
+        razorpayPlanId: "plan_TlSmuh1Z3mSRw5",
+        totalCount: 40
     },
 
     sixMonth: {
         name: "MedZoneX 6 Months",
         amount: 2274,
-        interval: 6,
-        intervalUnit: "MONTH",
-        cashfreePlanId:"plan_1791216743771_85gt6d"
+        razorpayPlanId: "plan_TmGgFi0atI45r3",
+        totalCount: 20
     }
-
 };
 
 // ======================================================
@@ -85,7 +84,16 @@ const PORT =
 
 app.use(
     express.json({
-        limit: "1mb"
+        limit: "1mb",
+
+        verify: (req, res, buf) => {
+            if (
+                req.originalUrl.split("?")[0] ===
+                "/api/razorpay/webhook"
+            ) {
+                req.rawBody = Buffer.from(buf);
+            }
+        }
     })
 );
 
@@ -1477,6 +1485,23 @@ app.post(
 
         try {
 
+                    // Verify Firebase user
+                    const decodedToken =
+                        await authenticateFirebaseRequest(req);
+
+                    // Verify trial or paid subscription
+                    const access =
+                        await verifySubscriptionAccess(decodedToken.uid);
+
+                    if (!access.active) {
+                        return res.status(403).json({
+                            success: false,
+                            code: "SUBSCRIPTION_REQUIRED",
+                            message:
+                                "Your free trial has expired. Please subscribe to continue."
+                        });
+                    }
+
             if (!req.file) {
                 return res.status(400).json({
                     success: false,
@@ -1587,592 +1612,2332 @@ Important:
                 }
             });
 
-        } catch (error) {
+                } catch (error) {
 
-            console.error(
-                "Medicine recognition error:",
-                error
-            );
+                    // Firebase authentication errors
+                    if (
+                        error.statusCode === 401 ||
+                        error.statusCode === 503
+                    ) {
+                        return res.status(error.statusCode).json({
+                            success: false,
+                            message: error.message
+                        });
+                    }
 
-            return res.status(500).json({
-                success: false,
-                message:
-                    "Medicine recognition failed."
-            });
-        }
-    }
-);
+                    // OpenAI credits exhausted or quota unavailable
+                    if (
+                        error.status === 429 &&
+                        (
+                            error.code === "credit_balance_exhausted" ||
+                            error.code === "insufficient_quota" ||
+                            error.type === "insufficient_quota"
+                        )
+                    ) {
+                        console.error(
+                            "Medicine recognition unavailable: OpenAI API credits exhausted."
+                        );
+
+                        return res.status(503).json({
+                            success: false,
+                            code: "AI_CREDITS_UNAVAILABLE",
+                            message:
+                                "Medicine recognition is temporarily unavailable. Please try again later."
+                        });
+                    }
+
+                    console.error(
+                        "Medicine recognition error:",
+                        error.message || error
+                    );
+
+                    return res.status(500).json({
+                        success: false,
+                        message:
+                            "Medicine recognition failed. Please try again later."
+                    });
+                }
+            }
+        );
+
 
 // ======================================================
-// CASHFREE SUBSCRIPTION
-// CREATE SUBSCRIPTION
+// RAZORPAY SUBSCRIPTION HELPERS
+// ======================================================
+
+const SUBSCRIPTION_COLLECTION = "razorpaySubscriptions";
+const PAYMENT_COLLECTION = "razorpayPayments";
+const WEBHOOK_EVENT_COLLECTION = "razorpayWebhookEvents";
+
+const PLAN_DURATIONS_MS = {
+    monthly: 30 * 24 * 60 * 60 * 1000,
+    threeMonth: 90 * 24 * 60 * 60 * 1000,
+    sixMonth: 180 * 24 * 60 * 60 * 1000
+};
+
+async function authenticateFirebaseRequest(req) {
+    if (!firebaseInitialized || !firebaseAuth || !db) {
+        const error = new Error(
+            "Firebase authentication is unavailable."
+        );
+
+        error.statusCode = 503;
+        throw error;
+    }
+
+    const authorization = req.headers.authorization || "";
+
+    if (!authorization.startsWith("Bearer ")) {
+        const error = new Error("Authentication required.");
+        error.statusCode = 401;
+        throw error;
+    }
+
+    const idToken = authorization.substring(7).trim();
+
+    if (!idToken) {
+        const error = new Error("Authentication token is missing.");
+        error.statusCode = 401;
+        throw error;
+    }
+
+    return firebaseAuth.verifyIdToken(idToken);
+}
+
+function requireRazorpay() {
+    if (!razorpay || !RAZORPAY_KEY_SECRET) {
+        const error = new Error(
+            "Razorpay is not configured on the server."
+        );
+
+        error.statusCode = 503;
+        throw error;
+    }
+}
+
+function verifyHmacSHA256(
+    message,
+    suppliedSignature,
+    secret
+) {
+    if (
+        typeof message !== "string" &&
+        !Buffer.isBuffer(message)
+    ) {
+        return false;
+    }
+
+    if (
+        !suppliedSignature ||
+        !/^[a-f0-9]{64}$/i.test(suppliedSignature)
+    ) {
+        return false;
+    }
+
+    const expected = crypto
+        .createHmac("sha256", secret)
+        .update(message)
+        .digest();
+
+    const supplied = Buffer.from(
+        suppliedSignature,
+        "hex"
+    );
+
+    return (
+        expected.length === supplied.length &&
+        crypto.timingSafeEqual(expected, supplied)
+    );
+}
+
+function getPlan(planKey) {
+    const plan = MEDZONEX_PLANS[planKey];
+
+    if (!plan || !plan.razorpayPlanId) {
+        const error = new Error(
+            "Invalid MedZoneX subscription plan."
+        );
+
+        error.statusCode = 400;
+        throw error;
+    }
+
+    return plan;
+}
+
+function getSubscriptionExpiry(planKey, startTime = Date.now()) {
+    const duration = PLAN_DURATIONS_MS[planKey];
+
+    if (!duration) {
+        throw new Error("Invalid subscription duration.");
+    }
+
+    return admin.firestore.Timestamp.fromMillis(
+        startTime + duration
+    );
+}
+
+async function getExistingSubscription(uid) {
+    const snapshot = await db
+        .collection(SUBSCRIPTION_COLLECTION)
+        .where("uid", "==", uid)
+        .where("status", "in", ["pending", "active"])
+        .limit(1)
+        .get();
+
+    if (snapshot.empty) {
+        return null;
+    }
+
+    return {
+        id: snapshot.docs[0].id,
+        ...snapshot.docs[0].data()
+    };
+}
+
+// ======================================================
+// RAZORPAY CHECKOUT LOCK — DUPLICATE PREVENTION
+// ======================================================
+
+const CHECKOUT_LOCK_COLLECTION = "razorpayCheckoutLocks";
+
+/**
+ * Atomically claim a checkout lock for a user.
+ * Prevents simultaneous subscription/order creation.
+ */
+async function claimCheckoutLock(uid, operation, planKey) {
+    const lockRef = db
+        .collection(CHECKOUT_LOCK_COLLECTION)
+        .doc(uid);
+
+    const token = crypto.randomUUID();
+
+    await db.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(lockRef);
+
+        if (snapshot.exists) {
+            const current = snapshot.data() || {};
+
+            const error = new Error(
+                current.status === "needs_reconciliation"
+                    ? "A previous checkout needs reconciliation. Please contact support before retrying."
+                    : "A checkout request is already in progress. Please wait before retrying."
+            );
+
+            error.statusCode = 409;
+            throw error;
+        }
+
+        transaction.create(lockRef, {
+            uid,
+            operation,
+            planKey,
+            token,
+            status: "creating",
+            createdAt:
+                admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt:
+                admin.firestore.FieldValue.serverTimestamp()
+        });
+    });
+
+    return {
+        ref: lockRef,
+        token
+    };
+}
+
+/**
+ * Release a checkout lock only when its token matches.
+ */
+async function releaseCheckoutLock(lock) {
+    if (!lock?.ref || !lock?.token) {
+        return;
+    }
+
+    await db.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(lock.ref);
+
+        if (
+            snapshot.exists &&
+            snapshot.data()?.token === lock.token
+        ) {
+            transaction.delete(lock.ref);
+        }
+    });
+}
+
+/**
+ * Preserve the lock when the Razorpay API outcome is uncertain.
+ * This avoids blindly creating a duplicate subscription or order.
+ */
+async function markCheckoutNeedsReconciliation(
+    lock,
+    resourceId = null,
+    reason = "unknown_outcome"
+) {
+    if (!lock?.ref || !lock?.token) {
+        return;
+    }
+
+    await db.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(lock.ref);
+
+        if (
+            snapshot.exists &&
+            snapshot.data()?.token === lock.token
+        ) {
+            transaction.update(lock.ref, {
+                status: "needs_reconciliation",
+                resourceId: resourceId || null,
+                reconciliationReason: reason,
+                updatedAt:
+                    admin.firestore.FieldValue.serverTimestamp()
+            });
+        }
+    });
+}
+
+// ======================================================
+// VERIFY MEDZONEX SUBSCRIPTION ACCESS
+// ======================================================
+
+async function verifySubscriptionAccess(uid) {
+    const userDoc = await db
+        .collection("users")
+        .doc(uid)
+        .get();
+
+    if (!userDoc.exists) {
+        return {
+            active: false,
+            status: "locked"
+        };
+    }
+
+    const userData = userDoc.data() || {};
+    const subscription = userData.subscription || {};
+    const now = Date.now();
+
+    function toMillis(value) {
+        if (!value) return 0;
+
+        if (typeof value.toMillis === "function") {
+            return value.toMillis();
+        }
+
+        if (typeof value.seconds === "number") {
+            return value.seconds * 1000;
+        }
+
+        if (
+            typeof value === "string" ||
+            typeof value === "number"
+        ) {
+            const parsed = new Date(value).getTime();
+
+            return Number.isFinite(parsed) ? parsed : 0;
+        }
+
+        return 0;
+    }
+
+    const paidExpiry = toMillis(
+        subscription.currentPeriodEnd
+    );
+
+    if (
+        subscription.status === "active" &&
+        paidExpiry > now
+    ) {
+        return {
+            active: true,
+            status: "active"
+        };
+    }
+
+    const trialStart = toMillis(
+        userData.trialStartedAt
+    );
+
+    const trialExpiry =
+        trialStart + 48 * 60 * 60 * 1000;
+
+    if (
+        trialStart > 0 &&
+        now < trialExpiry
+    ) {
+        return {
+            active: true,
+            status: "trial"
+        };
+    }
+
+    return {
+        active: false,
+        status: "locked"
+    };
+}
+
+// ======================================================
+// CREATE RAZORPAY RECURRING SUBSCRIPTION
+// POST /api/subscription/create
 // ======================================================
 
 app.post(
     "/api/subscription/create",
     async (req, res) => {
+        let checkoutLock = null;
+        let razorpayRequestStarted = false;
 
         try {
-
-            // ------------------------------------------------
-            // Cashfree configuration
-            // ------------------------------------------------
-
-            if (
-                !CASHFREE_APP_ID ||
-                !CASHFREE_SECRET_KEY
-            ) {
-
-                return res.status(503).json({
-
-                    success: false,
-
-                    message:
-                        "Cashfree is not configured on the server."
-
-                });
-            }
-
-            // ------------------------------------------------
-            // Firebase authentication
-            // ------------------------------------------------
-
-            if (
-                !firebaseInitialized ||
-                !firebaseAuth
-            ) {
-
-                return res.status(503).json({
-
-                    success: false,
-
-                    message:
-                        "Firebase authentication is unavailable."
-
-                });
-            }
-
-            const authorization =
-                req.headers.authorization || "";
-
-            if (
-                !authorization.startsWith("Bearer ")
-            ) {
-
-                return res.status(401).json({
-
-                    success: false,
-
-                    message:
-                        "Authentication required."
-
-                });
-            }
-
-            const idToken =
-                authorization.substring(7).trim();
-
-            if (!idToken) {
-
-                return res.status(401).json({
-
-                    success: false,
-
-                    message:
-                        "Authentication token is missing."
-
-                });
-            }
-
-            // ------------------------------------------------
-            // Verify Firebase user
-            // ------------------------------------------------
+            requireRazorpay();
 
             const decodedToken =
-                await firebaseAuth.verifyIdToken(
-                    idToken
-                );
+                await authenticateFirebaseRequest(req);
 
-            const uid =
-                decodedToken.uid;
+            const uid = decodedToken.uid;
+            const email = decodedToken.email || "";
 
-            const email =
-                decodedToken.email || "";
+            const customerPhone = String(
+                req.body.customerPhone || ""
+            ).trim();
 
-            const customerName =
-                decodedToken.name ||
-                decodedToken.email ||
-                "MedZoneX Customer";
-
-            // ------------------------------------------------
-            // Request data
-            // ------------------------------------------------
-
-            const planKey =
-                String(
-                    req.body.planKey || ""
-                ).trim();
-
-            const customerPhone =
-                String(
-                    req.body.customerPhone || ""
-                ).trim();
-
-            // ------------------------------------------------
-            // Validate plan
-            // ------------------------------------------------
-
-            const selectedPlan =
-                MEDZONEX_PLANS[planKey];
-
-            if (!selectedPlan) {
-
+            if (!/^[6-9]\d{9}$/.test(customerPhone)) {
                 return res.status(400).json({
-
                     success: false,
-
-                    message:
-                        "Invalid MedZoneX subscription plan."
-
-                });
-            }
-
-            // ------------------------------------------------
-            // Validate email
-            // ------------------------------------------------
-
-            if (!email) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Your Firebase account does not have an email address."
-
-                });
-            }
-
-            // ------------------------------------------------
-            // Validate phone
-            // ------------------------------------------------
-
-            if (
-                !/^[6-9]\d{9}$/.test(
-                    customerPhone
-                )
-            ) {
-
-                return res.status(400).json({
-
-                    success: false,
-
                     message:
                         "Enter a valid 10-digit Indian mobile number."
-
                 });
             }
 
-            // ------------------------------------------------
-            // Generate unique Cashfree subscription ID
-            // ------------------------------------------------
+            const planKey = String(
+                req.body.planKey || ""
+            ).trim();
 
-            const subscriptionId =
-                `mzx_${uid}_${Date.now()}`;
+            const selectedPlan = getPlan(planKey);
 
-            // ------------------------------------------------
-            // Create Cashfree subscription
-            // ------------------------------------------------
+            if (!email) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Your Firebase account does not have an email address."
+                });
+            }
 
-            const cashfreeResponse =
-                await fetch(
-                    `${CASHFREE_API_BASE}/subscriptions`,
-                    {
+            // Prevent duplicate pending subscriptions.
+            const existing =
+                await getExistingSubscription(uid);
 
-                        method: "POST",
+            if (existing) {
+                return res.status(409).json({
+                    success: false,
+                    message:
+                        "An existing subscription is already pending or active.",
+                    subscriptionId:
+                        existing.razorpaySubscriptionId || null
+                });
+            }
 
-                        headers: {
+            // Atomically prevent concurrent checkout requests.
+            checkoutLock = await claimCheckoutLock(
+                uid,
+                "recurring_subscription",
+                planKey
+            );
 
-                            "x-client-id":
-                                CASHFREE_APP_ID,
+            // Once the external request starts, its outcome may be uncertain
+            // if a network error occurs. Preserve the lock in that case.
+            razorpayRequestStarted = true;
 
-                            "x-client-secret":
-                                CASHFREE_SECRET_KEY,
+            // total_count is the number of billing cycles.
+            // Twelve cycles means the subscription is finite.
+            const subscription =
+                await razorpay.subscriptions.create({
+                    plan_id: selectedPlan.razorpayPlanId,
+                    total_count: selectedPlan.totalCount,
+                    quantity: 1,
+                    customer_notify: true,
 
-                            "x-api-version":
-                                CASHFREE_API_VERSION,
-
-                            "Accept":
-                                "application/json",
-
-                            "Content-Type":
-                                "application/json"
-
-                        },
-
-                        body:
-                            JSON.stringify({
-
-                                subscription_id:
-                                    subscriptionId,
-
-                                customer_details: {
-
-                                    customer_name:
-                                        customerName,
-
-                                    customer_email:
-                                        email,
-
-                                    customer_phone:
-                                        customerPhone
-
-                                },
-
-                                plan_details: {
-
-                                    plan_id:
-                                        selectedPlan
-                                            .cashfreePlanId
-
-                                },
-
-                                subscription_meta: {
-
-                                    return_url:
-                                        "https://medzonex-backend.onrender.com/api/subscription/return"
-
-                                },
-
-                                subscription_note:
-                                    `MedZoneX ${selectedPlan.name}`,
-
-                                subscription_tags: {
-
-                                    uid,
-
-                                    plan:
-                                        planKey,
-
-                                    product:
-                                        "MedZoneX"
-
-                                }
-
-                            })
-
+                    notes: {
+                        uid,
+                        planKey,
+                        product: "MedZoneX"
                     }
-                );
-
-            // ------------------------------------------------
-            // Read Cashfree response
-            // ------------------------------------------------
-
-            let cashfreeData = null;
-
-            try {
-
-                cashfreeData =
-                    await cashfreeResponse.json();
-
-            } catch {
-
-                cashfreeData = null;
-
-            }
-
-            // ------------------------------------------------
-            // Cashfree error
-            // ------------------------------------------------
-
-            if (!cashfreeResponse.ok) {
-
-                console.error(
-                    "Cashfree subscription creation failed:",
-                    cashfreeData
-                );
-
-                return res.status(
-                    cashfreeResponse.status
-                ).json({
-
-                    success: false,
-
-                    message:
-                        cashfreeData?.message ||
-                        "Cashfree subscription creation failed.",
-
-                    cashfree:
-                        cashfreeData
-
                 });
-
-            }
-
-            // ------------------------------------------------
-            // Save subscription record in Firestore
-            // ------------------------------------------------
-
-            const subscriptionSessionId =
-                cashfreeData
-                    ?.subscription_session_id ||
-                null;
-
-
-            if (!db) {
-
-                console.error(
-                    "Firebase Firestore is unavailable."
-                );
-
-                return res.status(503).json({
-
-                    success: false,
-
-                    message:
-                        "Subscription database is unavailable."
-
-                });
-
-            }
-
 
             await db
-                .collection("cashfreeSubscriptions")
-                .doc(subscriptionId)
+                .collection(SUBSCRIPTION_COLLECTION)
+                .doc(subscription.id)
                 .set({
+                    uid,
+                    email,
+                    planKey,
+                    planName: selectedPlan.name,
+                    amount: selectedPlan.amount,
 
-                    subscriptionId:
-                        subscriptionId,
+                    razorpaySubscriptionId:
+                        subscription.id,
 
-                    uid:
-                        uid,
+                    razorpayPlanId:
+                        selectedPlan.razorpayPlanId,
 
-                    email:
-                        email,
+                    razorpayStatus:
+                        subscription.status || "created",
 
-                    customerName:
-                        customerName,
+                    status: "pending",
 
-                    customerPhone:
-                        customerPhone,
-
-                    planKey:
-                        planKey,
-
-                    planName:
-                        selectedPlan.name,
-
-                    amount:
-                        selectedPlan.amount,
-
-                    cashfreePlanId:
-                        selectedPlan.cashfreePlanId,
-
-                    subscriptionSessionId:
-                        subscriptionSessionId,
-
-                    status:
-                        "pending",
-
-                    authorizationStatus:
-                        "PENDING",
-
-                    environment:
-                        CASHFREE_ENV,
+                    currentPeriodEnd: null,
 
                     createdAt:
-                        new Date(),
+                        admin.firestore.FieldValue
+                            .serverTimestamp(),
 
                     updatedAt:
-                        new Date()
-
+                        admin.firestore.FieldValue
+                            .serverTimestamp()
                 });
 
-
-            console.log(
-                "Cashfree subscription created and saved:",
-                subscriptionId
-            );
-
-
-            // ------------------------------------------------
-            // Success response
-            // ------------------------------------------------
+                // Subscription has been saved successfully.
+                // The checkout lock can now be released.
+                await releaseCheckoutLock(checkoutLock);
+                checkoutLock = null;
 
             return res.json({
-
                 success: true,
 
-                subscriptionId:
+                keyId: RAZORPAY_KEY_ID,
 
-                    subscriptionId,
+                subscriptionId: subscription.id,
 
-                planKey:
+                planKey,
 
-                    planKey,
+                planName: selectedPlan.name,
 
-                planName:
+                amount: selectedPlan.amount,
 
-                    selectedPlan.name,
+                currency: "INR",
 
-                amount:
-
-                    selectedPlan.amount,
-
-                subscriptionSessionId:
-
-                    subscriptionSessionId,
-
-                data:
-
-                    cashfreeData
-
+                shortUrl: subscription.short_url || null
             });
 
-            } catch (error) {
 
-                console.error(
-                    "Cashfree subscription creation error:",
-                    error
-                );
+        } catch (error) {
 
-                return res.status(500).json({
-
-                    success: false,
-
-                    message:
-                        "Unable to create Cashfree subscription.",
-
-                    error:
-                        error?.message || "Unknown server error."
-
-                });
-
-            }
-
-        }
-        
-);
-
-
-// ======================================================
-// CASHFREE SUBSCRIPTION RETURN
-// ======================================================
-
-app.post("/api/subscription/return", async (req, res) => {
-
-    try {
-
-        const subscriptionId =
-            req.body?.subscriptionId ||
-            req.body?.subscription_id;
-
-        if (!subscriptionId) {
-            return res.status(400).send(`
-                <h2>Subscription ID missing</h2>
-                <p>Cashfree did not provide a subscription ID.</p>
-            `);
-        }
-
-        if (
-            !CASHFREE_APP_ID ||
-            !CASHFREE_SECRET_KEY
-        ) {
-            return res.status(500).send(`
-                <h2>Payment Configuration Error</h2>
-                <p>Cashfree credentials are not configured.</p>
-            `);
-        }
-
-        // Fetch subscription status from Cashfree
-        const cashfreeResponse = await fetch(
-            `${CASHFREE_API_BASE}/subscriptions/${encodeURIComponent(subscriptionId)}`,
-            {
-                method: "GET",
-                headers: {
-                    "x-client-id": CASHFREE_APP_ID,
-                    "x-client-secret": CASHFREE_SECRET_KEY,
-                    "x-api-version": CASHFREE_API_VERSION,
-                    "Accept": "application/json"
+            if (checkoutLock) {
+                try {
+                    if (razorpayRequestStarted) {
+                        await markCheckoutNeedsReconciliation(
+                            checkoutLock,
+                            null,
+                            "subscription_creation_outcome_uncertain"
+                        );
+                    } else {
+                        await releaseCheckoutLock(checkoutLock);
+                    }
+                } catch (lockError) {
+                    console.error(
+                        "Subscription checkout lock recovery error:",
+                        lockError.message
+                    );
                 }
             }
-        );
-
-        const cashfreeData =
-            await cashfreeResponse.json();
-
-        if (!cashfreeResponse.ok) {
 
             console.error(
-                "Cashfree subscription fetch failed:",
-                cashfreeData
+                "Razorpay subscription creation error:",
+                error
             );
 
-            return res.status(502).send(`
-                <h2>Unable to verify subscription</h2>
-                <p>Please contact MedZoneX support.</p>
-            `);
+            return res.status(
+                error.statusCode || 500
+            ).json({
+                success: false,
+                message:
+                    error.statusCode
+                        ? error.message
+                        : "Unable to create Razorpay subscription."
+            });
+        }
+    }
+);
+
+// ======================================================
+// CREATE MANUAL PAYMENT ORDER
+// POST /api/subscription/manual-order
+// ======================================================
+
+app.post(
+    "/api/subscription/manual-order",
+    async (req, res) => {
+        let checkoutLock = null;
+        let razorpayRequestStarted = false;
+
+        try {
+            requireRazorpay();
+
+            if (!firebaseInitialized || !db) {
+                return res.status(503).json({
+                    success: false,
+                    message: "Database is unavailable."
+                });
+            }
+
+            const decodedToken =
+                await authenticateFirebaseRequest(req);
+
+            const uid = decodedToken.uid;
+
+            const planKey = String(
+                req.body?.planKey || ""
+            ).trim();
+
+            const selectedPlan = getPlan(planKey);
+
+            if (!selectedPlan) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Please select a valid subscription plan."
+                });
+            }
+
+            // Read the user's current subscription.
+            const userRef = db
+                .collection("users")
+                .doc(uid);
+
+            const userSnapshot = await userRef.get();
+
+            if (!userSnapshot.exists) {
+                return res.status(404).json({
+                    success: false,
+                    message: "User account was not found."
+                });
+            }
+
+            const userData = userSnapshot.data() || {};
+            const currentSubscription =
+                userData.subscription || {};
+
+            const currentExpiry =
+                currentSubscription.currentPeriodEnd
+                    ?.toMillis?.() || 0;
+
+            const currentStatus =
+                String(currentSubscription.status || "")
+                    .toLowerCase();
+
+            const currentRecurringId =
+                currentSubscription.razorpaySubscriptionId;
+
+            // Do not create a manual order while a recurring
+            // subscription is still active or awaiting payment.
+            if (
+                currentRecurringId &&
+                [
+                    "created",
+                    "authenticated",
+                    "pending",
+                    "active",
+                    "halted",
+                    "paused"
+                ].includes(currentStatus)
+            ) {
+                return res.status(409).json({
+                    success: false,
+                    code: "RECURRING_SUBSCRIPTION_EXISTS",
+                    message:
+                        "A recurring subscription already exists. Manage that subscription before starting manual payment."
+                });
+            }
+
+            // Do not start another manual payment while an
+            // earlier manual order is still awaiting verification.
+            const pendingPayments = await db
+                .collection(PAYMENT_COLLECTION)
+                .where("uid", "==", uid)
+                .where("status", "==", "created")
+                .limit(10)
+                .get();
+
+            if (!pendingPayments.empty) {
+                return res.status(409).json({
+                    success: false,
+                    code: "PAYMENT_ALREADY_PENDING",
+                    message:
+                        "A payment is already pending. Complete or resolve it before creating another order."
+                });
+            }
+
+            // If a manual subscription is currently paid,
+            // do not start another manual payment until it expires.
+            if (
+                !currentRecurringId &&
+                currentStatus === "active" &&
+                currentExpiry > Date.now()
+            ) {
+                return res.status(409).json({
+                    success: false,
+                    code: "SUBSCRIPTION_ALREADY_ACTIVE",
+                    message:
+                        "Your subscription is already active."
+                });
+            }
+
+            // Prevent simultaneous manual payment order creation.
+            checkoutLock = await claimCheckoutLock(
+                uid,
+                "manual_payment_order",
+                planKey
+            );
+
+            razorpayRequestStarted = true;
+
+            const order = await razorpay.orders.create({
+                amount: selectedPlan.amount * 100,
+                currency: "INR",
+
+                receipt:
+                    `mzx_${crypto.randomBytes(8).toString("hex")}`,
+
+                notes: {
+                    uid,
+                    planKey,
+                    product: "MedZoneX",
+                    paymentType: "manual_subscription_payment"
+                }
+            });
+
+            await db
+                .collection(PAYMENT_COLLECTION)
+                .doc(order.id)
+                .set({
+                    uid,
+                    planKey,
+                    planName: selectedPlan.name,
+                    amount: selectedPlan.amount * 100,
+                    currency: "INR",
+                    razorpayOrderId: order.id,
+                    status: "created",
+
+                    createdAt:
+                        admin.firestore.FieldValue
+                            .serverTimestamp()
+                });
+
+                // Payment order is saved in Firestore.
+                await releaseCheckoutLock(checkoutLock);
+                checkoutLock = null;
+
+            return res.json({
+                success: true,
+                keyId: RAZORPAY_KEY_ID,
+                orderId: order.id,
+                amount: order.amount,
+                currency: order.currency,
+                planKey,
+                planName: selectedPlan.name
+            });
+
+        } catch (error) {
+
+             if (checkoutLock) {
+                 try {
+                     if (razorpayRequestStarted) {
+                         await markCheckoutNeedsReconciliation(
+                             checkoutLock,
+                             null,
+                             "manual_order_creation_outcome_uncertain"
+                         );
+                     } else {
+                         await releaseCheckoutLock(checkoutLock);
+                     }
+                 } catch (lockError) {
+                     console.error(
+                         "Manual checkout lock recovery error:",
+                         lockError.message
+                     );
+                 }
+             }
+
+            console.error(
+                "Manual payment order error:",
+                error
+            );
+
+            return res.status(
+                error.statusCode || 500
+            ).json({
+                success: false,
+                message:
+                    error.statusCode
+                        ? error.message
+                        : "Unable to create payment order."
+            });
+        }
+    }
+);
+
+// ======================================================
+// VERIFY MANUAL PAYMENT
+// POST /api/subscription/verify-manual-payment
+// ======================================================
+
+app.post(
+    "/api/subscription/verify-manual-payment",
+    async (req, res) => {
+        try {
+            requireRazorpay();
+
+            const decodedToken =
+                await authenticateFirebaseRequest(req);
+
+            const uid = decodedToken.uid;
+
+            const orderId = String(
+                req.body.razorpay_order_id || ""
+            );
+
+            const paymentId = String(
+                req.body.razorpay_payment_id || ""
+            );
+
+            const signature = String(
+                req.body.razorpay_signature || ""
+            );
+
+            if (!orderId || !paymentId || !signature) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Razorpay payment verification details are missing."
+                });
+            }
+
+            const paymentRef = db
+                .collection(PAYMENT_COLLECTION)
+                .doc(orderId);
+
+            const paymentDoc = await paymentRef.get();
+
+            if (!paymentDoc.exists) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Payment order not found."
+                });
+            }
+
+            const paymentData = paymentDoc.data();
+
+            if (paymentData.uid !== uid) {
+                return res.status(403).json({
+                    success: false,
+                    message:
+                        "This payment order does not belong to your account."
+                });
+            }
+
+            const validSignature = verifyHmacSHA256(
+                `${orderId}|${paymentId}`,
+                signature,
+                RAZORPAY_KEY_SECRET
+            );
+
+            if (!validSignature) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid payment signature."
+                });
+            }
+
+            // Fetch and validate payment directly from Razorpay.
+            const payment =
+                await razorpay.payments.fetch(paymentId);
+
+            if (
+                payment.order_id !== orderId ||
+                payment.status !== "captured" ||
+                Number(payment.amount) !== Number(paymentData.amount) ||
+                payment.currency !== "INR"
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Payment is not captured or its details do not match."
+                });
+            }
+
+            // Verify that the payment belongs to a valid MedZoneX plan.
+            const verifiedPlan = MEDZONEX_PLANS[paymentData.planKey];
+
+            if (
+                !verifiedPlan ||
+                Number(payment.amount) !== Number(verifiedPlan.amount) * 100 ||
+                paymentData.currency !== "INR" ||
+                paymentData.razorpayOrderId !== orderId
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Payment order does not match a valid MedZoneX plan."
+                });
+            }
+
+            // Return already-processed success only after signature
+            // and Razorpay payment details have been verified.
+            if (paymentData.status === "paid") {
+                if (paymentData.razorpayPaymentId !== paymentId) {
+                    return res.status(409).json({
+                        success: false,
+                        message:
+                            "This order was already processed with a different payment."
+                    });
+                }
+
+                return res.json({
+                    success: true,
+                    alreadyProcessed: true,
+                    message: "Payment was already verified."
+                });
+            }
+
+            const planKey = paymentData.planKey;
+
+            const userRef = db
+                .collection("users")
+                .doc(uid);
+
+            const now = Date.now();
+
+            const transactionResult = await db.runTransaction(async (transaction) => {
+                const freshPayment =
+                    await transaction.get(paymentRef);
+
+                if (!freshPayment.exists) {
+                    throw new Error("Payment record disappeared.");
+                }
+
+                const freshPaymentData = freshPayment.data();
+
+                // Revalidate ownership and order binding inside the transaction.
+                if (
+                    freshPaymentData.uid !== uid ||
+                    freshPaymentData.razorpayOrderId !== orderId
+                ) {
+                    throw new Error(
+                        "Payment ownership or order mismatch."
+                    );
+                }
+
+                // Revalidate the plan and amount against the fresh Firestore record.
+                const freshPlan =
+                    MEDZONEX_PLANS[freshPaymentData.planKey];
+
+                if (
+                    !freshPlan ||
+                    freshPaymentData.currency !== "INR" ||
+                    Number(freshPaymentData.amount) !==
+                        Number(freshPlan.amount) * 100 ||
+                    freshPaymentData.planKey !== paymentData.planKey
+                ) {
+                    throw new Error(
+                        "Fresh payment record failed plan validation."
+                    );
+                }
+
+                // Do not process an order already associated with another payment.
+                if (freshPaymentData.status === "paid") {
+                    if (freshPaymentData.razorpayPaymentId !== paymentId) {
+                        throw new Error(
+                            "Order was already processed with another payment."
+                        );
+                    }
+
+                    return {
+                        applied: true,
+                        alreadyPaid: true
+                    };
+                }
+
+                // Only a newly created order can grant subscription access.
+                if (freshPaymentData.status !== "created") {
+                    throw new Error(
+                        "This payment order cannot be processed again."
+                    );
+                }
+
+                const freshUser = await transaction.get(userRef);
+
+                if (!freshUser.exists) {
+                    throw new Error("User account was not found.");
+                }
+
+                const userData = freshUser.data() || {};
+
+                const currentSubscription =
+                    userData.subscription || {};
+
+                const existingExpiry =
+                    currentSubscription.currentPeriodEnd
+                        ?.toMillis?.() || 0;
+
+                const currentStatus =
+                    String(currentSubscription.status || "").toLowerCase();
+
+                const currentRecurringId =
+                    currentSubscription.razorpaySubscriptionId || null;
+
+                const nowMs = Date.now();
+
+                if (
+                    currentRecurringId &&
+                    ["created", "authenticated", "pending", "active", "halted", "paused"]
+                        .includes(currentStatus)
+                ) {
+                    transaction.update(paymentRef, {
+                        status: "captured_conflict",
+                        razorpayPaymentId: paymentId,
+                        conflictReason:
+                            "A recurring subscription exists; manual payment needs review.",
+                        updatedAt: serverTimestamp()
+                    });
+
+                    return {
+                        applied: false,
+                        conflict: true
+                    };
+                }
+
+                const paymentCreatedAt =
+                    freshPaymentData.createdAt?.toMillis?.() || 0;
+
+                const subscriptionUpdatedAt =
+                    currentSubscription.updatedAt?.toMillis?.() || 0;
+
+                if (
+                    currentStatus === "active" &&
+                    existingExpiry > nowMs &&
+                    subscriptionUpdatedAt > paymentCreatedAt
+                ) {
+                    transaction.update(paymentRef, {
+                        status: "captured_conflict",
+                        razorpayPaymentId: paymentId,
+                        conflictReason:
+                            "Subscription is already active; manual payment needs review.",
+                        updatedAt: serverTimestamp()
+                    });
+
+                    return {
+                        applied: false,
+                        conflict: true
+                    };
+                }
+                const periodStart =
+                    Math.max(now, existingExpiry);
+
+                const expiry =
+                    getSubscriptionExpiry(
+                        planKey,
+                        periodStart
+                    );
+
+                transaction.set(
+                    userRef,
+                    {
+                        subscription: {
+                            provider: "razorpay",
+                            status: "active",
+                            planKey,
+                            planName: paymentData.planName,
+
+                            currentPeriodStart:
+                                admin.firestore.Timestamp
+                                    .fromMillis(periodStart),
+
+                            currentPeriodEnd: expiry,
+
+                            lastPaymentId: paymentId,
+                            lastOrderId: orderId,
+
+                            updatedAt:
+                                admin.firestore.FieldValue
+                                    .serverTimestamp()
+                        }
+                    },
+                    { merge: true }
+                );
+
+                transaction.update(paymentRef, {
+                    status: "paid",
+                    razorpayPaymentId: paymentId,
+
+                    paidAt:
+                        admin.firestore.FieldValue
+                            .serverTimestamp(),
+
+                    updatedAt:
+                        admin.firestore.FieldValue
+                            .serverTimestamp()
+                });
+            });
+
+            if (transactionResult?.conflict) {
+                return res.status(409).json({
+                    success: false,
+                    conflict: true,
+                    paymentRecorded: true,
+                    message:
+                        "Payment was received, but could not be applied automatically. Please contact support."
+                });
+            }
+
+            return res.json({
+                success: true,
+                verified: true,
+                message:
+                    "Payment verified. Subscription access has been updated."
+            });
+
+        } catch (error) {
+            console.error(
+                "Manual payment verification error:",
+                error
+            );
+
+            return res.status(
+                error.statusCode || 500
+            ).json({
+                success: false,
+                message:
+                    error.statusCode
+                        ? error.message
+                        : "Unable to verify payment."
+            });
+        }
+    }
+);
+
+// ======================================================
+// GET SUBSCRIPTION STATUS
+// GET /api/subscription/status
+// ======================================================
+
+app.get(
+    "/api/subscription/status",
+    async (req, res) => {
+        try {
+            const decodedToken =
+                await authenticateFirebaseRequest(req);
+
+            const uid = decodedToken.uid;
+
+            const userDoc = await db
+                .collection("users")
+                .doc(uid)
+                .get();
+
+            // Missing user document: deny access
+            if (!userDoc.exists) {
+                return res.json({
+                    success: true,
+                    active: false,
+                    status: "locked",
+                    reason: "user_not_found",
+                    planKey: null,
+                    expiresAt: null
+                });
+            }
+
+            const userData = userDoc.data() || {};
+            const subscription = userData.subscription || {};
+            const now = Date.now();
+
+            // Convert Firestore Timestamp or supported date values to milliseconds
+            const toMillis = (value) => {
+                if (!value) return 0;
+
+                if (typeof value.toMillis === "function") {
+                    return value.toMillis();
+                }
+
+                if (typeof value.seconds === "number") {
+                    return value.seconds * 1000;
+                }
+
+                if (typeof value === "string" || typeof value === "number") {
+                    const parsed = new Date(value).getTime();
+                    return Number.isFinite(parsed) ? parsed : 0;
+                }
+
+                return 0;
+            };
+
+            // 1. Check paid subscription first
+            const paidExpiry =
+                toMillis(subscription.currentPeriodEnd);
+
+            const paidStatus =
+                subscription.status === "active" &&
+                paidExpiry > now;
+
+            if (paidStatus) {
+                return res.json({
+                    success: true,
+                    active: true,
+                    status: "active",
+                    accessType: "subscription",
+                    planKey: subscription.planKey || null,
+                    expiresAt: new Date(paidExpiry).toISOString()
+                });
+            }
+
+            // 2. Check the 48-hour free trial
+            const trialStart =
+                toMillis(userData.trialStartedAt);
+
+            const trialDurationMs =
+                48 * 60 * 60 * 1000;
+
+            const trialExpiry =
+                trialStart > 0
+                    ? trialStart + trialDurationMs
+                    : 0;
+
+            const trialActive =
+                trialStart > 0 &&
+                now < trialExpiry;
+
+            if (trialActive) {
+                return res.json({
+                    success: true,
+                    active: true,
+                    status: "trial",
+                    accessType: "trial",
+                    planKey: null,
+                    expiresAt: new Date(trialExpiry).toISOString()
+                });
+            }
+
+            // 3. Neither paid access nor trial is valid
+            return res.json({
+                success: true,
+                active: false,
+                status: "locked",
+                reason: trialStart > 0
+                    ? "trial_expired"
+                    : "trial_start_missing",
+                planKey: subscription.planKey || null,
+                expiresAt: null
+            });
+
+        } catch (error) {
+            console.error(
+                "Subscription status error:",
+                error
+            );
+
+            return res.status(
+                error.statusCode || 500
+            ).json({
+                success: false,
+                active: false,
+                status: "locked",
+                message: error.statusCode
+                    ? error.message
+                    : "Unable to fetch subscription status."
+            });
+        }
+    }
+);
+
+// ======================================================
+// RAZORPAY WEBHOOK
+// POST /api/razorpay/webhook
+// ======================================================
+
+app.post("/api/razorpay/webhook", async (req, res) => {
+    let eventRef = null;
+    let eventClaimed = false;
+
+    try {
+        // 1. Check configuration.
+        if (!RAZORPAY_WEBHOOK_SECRET) {
+            console.error(
+                "Razorpay webhook secret is missing."
+            );
+
+            return res.status(500).json({
+                success: false,
+                message: "Webhook configuration error."
+            });
         }
 
-        const authorizationStatus =
-            cashfreeData
-                ?.authorization_details
-                ?.authorization_status;
+        if (!firebaseInitialized || !db) {
+            return res.status(503).json({
+                success: false,
+                message: "Database is unavailable."
+            });
+        }
 
-        console.log(
-            "Cashfree Subscription:",
-            subscriptionId
+        // 2. Verify exact raw body.
+        const signature =
+            req.headers["x-razorpay-signature"];
+
+        const rawBody = req.rawBody;
+
+        if (!Buffer.isBuffer(rawBody)) {
+            return res.status(400).json({
+                success: false,
+                message: "Webhook raw body is missing."
+            });
+        }
+
+        const validSignature = verifyHmacSHA256(
+            rawBody,
+            signature,
+            RAZORPAY_WEBHOOK_SECRET
         );
 
-        console.log(
-            "Authorization Status:",
-            authorizationStatus
-        );
+        if (!validSignature) {
+            console.error(
+                "Invalid Razorpay webhook signature."
+            );
 
-        // ============================================
-        // SUCCESS
-        // ============================================
+            return res.status(400).json({
+                success: false,
+                message: "Invalid webhook signature."
+            });
+        }
 
-        if (authorizationStatus === "ACTIVE") {
+        // 3. Validate event.
+        const event = req.body;
 
-            return res.redirect(
-                `https://medzonex.site/?subscription=success&subscriptionId=${encodeURIComponent(subscriptionId)}`
+        const eventId =
+            req.headers["x-razorpay-event-id"];
+
+        if (
+            !eventId ||
+            typeof eventId !== "string" ||
+            !event ||
+            typeof event.event !== "string"
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid webhook event."
+            });
+        }
+
+        const eventType = event.event;
+
+        const subscriptionEntity =
+            event.payload?.subscription?.entity || null;
+
+        const paymentEntity =
+            event.payload?.payment?.entity || null;
+
+        const subscriptionId =
+            subscriptionEntity?.id ||
+            paymentEntity?.subscription_id ||
+            null;
+
+       // ----------------------------------------------
+       // 4. CLAIM OR RECOVER WEBHOOK EVENT
+       // ----------------------------------------------
+
+       const claimToken = crypto.randomUUID();
+
+       eventRef = db
+           .collection(WEBHOOK_EVENT_COLLECTION)
+           .doc(eventId);
+
+       const PROCESSING_TIMEOUT_MS = 2 * 60 * 1000;
+
+       let claimResult = "busy";
+
+       await db.runTransaction(async (transaction) => {
+            claimResult = "busy";
+
+           const eventSnapshot = await transaction.get(eventRef);
+
+           // New event: claim it.
+           if (!eventSnapshot.exists) {
+               transaction.create(eventRef, {
+                   eventId,
+                   eventType,
+                   eventPayload: event,
+                   subscriptionId: subscriptionId || null,
+                   status: "processing",
+                   claimToken,
+                   receivedAt:
+                       admin.firestore.FieldValue.serverTimestamp(),
+                   processingStartedAt:
+                       admin.firestore.FieldValue.serverTimestamp(),
+                   attemptCount: 1
+               });
+
+               claimResult = "claimed";
+               return;
+           }
+
+           const existingEvent = eventSnapshot.data();
+
+           // Already processed: never process it again.
+           if (existingEvent.status === "processed") {
+               claimResult = "processed";
+               return;
+           }
+
+           // Retry unmatched events only when their retry time is due.
+           if (existingEvent.status === "unmatched") {
+               const nextRetryAt =
+                   existingEvent.nextRetryAt?.toMillis?.() || 0;
+
+               const attemptCount =
+                   Number(existingEvent.attemptCount || 1);
+
+               const MAX_WEBHOOK_ATTEMPTS = 10;
+
+               if (attemptCount >= MAX_WEBHOOK_ATTEMPTS) {
+                   claimResult = "retry_limit_reached";
+                   return;
+               }
+
+               if (nextRetryAt > Date.now()) {
+                   claimResult = "retry_not_due";
+                   return;
+               }
+
+               transaction.update(eventRef, {
+                   status: "processing",
+                   claimToken,
+                   processingStartedAt:
+                       admin.firestore.FieldValue.serverTimestamp(),
+                   attemptCount: attemptCount + 1,
+                   recoveredAt:
+                       admin.firestore.FieldValue.serverTimestamp()
+               });
+
+               claimResult = "claimed";
+               return;
+           }
+
+           // Only recover a processing claim if it is stale.
+           const startedAt =
+               existingEvent.processingStartedAt
+                   ?.toMillis?.() ||
+               existingEvent.receivedAt
+                   ?.toMillis?.() ||
+               0;
+
+           const isStale =
+               existingEvent.status === "processing" &&
+               startedAt > 0 &&
+               Date.now() - startedAt > PROCESSING_TIMEOUT_MS;
+
+           if (isStale) {
+               transaction.update(eventRef, {
+                   status: "processing",
+                   claimToken,
+                   processingStartedAt:
+                       admin.firestore.FieldValue.serverTimestamp(),
+                   attemptCount:
+                       Number(existingEvent.attemptCount || 1) + 1,
+                   recoveredAt:
+                       admin.firestore.FieldValue.serverTimestamp()
+               });
+
+               claimResult = "claimed";
+           }
+       });
+
+       // ----------------------------------------------
+       // 5. HANDLE CLAIM RESULT
+       // ----------------------------------------------
+       if (claimResult === "processed") {
+           return res.status(200).json({
+               success: true,
+               duplicate: true
+           });
+       }
+
+       if (claimResult === "retry_limit_reached") {
+           return res.status(200).json({
+               success: true,
+               unmatched: true,
+               retryLimitReached: true
+           });
+       }
+
+       if (claimResult === "retry_not_due") {
+           return res.status(200).json({
+               success: true,
+               unmatched: true,
+               retryScheduled: true
+           });
+       }
+
+       if (claimResult !== "claimed") {
+           return res.status(500).json({
+               success: false,
+               message: "Webhook event is already being processed."
+           });
+       }
+
+       eventClaimed = true;
+
+
+        // 5. Locate MedZoneX subscription.
+        let subscriptionRecord = null;
+
+        if (subscriptionId) {
+            const subscriptionDoc = await db
+                .collection(SUBSCRIPTION_COLLECTION)
+                .doc(subscriptionId)
+                .get();
+
+            if (subscriptionDoc.exists) {
+                subscriptionRecord = {
+                    id: subscriptionDoc.id,
+                    ...subscriptionDoc.data()
+                };
+            }
+        }
+
+        // Unknown events should be acknowledged after
+        // successful signature verification.
+        const supportedEvents = [
+            "subscription.activated",
+            "subscription.authenticated",
+            "subscription.pending",
+            "subscription.charged",
+            "subscription.updated",
+            "subscription.resumed",
+            "subscription.paused",
+            "subscription.halted",
+            "subscription.cancelled",
+            "subscription.completed",
+            "payment.failed"
+        ];
+
+        if (!supportedEvents.includes(eventType)) {
+            await db.runTransaction(async (transaction) => {
+                const snapshot = await transaction.get(eventRef);
+
+                if (
+                    !snapshot.exists ||
+                    snapshot.data().status !== "processing" ||
+                    snapshot.data().claimToken !== claimToken
+                ) {
+                    throw new Error("Webhook claim ownership lost.");
+                }
+
+                transaction.update(eventRef, {
+                    status: "processed",
+                    ignored: true,
+                    processedAt:
+                        admin.firestore.FieldValue.serverTimestamp()
+                });
+            });
+
+            return res.status(200).json({
+                success: true,
+                ignored: true
+            });
+        }
+
+        // No matching subscription means we cannot safely
+        // change any user's subscription access.
+        if (!subscriptionRecord?.uid) {
+            console.error(
+                "No matching MedZoneX subscription found.",
+                {
+                    eventType,
+                    subscriptionId
+                }
+            );
+
+            // Record the event for investigation.
+            await db.runTransaction(async (transaction) => {
+                const snapshot = await transaction.get(eventRef);
+
+                if (
+                    !snapshot.exists ||
+                    snapshot.data().status !== "processing" ||
+                    snapshot.data().claimToken !== claimToken
+                ) {
+                    throw new Error(
+                        "Webhook claim ownership lost."
+                    );
+                }
+
+                const currentAttemptCount =
+                    Number(snapshot.data().attemptCount || 1);
+
+                const retryDelayMs = Math.min(
+                    60 * 60 * 1000,
+                    60 * 1000 * Math.pow(
+                        2,
+                        Math.max(0, currentAttemptCount - 1)
+                    )
+                );
+
+                transaction.update(eventRef, {
+                    status: "unmatched",
+                    subscriptionId: subscriptionId || null,
+                    nextRetryAt:
+                        admin.firestore.Timestamp.fromMillis(
+                            Date.now() + retryDelayMs
+                        ),
+                    lastError: "Matching subscription record not found.",
+                    updatedAt:
+                        admin.firestore.FieldValue.serverTimestamp()
+                });
+            });
+
+            // Acknowledge to avoid an endless retry loop.
+            return res.status(200).json({
+                success: true,
+                matched: false
+            });
+        }
+
+        const uid = subscriptionRecord.uid;
+
+        const userRef = db
+            .collection("users")
+            .doc(uid);
+
+        const subscriptionRef = db
+            .collection(SUBSCRIPTION_COLLECTION)
+            .doc(subscriptionId);
+
+        // 6. Validate recurring payment failure linkage.
+        if (
+            eventType === "payment.failed" &&
+            paymentEntity?.subscription_id !== subscriptionId
+        ) {
+            throw new Error(
+                "Failed payment does not match the subscription."
             );
         }
 
-        // ============================================
-        // FAILURE
-        // ============================================
+        // Validate recurring payment before granting subscription access.
+        if (eventType === "subscription.charged") {
+            const expectedPlan =
+                MEDZONEX_PLANS[subscriptionRecord.planKey];
 
-        if (authorizationStatus === "FAILURE") {
+            if (!expectedPlan) {
+                throw new Error(
+                    "Subscription has an invalid plan."
+                );
+            }
 
-            return res.redirect(
-                `https://medzonex.site/?subscription=failed&subscriptionId=${encodeURIComponent(subscriptionId)}`
-            );
+            // A charged event must include a usable payment entity.
+            if (
+                !paymentEntity ||
+                typeof paymentEntity.id !== "string" ||
+                !paymentEntity.id.trim()
+            ) {
+                throw new Error(
+                    "Charged event is missing a valid payment ID."
+                );
+            }
+
+            // Require an exact amount match; missing amounts are rejected.
+            if (
+                paymentEntity.amount == null ||
+                !Number.isSafeInteger(Number(paymentEntity.amount)) ||
+                Number(paymentEntity.amount) !==
+                    expectedPlan.amount * 100
+            ) {
+                throw new Error(
+                    "Recurring payment amount does not match the plan."
+                );
+            }
+
+            // Require INR currency.
+            if (paymentEntity.currency !== "INR") {
+                throw new Error(
+                    "Recurring payment currency does not match INR."
+                );
+            }
+
+            // Require the payment to belong to this subscription.
+            if (
+                paymentEntity.subscription_id !== subscriptionId
+            ) {
+                throw new Error(
+                    "Charged payment belongs to another subscription."
+                );
+            }
         }
 
-        // ============================================
-        // PENDING
-        // ============================================
+        // 7. Update subscription and user atomically.
+        await db.runTransaction(async (transaction) => {
+            // First, verify that this handler still owns the event.
+            const eventSnapshot =
+                await transaction.get(eventRef);
 
-        return res.redirect(
-            `https://medzonex.site/?subscription=pending&subscriptionId=${encodeURIComponent(subscriptionId)}`
-        );
+            if (!eventSnapshot.exists) {
+                throw new Error(
+                    "Webhook event claim no longer exists."
+                );
+            }
+
+            const currentEvent = eventSnapshot.data();
+
+            if (
+                currentEvent.status !== "processing" ||
+                currentEvent.claimToken !== claimToken
+            ) {
+                throw new Error(
+                    "Webhook claim ownership lost; refusing subscription update."
+                );
+            }
+
+            // Continue with the existing transaction.
+            const userSnapshot =
+                await transaction.get(userRef);
+
+            const currentUser = userSnapshot.exists
+                ? userSnapshot.data()
+                : {};
+
+            const currentSubscription =
+                currentUser.subscription || {};
+
+            const now = Date.now();
+
+            const nowTimestamp =
+                admin.firestore.Timestamp.fromMillis(now);
+
+            const currentSubscriptionId =
+                currentSubscription.razorpaySubscriptionId || null;
+
+            // A separate manually paid subscription must not
+            // be overwritten by an unrelated recurring event.
+            const hasManualPayment =
+                currentSubscription.status === "active" &&
+                Boolean(currentSubscription.lastOrderId) &&
+                !currentSubscriptionId;
+
+            const belongsToCurrentSubscription =
+                !currentSubscriptionId ||
+                currentSubscriptionId === subscriptionId;
+
+            const canChangeAccess =
+                belongsToCurrentSubscription &&
+                !hasManualPayment;
+
+                          // ----------------------------------------------
+                          // SUCCESSFUL RECURRING CHARGE
+                          // ----------------------------------------------
+                          if (eventType === "subscription.charged") {
+                              const periodEndSeconds = Number(
+                                  subscriptionEntity?.current_end || 0
+                              );
+                              const successfulPaymentCreatedAt = Number(
+                                  paymentEntity?.created_at ||
+                                  event.created_at ||
+                                  0
+                              );
+
+                              const lastSuccessfulPaymentCreatedAt = Number(
+                                  currentSubscription.lastSuccessfulPaymentCreatedAt || 0
+                              );
+
+                              const isOlderOrUnverifiableSuccess =
+                                  lastSuccessfulPaymentCreatedAt > 0 &&
+                                  (
+                                      successfulPaymentCreatedAt <= 0 ||
+                                      successfulPaymentCreatedAt <
+                                          lastSuccessfulPaymentCreatedAt
+                                  );
+
+                              const expiry = periodEndSeconds > 0
+                                  ? admin.firestore.Timestamp.fromMillis(
+                                      periodEndSeconds * 1000
+                                  )
+                                  : getSubscriptionExpiry(
+                                      subscriptionRecord.planKey,
+                                      now
+                                  );
+
+                              if (
+                                  canChangeAccess &&
+                                  !isOlderOrUnverifiableSuccess
+                              ) {
+                                  transaction.set(
+                                      userRef,
+                                      {
+                                          subscription: {
+                                              provider: "razorpay",
+                                              status: "active",
+                                              planKey: subscriptionRecord.planKey,
+                                              planName: subscriptionRecord.planName,
+                                              razorpaySubscriptionId: subscriptionId,
+                                              lastPaymentId:
+                                                  paymentEntity?.id || null,
+                                              lastSuccessfulPaymentCreatedAt:
+                                                  successfulPaymentCreatedAt,
+
+                                              lastPaymentEventCreatedAt: Number(
+                                                  event.created_at || successfulPaymentCreatedAt || 0
+                                              ),
+                                              currentPeriodStart:
+                                                  admin.firestore.Timestamp.fromMillis(
+                                                      Number(
+                                                          subscriptionEntity?.current_start ||
+                                                          now / 1000
+                                                      ) * 1000
+                                                  ),
+                                              currentPeriodEnd: expiry,
+                                              updatedAt:
+                                                  admin.firestore.FieldValue
+                                                      .serverTimestamp()
+                                          }
+                                      },
+                                      { merge: true }
+                                  );
+
+                                  transaction.set(
+                                      subscriptionRef,
+                                      {
+                                          status: "active",
+                                          razorpayStatus:
+                                              subscriptionEntity?.status || "active",
+                                          currentPeriodEnd: expiry,
+                                          lastWebhookEvent: eventType,
+                                          updatedAt:
+                                              admin.firestore.FieldValue
+                                                  .serverTimestamp()
+                                      },
+                                      { merge: true }
+                                  );
+                              }
+                          }
+
+                          // ----------------------------------------------
+                          // FAILED RECURRING PAYMENT
+                          // Lock immediately, unless a newer successful
+                          // payment has already been recorded.
+                          // ----------------------------------------------
+
+            else if (eventType === "payment.failed") {
+                const failedPaymentCreatedAt = Number(
+                    paymentEntity?.created_at ||
+                    event.created_at ||
+                    0
+                );
+
+                const lastSuccessfulPaymentCreatedAt =
+                    Number(
+                        currentSubscription
+                            .lastSuccessfulPaymentCreatedAt || 0
+                    );
+
+                const lastPaymentEventCreatedAt = Number(
+                    currentSubscription.lastPaymentEventCreatedAt || 0
+                );
+
+                const isOlderPaymentEvent =
+                    lastPaymentEventCreatedAt > 0 &&
+                    (
+                        failedPaymentCreatedAt <= 0 ||
+                        failedPaymentCreatedAt < lastPaymentEventCreatedAt
+                    );
+
+                const isOlderOrUnverifiableFailure =
+                    (
+                        lastSuccessfulPaymentCreatedAt > 0 &&
+                        (
+                            failedPaymentCreatedAt <= 0 ||
+                            failedPaymentCreatedAt <
+                                lastSuccessfulPaymentCreatedAt
+                        )
+                    ) ||
+                    isOlderPaymentEvent;
+
+                if (
+                    canChangeAccess &&
+                    !isOlderOrUnverifiableFailure
+                ) {
+                    transaction.set(
+                        userRef,
+                        {
+                            subscription: {
+                                ...currentSubscription,
+                                provider: "razorpay",
+                                status: "payment_failed",
+                                lastPaymentEventCreatedAt:
+                                    failedPaymentCreatedAt,
+                                razorpaySubscriptionId: subscriptionId,
+                                currentPeriodEnd: nowTimestamp,
+                                updatedAt:
+                                    admin.firestore.FieldValue
+                                        .serverTimestamp()
+                            }
+                        },
+                        { merge: true }
+                    );
+
+                    transaction.set(
+                        subscriptionRef,
+                        {
+                            status: "payment_failed",
+                            lastFailedPaymentId:
+                                paymentEntity?.id || null,
+                            lastFailedPaymentCreatedAt:
+                                failedPaymentCreatedAt,
+                            lastPaymentEventCreatedAt:
+                                failedPaymentCreatedAt,
+                            lastWebhookEvent: eventType,
+                            updatedAt:
+                                admin.firestore.FieldValue
+                                    .serverTimestamp()
+                        },
+                        { merge: true }
+                    );
+                }
+            }
+
+            // ----------------------------------------------
+            // CANCELLATION
+            // Preserve access until the paid period ends.
+            // ----------------------------------------------
+            else if (eventType === "subscription.cancelled") {
+                const periodEndSeconds = Number(
+                    subscriptionEntity?.current_end || 0
+                );
+
+                const storedEnd =
+                    currentSubscription.currentPeriodEnd
+                        ?.toMillis?.() ||
+                    subscriptionRecord.currentPeriodEnd
+                        ?.toMillis?.() ||
+                    0;
+
+                const expiryMs =
+                    periodEndSeconds > 0
+                        ? periodEndSeconds * 1000
+                        : storedEnd;
+
+                const expiry = expiryMs > 0
+                    ? admin.firestore.Timestamp.fromMillis(expiryMs)
+                    : nowTimestamp;
+
+                const paidPeriodStillValid =
+                    expiryMs > now;
+
+                if (canChangeAccess) {
+                    transaction.set(
+                        userRef,
+                        {
+                            subscription: {
+                                ...currentSubscription,
+                                provider: "razorpay",
+                                razorpaySubscriptionId: subscriptionId,
+
+                                status: paidPeriodStillValid
+                                    ? "active"
+                                    : "cancelled",
+
+                                cancelAtPeriodEnd: true,
+                                currentPeriodEnd: expiry,
+
+                                cancelledAt:
+                                    admin.firestore.FieldValue
+                                        .serverTimestamp(),
+
+                                updatedAt:
+                                    admin.firestore.FieldValue
+                                        .serverTimestamp()
+                            }
+                        },
+                        { merge: true }
+                    );
+                }
+
+                transaction.set(
+                    subscriptionRef,
+                    {
+                        status: paidPeriodStillValid
+                            ? "active"
+                            : "cancelled",
+
+                        razorpayStatus:
+                            subscriptionEntity?.status || "cancelled",
+
+                        cancelAtPeriodEnd: true,
+                        currentPeriodEnd: expiry,
+                        lastWebhookEvent: eventType,
+
+                        updatedAt:
+                            admin.firestore.FieldValue
+                                .serverTimestamp()
+                    },
+                    { merge: true }
+                );
+            }
+
+            // ----------------------------------------------
+            // HALTED, PAUSED OR COMPLETED
+            // ----------------------------------------------
+            else if (
+                [
+                    "subscription.halted",
+                    "subscription.paused",
+                    "subscription.completed"
+                ].includes(eventType)
+            ) {
+                const eventStatus = eventType.replace(
+                    "subscription.",
+                    ""
+                );
+
+                const storedPeriodEnd =
+                    currentSubscription.currentPeriodEnd
+                        ?.toMillis?.() ||
+                    subscriptionRecord.currentPeriodEnd
+                        ?.toMillis?.() ||
+                    0;
+
+                const razorpayPeriodEnd = Number(
+                    subscriptionEntity?.current_end || 0
+                ) * 1000;
+
+                const periodEndMs =
+                    razorpayPeriodEnd > 0
+                        ? razorpayPeriodEnd
+                        : storedPeriodEnd;
+
+                const paidPeriodStillValid =
+                    periodEndMs > now;
+
+                // A terminal event must not revoke a newer subscription.
+                if (canChangeAccess) {
+                    let nextStatus = eventStatus;
+                    let nextPeriodEnd = nowTimestamp;
+
+                    if (
+                        eventType === "subscription.completed" &&
+                        paidPeriodStillValid
+                    ) {
+                        // The subscription has completed, but the
+                        // already-paid period may still be valid.
+                        nextStatus = "active";
+                        nextPeriodEnd =
+                            admin.firestore.Timestamp.fromMillis(
+                                periodEndMs
+                            );
+                    } else if (
+                        eventType === "subscription.paused" &&
+                        paidPeriodStillValid
+                    ) {
+                        // Preserve the recorded paid-period expiry.
+                        // Access policy for paused subscriptions must
+                        // be enforced separately if pausing should lock access.
+                        nextPeriodEnd =
+                            admin.firestore.Timestamp.fromMillis(
+                                periodEndMs
+                            );
+                    }
+
+                    transaction.set(
+                        userRef,
+                        {
+                            subscription: {
+                                ...currentSubscription,
+                                provider: "razorpay",
+                                status: nextStatus,
+                                razorpaySubscriptionId: subscriptionId,
+                                currentPeriodEnd: nextPeriodEnd,
+                                updatedAt:
+                                    admin.firestore.FieldValue
+                                        .serverTimestamp()
+                            }
+                        },
+                        { merge: true }
+                    );
+                }
+
+                transaction.set(
+                    subscriptionRef,
+                    {
+                        status: eventStatus,
+                        razorpayStatus:
+                            subscriptionEntity?.status || eventStatus,
+                        currentPeriodEnd:
+                            periodEndMs > 0
+                                ? admin.firestore.Timestamp.fromMillis(
+                                    periodEndMs
+                                )
+                                : nowTimestamp,
+                        lastWebhookEvent: eventType,
+                        updatedAt:
+                            admin.firestore.FieldValue
+                                .serverTimestamp()
+                    },
+                    { merge: true }
+                );
+              }
+
+
+            // ----------------------------------------------
+            // OTHER SUBSCRIPTION STATUS EVENTS
+            // ----------------------------------------------
+            else {
+                transaction.set(
+                    subscriptionRef,
+                    {
+                        razorpayStatus:
+                            subscriptionEntity?.status ||
+                            eventType,
+                        lastWebhookEvent: eventType,
+                        updatedAt:
+                            admin.firestore.FieldValue
+                                .serverTimestamp()
+                    },
+                    { merge: true }
+                );
+            }
+
+            // Mark the event processed atomically with subscription updates.
+            transaction.update(eventRef, {
+                status: "processed",
+                processedAt:
+                    admin.firestore.FieldValue.serverTimestamp()
+            });
+        });
+
+        return res.status(200).json({
+            success: true,
+            received: true
+        });
 
     } catch (error) {
-
         console.error(
-            "Cashfree subscription return error:",
+            "Razorpay webhook processing error:",
             error
         );
 
-        return res.status(500).send(`
-            <h2>Subscription Verification Error</h2>
-            <p>Please contact MedZoneX support.</p>
-        `);
+        return res.status(500).json({
+            success: false,
+            message: "Webhook processing failed."
+        });
     }
+});
 
+// ======================================================
+// CANCEL SUBSCRIPTION
+// POST /api/subscription/cancel
+// Access remains active until the paid period ends.
+// ======================================================
+
+app.post("/api/subscription/cancel", async (req, res) => {
+    try {
+        if (!razorpay) {
+            return res.status(503).json({
+                success: false,
+                message: "Payment service is unavailable."
+            });
+        }
+
+        if (!firebaseInitialized || !db) {
+            return res.status(503).json({
+                success: false,
+                message: "Database is unavailable."
+            });
+        }
+
+        // 1. Authenticate the Firebase user.
+        const decodedToken =
+            await authenticateFirebaseRequest(req);
+
+        const uid = decodedToken.uid;
+
+        // 2. Get the user's subscription.
+        const userRef = db.collection("users").doc(uid);
+        const userSnapshot = await userRef.get();
+
+        if (!userSnapshot.exists) {
+            return res.status(404).json({
+                success: false,
+                message: "User account was not found."
+            });
+        }
+
+        const userData = userSnapshot.data();
+        const userSubscription = userData.subscription || {};
+
+        const subscriptionId =
+            userSubscription.razorpaySubscriptionId;
+
+        if (!subscriptionId) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "No recurring Razorpay subscription was found."
+            });
+        }
+
+        // 3. Verify that the subscription belongs to this user.
+        const subscriptionRef = db
+            .collection(SUBSCRIPTION_COLLECTION)
+            .doc(subscriptionId);
+
+        const subscriptionSnapshot =
+            await subscriptionRef.get();
+
+        if (!subscriptionSnapshot.exists) {
+            return res.status(404).json({
+                success: false,
+                message: "Subscription record was not found."
+            });
+        }
+
+        const subscriptionData =
+            subscriptionSnapshot.data();
+
+        if (subscriptionData.uid !== uid) {
+            return res.status(403).json({
+                success: false,
+                message: "You cannot cancel this subscription."
+            });
+        }
+
+        // 4. Prevent duplicate cancellation requests.
+        if (userSubscription.cancelAtPeriodEnd === true) {
+            return res.status(200).json({
+                success: true,
+                message:
+                    "Cancellation has already been requested.",
+                cancelAtPeriodEnd: true,
+                expiresAt:
+                    userSubscription.currentPeriodEnd
+                        ?.toDate?.() || null
+            });
+        }
+
+        // 5. Ask Razorpay to cancel at the end of the cycle.
+        const razorpaySubscription =
+            await razorpay.subscriptions.cancel(
+                subscriptionId,
+                {
+                    cancel_at_cycle_end: true
+                }
+            );
+
+        // 6. Determine the paid period's end.
+        const razorpayEnd = Number(
+            razorpaySubscription.current_end || 0
+        );
+
+        const storedEnd =
+            userSubscription.currentPeriodEnd
+                ?.toMillis?.() || 0;
+
+        const expiryMs = razorpayEnd > 0
+            ? razorpayEnd * 1000
+            : storedEnd;
+
+        if (!expiryMs) {
+            throw new Error(
+                "Could not determine the paid period end."
+            );
+        }
+
+        const expiryTimestamp =
+            admin.firestore.Timestamp.fromMillis(expiryMs);
+
+        // 7. Update the user's access without extending it.
+        await db.runTransaction(async (transaction) => {
+            const freshUser =
+                await transaction.get(userRef);
+
+            const freshSubscription =
+                freshUser.exists
+                    ? freshUser.data().subscription || {}
+                    : {};
+
+            if (
+                freshSubscription.razorpaySubscriptionId !==
+                subscriptionId
+            ) {
+                throw new Error(
+                    "The user's subscription changed. Please retry."
+                );
+            }
+
+            transaction.set(
+                userRef,
+                {
+                    subscription: {
+                        ...freshSubscription,
+
+                        // Access continues only until the
+                        // already-paid period ends.
+                        status: expiryMs > Date.now()
+                            ? "active"
+                            : "cancelled",
+
+                        cancelAtPeriodEnd: true,
+                        currentPeriodEnd: expiryTimestamp,
+
+                        cancelledAt:
+                            admin.firestore.FieldValue
+                                .serverTimestamp(),
+
+                        updatedAt:
+                            admin.firestore.FieldValue
+                                .serverTimestamp()
+                    }
+                },
+                { merge: true }
+            );
+
+            transaction.set(
+                subscriptionRef,
+                {
+                    status: expiryMs > Date.now()
+                                ? "active"
+                                : "cancelled",
+                    razorpayStatus:
+                        razorpaySubscription.status || "cancelled",
+
+                    cancelAtPeriodEnd: true,
+                    currentPeriodEnd: expiryTimestamp,
+
+                    updatedAt:
+                        admin.firestore.FieldValue
+                            .serverTimestamp()
+                },
+                { merge: true }
+            );
+        });
+
+        return res.status(200).json({
+            success: true,
+            message:
+                "Cancellation requested. Your dashboard remains available until the paid period ends.",
+
+            cancelAtPeriodEnd: true,
+            expiresAt: expiryTimestamp.toDate()
+        });
+
+    } catch (error) {
+        console.error(
+            "Subscription cancellation error:",
+            error.message
+        );
+
+        return res.status(error.statusCode || 500).json({
+            success: false,
+            message:
+                error.statusCode
+                    ? error.message
+                    : "Unable to cancel the subscription. Please try again."
+        });
+    }
 });
 
 // ======================================================
@@ -2222,6 +3987,108 @@ app.use(
 );
 
 // ======================================================
+// RAZORPAY WEBHOOK RECONCILIATION WORKER
+// ======================================================
+
+let webhookReconciliationRunning = false;
+
+async function reconcileUnmatchedRazorpayWebhooks() {
+    if (
+        webhookReconciliationRunning ||
+        !firebaseInitialized ||
+        !db ||
+        !RAZORPAY_WEBHOOK_SECRET
+    ) {
+        return;
+    }
+
+    webhookReconciliationRunning = true;
+
+    try {
+        const now = Date.now();
+
+        const snapshot = await db
+            .collection(WEBHOOK_EVENT_COLLECTION)
+            .where("status", "==", "unmatched")
+            .limit(100)
+            .get();
+
+        const dueEvents = snapshot.docs
+            .filter((doc) => {
+                const data = doc.data();
+
+                const attempts = Number(
+                    data.attemptCount || 1
+                );
+
+                const nextRetryAt =
+                    data.nextRetryAt?.toMillis?.() || 0;
+
+                return (
+                    attempts < 10 &&
+                    nextRetryAt <= now &&
+                    data.eventPayload
+                );
+            })
+            .slice(0, 10);
+
+        for (const eventDoc of dueEvents) {
+            const data = eventDoc.data();
+
+            try {
+                const payload = JSON.stringify(
+                    data.eventPayload
+                );
+
+                const signature = crypto
+                    .createHmac(
+                        "sha256",
+                        RAZORPAY_WEBHOOK_SECRET
+                    )
+                    .update(payload)
+                    .digest("hex");
+
+                const response = await fetch(
+                    `http://127.0.0.1:${PORT}/api/razorpay/webhook`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "x-razorpay-signature": signature,
+                            "x-razorpay-event-id": eventDoc.id
+                        },
+                        body: payload,
+                        signal: AbortSignal.timeout(15000)
+                    }
+                );
+
+                if (!response.ok) {
+                    console.error(
+                        "Webhook reconciliation returned HTTP",
+                        response.status,
+                        "for event",
+                        eventDoc.id
+                    );
+                }
+            } catch (error) {
+                console.error(
+                    "Webhook reconciliation failed for event",
+                    eventDoc.id,
+                    error.message
+                );
+            }
+        }
+    } catch (error) {
+        console.error(
+            "Razorpay webhook reconciliation worker error:",
+            error.message
+        );
+    } finally {
+        webhookReconciliationRunning = false;
+    }
+}
+
+// ======================================================
 // START SERVER
 // ======================================================
 
@@ -2243,5 +4110,27 @@ app.listen(
             "Resend status:",
             resendVerified
         );
-    }
-);
+
+        // Start unmatched-webhook reconciliation.
+            setInterval(() => {
+                reconcileUnmatchedRazorpayWebhooks().catch(
+                    (error) => {
+                        console.error(
+                            "Webhook reconciliation scheduler error:",
+                            error.message
+                        );
+                    }
+                );
+            }, 60 * 1000);
+
+            // Run once after startup.
+            reconcileUnmatchedRazorpayWebhooks().catch(
+                (error) => {
+                    console.error(
+                        "Initial webhook reconciliation error:",
+                        error.message
+                    );
+                }
+            );
+        }
+    );

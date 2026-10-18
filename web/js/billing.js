@@ -1867,25 +1867,22 @@ window.MedZoneXBilling = {
 
 function initializeBilling() {
 
-    if (
-        billingInitialized
-    ) {
+    if (billingInitialized) {
         return;
     }
 
-    billingInitialized =
-        true;
-
+    billingInitialized = true;
 
     console.log(
         "MedZoneX Billing initialized."
     );
 
+    // Load medicines when the billing module initializes.
+    loadBillingInventory();
+
 }
 
-
 initializeBilling();
-
 
 console.log(
     "MedZoneX Billing.js loaded successfully."

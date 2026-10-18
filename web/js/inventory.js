@@ -1040,28 +1040,52 @@ async function recognizeMedicineFromImage(file) {
         );
 
 
-        const response =
-            await fetch(
-                "https://medzonex-backend.onrender.com/api/inventory/recognize-medicine",
-                {
-                    method: "POST",
-                    body: formData
+                const user = auth.currentUser;
+
+                if (!user) {
+                    throw new Error(
+                        "Please log in to recognize a medicine."
+                    );
                 }
-            );
+
+                const idToken = await user.getIdToken();
+
+                const response =
+                    await fetch(
+                        "https://medzonex-backend.onrender.com/api/inventory/recognize-medicine",
+                        {
+                            method: "POST",
+                            headers: {
+                                Authorization: `Bearer ${idToken}`
+                            },
+                            body: formData
+                        }
+                    );
 
 
         const result =
             await response.json();
 
 
-        if (!response.ok || !result.success) {
+                if (!response.ok || !result.success) {
 
-            throw new Error(
-                result.message ||
-                "Medicine recognition failed."
-            );
+                    if (result.code === "AI_CREDITS_UNAVAILABLE") {
+                        throw new Error(
+                            "AI medicine recognition is temporarily unavailable. Please try again later."
+                        );
+                    }
 
-        }
+                    if (result.code === "SUBSCRIPTION_REQUIRED") {
+                        throw new Error(
+                            "Your free trial has expired. Please subscribe to continue."
+                        );
+                    }
+
+                    throw new Error(
+                        result.message ||
+                        "Medicine recognition failed. Please try again."
+                    );
+                }
 
 
         const medicine =

@@ -1095,99 +1095,84 @@ $("signupBtn")
                     "success"
                 );
 
+                await routeUserByAccess(user);
 
-                /*
-                   Small delay so user sees success.
-                */
+                                           } catch (error) {
 
-                setTimeout(
-                    () => {
+                                               console.error(
+                                                   "SIGNUP ERROR:",
+                                                   error
+                                               );
 
-                        showPage(
-                            "dashboardPage"
-                        );
+                                               let message =
+                                                   "Unable to create account.";
 
-                        loadDashboard(
-                            user
-                        );
+                                               if (
+                                                   error.code ===
+                                                   "auth/email-already-in-use"
+                                               ) {
 
-                    },
-                    500
-                );
+                                                   message =
+                                                       "An account with this email already exists.";
 
+                                               } else if (
+                                                   error.code ===
+                                                   "auth/invalid-email"
+                                               ) {
 
-            } catch (error) {
+                                                   message =
+                                                       "Please enter a valid email address.";
 
-                console.error(
-                    "SIGNUP ERROR:",
-                    error
-                );
+                                               } else if (
+                                                   error.code ===
+                                                   "auth/weak-password"
+                                               ) {
 
+                                                   message =
+                                                       "Password is too weak.";
 
-                let message =
-                    "Unable to create account.";
+                                               } else if (
+                                                   error.code ===
+                                                   "auth/network-request-failed"
+                                               ) {
 
+                                                   message =
+                                                       "Network error. Please check your internet connection.";
 
-                if (
-                    error.code ===
-                    "auth/email-already-in-use"
-                ) {
+                                               } else {
 
-                    message =
-                        "An account with this email already exists.";
+                                                   message =
+                                                       error.message ||
+                                                       message;
 
-                } else if (
-                    error.code ===
-                    "auth/invalid-email"
-                ) {
+                                               }
 
-                    message =
-                        "Please enter a valid email address.";
+                                               setMessage(
+                                                   "signupMessage",
+                                                   message,
+                                                   "error"
+                                               );
 
-                } else if (
-                    error.code ===
-                    "auth/weak-password"
-                ) {
+                                           } finally {
 
-                    message =
-                        "Password is too weak.";
+                                               const button =
+                                                   $("signupBtn");
 
-                } else {
+                                               if (button) {
 
-                    message =
-                        error.message ||
-                        message;
+                                                   button.disabled =
+                                                       false;
 
-                }
+                                                   button.textContent =
+                                                       "Create Account";
 
+                                               }
 
-                setMessage(
-                    "signupMessage",
-                    message,
-                    "error"
-                );
+                                           }
 
+                                       }
 
-            } finally {
-
-                const button =
-                    $("signupBtn");
-
-                if (button) {
-
-                    button.disabled =
-                        false;
-
-                    button.textContent =
-                        "Create Account";
-
-                }
-
-            }
-
-        }
-    );
-
+                                   );
 
 /* ======================================================
    SEND FORGOT OTP
@@ -1732,16 +1717,6 @@ $("loginBtn")
                 );
 
 
-                showPage(
-                    "dashboardPage"
-                );
-
-
-                await loadDashboard(
-                    credential.user
-                );
-
-
             } catch (error) {
 
                 console.error(
@@ -2026,15 +2001,41 @@ function calculateTrialStatus(
     data
 ) {
 
+    const subscription =
+        data.subscription || {};
+
+    const expiryValue =
+        subscription.currentPeriodEnd;
+
+    let paidExpiry = 0;
+
     if (
-        data.subscriptionStatus ===
-        "active"
+        expiryValue &&
+        typeof expiryValue.toMillis === "function"
     ) {
+        paidExpiry = expiryValue.toMillis();
+    } else if (
+        expiryValue &&
+        typeof expiryValue.seconds === "number"
+    ) {
+        paidExpiry = expiryValue.seconds * 1000;
+    } else if (
+        typeof expiryValue === "string" ||
+        typeof expiryValue === "number"
+    ) {
+        const parsed = new Date(expiryValue).getTime();
 
-        return "Subscription active";
-
+        paidExpiry = Number.isFinite(parsed)
+            ? parsed
+            : 0;
     }
 
+    if (
+        subscription.status === "active" &&
+        paidExpiry > Date.now()
+    ) {
+        return "Subscription active";
+    }
 
     let startTime =
         null;
@@ -2067,7 +2068,7 @@ function calculateTrialStatus(
 
     if (!startTime) {
 
-        return "Free trial active";
+        return "Trial status unavailable. Please contact support.";
 
     }
 
@@ -2131,6 +2132,158 @@ function calculateTrialStatus(
     return `Free trial: ${days} day(s), ${hours} hour(s) remaining`;
 
 }
+
+/* ======================================================
+   SUBSCRIPTION ACCESS VERIFICATION
+====================================================== */
+
+async function verifySubscriptionAccess(user) {
+
+    if (!user) {
+        throw new Error("User is not authenticated.");
+    }
+
+    const idToken = await user.getIdToken();
+
+    // Retry if the signup document has not appeared yet.
+    // This handles the Firebase signup/auth-state race.
+    for (let attempt = 0; attempt < 5; attempt++) {
+
+        const response = await fetch(
+            apiUrl("/api/subscription/status"),
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${idToken}`
+                }
+            }
+        );
+
+        let access = {};
+
+        try {
+            access = await response.json();
+        } catch {
+            throw new Error(
+                "The server returned an invalid response."
+            );
+        }
+
+        if (!response.ok || access.success !== true) {
+            throw new Error(
+                access.message ||
+                "Subscription verification failed."
+            );
+        }
+
+        // A new signup may briefly be missing from Firestore.
+        if (
+            access.active !== true &&
+            access.reason === "user_not_found" &&
+            attempt < 4
+        ) {
+            await new Promise(
+                resolve => setTimeout(resolve, 500)
+            );
+
+            continue;
+        }
+
+        return access;
+    }
+
+    throw new Error(
+        "Unable to verify your subscription. Please try again."
+    );
+}
+
+
+/* ======================================================
+   ROUTE USER BASED ON VERIFIED ACCESS
+====================================================== */
+
+async function routeUserByAccess(user) {
+    try {
+        const access = await verifySubscriptionAccess(user);
+
+        // Backend response validation
+        if (access.success !== true) {
+            throw new Error("Invalid subscription response.");
+        }
+
+        // Active subscription or valid free trial
+        if (
+            access.active === true &&
+            (access.status === "active" ||
+             access.status === "trial")
+        ) {
+            showPage("dashboardPage");
+            await loadDashboard(user);
+            return;
+        }
+
+        // Expired trial or inactive subscription
+        if (
+            access.active === false &&
+            access.status === "locked"
+        ) {
+            showPage("subscriptionPage");
+            return;
+        }
+
+        // Unknown response: deny access
+        throw new Error("Unknown subscription status.");
+
+    } catch (error) {
+        console.error(
+            "SUBSCRIPTION ACCESS CHECK ERROR:",
+            error
+        );
+
+        // Fail closed
+        showPage("subscriptionPage");
+
+        setMessage(
+            "subscriptionMessage",
+            "Unable to verify your subscription. Please try again.",
+            "error"
+        );
+    }
+}
+
+/* ======================================================
+   FIREBASE AUTH STATE
+====================================================== */
+
+onAuthStateChanged(
+    auth,
+    async (user) => {
+
+        if (user) {
+
+            await routeUserByAccess(user);
+
+        } else {
+
+            const dashboard =
+                $("dashboardPage");
+
+            const subscriptionPage =
+                $("subscriptionPage");
+
+            // If the user logs out while viewing a protected page,
+            // return them to the welcome page.
+            if (
+                dashboard?.classList.contains("active") ||
+                subscriptionPage?.classList.contains("active")
+            ) {
+                showPage("welcomePage");
+            }
+
+        }
+
+    }
+);
 
 
 /* ======================================================
@@ -2401,244 +2554,6 @@ document
 
         }
     );
-
-
-/* ======================================================
-   FIREBASE AUTH STATE
-====================================================== */
-
-onAuthStateChanged(
-    auth,
-    async (user) => {
-
-        /*
-           If Firebase already has a logged-in user,
-           check the MedZoneX trial/subscription status.
-        */
-
-        if (user) {
-
-            try {
-
-                const userRef =
-                    doc(
-                        db,
-                        "users",
-                        user.uid
-                    );
-
-
-                const userSnap =
-                    await getDoc(
-                        userRef
-                    );
-
-
-                /*
-                   If user document does not exist,
-                   keep the normal dashboard behavior.
-                */
-
-                if (!userSnap.exists()) {
-
-                    showPage(
-                        "dashboardPage"
-                    );
-
-                    await loadDashboard(
-                        user
-                    );
-
-                    return;
-                }
-
-
-                const userData =
-                    userSnap.data();
-
-
-                /*
-                   ------------------------------------------------
-                   SUBSCRIPTION ACTIVE
-                   ------------------------------------------------
-
-                   If user already has an active subscription,
-                   directly open dashboard.
-                */
-
-                if (
-                    userData.subscriptionStatus ===
-                    "active"
-                ) {
-
-                    showPage(
-                        "dashboardPage"
-                    );
-
-                    await loadDashboard(
-                        user
-                    );
-
-                    return;
-                }
-
-
-                /*
-                   ------------------------------------------------
-                   TRIAL CHECK
-                   ------------------------------------------------
-                */
-
-                const trialStartedAt =
-                    userData.trialStartedAt;
-
-
-                /*
-                   If trial date is missing,
-                   keep normal dashboard behavior.
-                */
-
-                if (!trialStartedAt) {
-
-                    showPage(
-                        "dashboardPage"
-                    );
-
-                    await loadDashboard(
-                        user
-                    );
-
-                    return;
-                }
-
-
-                let trialStartTime;
-
-
-                /*
-                   Firestore Timestamp
-                */
-
-                if (
-                    typeof trialStartedAt.toMillis ===
-                    "function"
-                ) {
-
-                    trialStartTime =
-                        trialStartedAt.toMillis();
-
-                } else {
-
-                    trialStartTime =
-                        new Date(
-                            trialStartedAt
-                        ).getTime();
-
-                }
-
-
-                const now =
-                    Date.now();
-
-
-                const trialDuration =
-                    2 *
-                    24 *
-                    60 *
-                    60 *
-                    1000;
-
-
-                const trialEndTime =
-                    trialStartTime +
-                    trialDuration;
-
-
-                /*
-                   ------------------------------------------------
-                   TRIAL STILL ACTIVE
-                   ------------------------------------------------
-                */
-
-                if (
-                    now <
-                    trialEndTime
-                ) {
-
-                    showPage(
-                        "dashboardPage"
-                    );
-
-                    await loadDashboard(
-                        user
-                    );
-
-                    return;
-                }
-
-
-                /*
-                   ------------------------------------------------
-                   TRIAL EXPIRED
-                   ------------------------------------------------
-
-                   Open subscription page.
-                */
-
-                showPage(
-                    "subscriptionPage"
-                );
-
-
-            } catch (error) {
-
-                console.error(
-                    "TRIAL / SUBSCRIPTION CHECK ERROR:",
-                    error
-                );
-
-
-                /*
-                   In case of a temporary Firestore
-                   error, do not break the existing app.
-                */
-
-                showPage(
-                    "dashboardPage"
-                );
-
-                await loadDashboard(
-                    user
-                );
-
-            }
-
-
-        } else {
-
-            /*
-               Don't automatically force user away
-               from welcome page unless dashboard is active.
-            */
-
-            const dashboard =
-                $("dashboardPage");
-
-            if (
-                dashboard?.classList
-                    .contains("active")
-            ) {
-
-                showPage(
-                    "welcomePage"
-                );
-
-            }
-
-        }
-
-    }
-);
 
 
 /* ======================================================
