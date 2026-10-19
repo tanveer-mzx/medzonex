@@ -197,6 +197,7 @@ app.post(
 const defaultOrigins = [
     "https://medzonex.site",
     "https://www.medzonex.site",
+    "https://data-2c37b--razorpay-preview-1ukxsgdx.web.app",
 
     "http://localhost",
     "http://localhost:3000",
