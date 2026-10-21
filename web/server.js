@@ -2022,21 +2022,110 @@ app.post(
                 return res.status(400).json({
                     success: false,
                     message:
-                        "Your Firebase account does not have an email address."
+                        "Your account does not have an email address."
                 });
             }
 
-            // Prevent duplicate pending subscriptions.
-            const existing =
-                await getExistingSubscription(uid);
+            // Check existing subscription against Razorpay's actual status.
+            const existing = await getExistingSubscription(uid);
 
             if (existing) {
+                const existingSubscriptionId =
+                    existing.razorpaySubscriptionId ||
+                    (
+                        String(existing.id || "").startsWith("sub_")
+                            ? existing.id
+                            : null
+                    );
+
+                if (!existingSubscriptionId) {
+                    return res.status(409).json({
+                        success: false,
+                        code: "SUBSCRIPTION_RECONCILIATION_REQUIRED",
+                        message:
+                            "Your previous subscription needs reconciliation. Please reach out us at support@medzonex.site."
+                    });
+                }
+
+                let razorpayExisting;
+
+                try {
+                    razorpayExisting =
+                        await razorpay.subscriptions.fetch(
+                            existingSubscriptionId
+                        );
+                } catch (fetchError) {
+                    console.error(
+                        "Existing Razorpay subscription lookup failed:",
+                        fetchError?.error?.description ||
+                        fetchError.message
+                    );
+
+                    return res.status(503).json({
+                        success: false,
+                        code: "SUBSCRIPTION_STATUS_UNAVAILABLE",
+                        message:
+                            "Unable to verify your previous subscription. Please try again shortly."
+                    });
+                }
+
+                const actualStatus =
+                    String(razorpayExisting.status || "").toLowerCase();
+
+                // The subscription exists but has not been authorised.
+                // Reopen Checkout using the SAME subscription ID.
+                if (actualStatus === "created") {
+                    await db
+                        .collection(SUBSCRIPTION_COLLECTION)
+                        .doc(existing.id)
+                        .set({
+                            razorpaySubscriptionId:
+                                existingSubscriptionId,
+
+                            razorpayStatus: actualStatus,
+
+                            updatedAt:
+                                admin.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true });
+
+                    return res.json({
+                        success: true,
+                        reusedExistingSubscription: true,
+                        keyId: RAZORPAY_KEY_ID,
+                        subscriptionId: existingSubscriptionId,
+                        planKey: existing.planKey,
+                        planName: existing.planName,
+                        amount: existing.amount,
+                        currency: "INR"
+                    });
+                }
+
+                // Never create a second subscription while the existing
+                // one is active or undergoing payment/retry processing.
+                if (
+                    actualStatus === "authenticated" ||
+                    actualStatus === "active" ||
+                    actualStatus === "pending"
+                ) {
+                    return res.status(409).json({
+                        success: false,
+                        code: "SUBSCRIPTION_IN_PROGRESS",
+                        razorpayStatus: actualStatus,
+                        message:
+                            actualStatus === "pending"
+                                ? "Your subscription payment is pending with Razorpay. Please check its status before trying again."
+                                : "Your existing subscription is authorised or active. Please wait while its status is verified."
+                    });
+                }
+
+                // Do not silently create another subscription for other
+                // statuses until the old subscription is reconciled.
                 return res.status(409).json({
                     success: false,
+                    code: "SUBSCRIPTION_REQUIRES_REVIEW",
+                    razorpayStatus: actualStatus,
                     message:
-                        "An existing subscription is already pending or active.",
-                    subscriptionId:
-                        existing.razorpaySubscriptionId || null
+                        "Your previous subscription is no longer awaiting authorisation. Please reconcile its status before creating another subscription."
                 });
             }
 
