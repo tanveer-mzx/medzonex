@@ -7,6 +7,7 @@ const admin = require("firebase-admin");
 const OpenAI = require("openai");
 const multer = require("multer");
 const path = require("path");
+const PDFDocument = require("pdfkit");
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
@@ -518,66 +519,60 @@ initializeResend();
 
 // ======================================================
 // SEND EMAIL THROUGH RESEND
+// Supports normal emails and PDF attachments
 // ======================================================
 
 async function sendEmail({
     to,
     subject,
-    html
+    html,
+    attachments = [],
+    idempotencyKey = null
 }) {
-
     if (!RESEND_API_KEY) {
-
         throw new Error(
             "RESEND_API_KEY is not configured."
         );
     }
 
-    const response =
-        await fetch(
-            RESEND_API_URL,
-            {
-                method: "POST",
+    const headers = {
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json"
+    };
 
-                headers: {
-                    "Authorization":
-                        `Bearer ${RESEND_API_KEY}`,
+    if (idempotencyKey) {
+        headers["Idempotency-Key"] = idempotencyKey;
+    }
 
-                    "Content-Type":
-                        "application/json"
-                },
+    const emailPayload = {
+        from: EMAIL_FROM,
+        to: [to],
+        subject,
+        html
+    };
 
-                body:
-                    JSON.stringify({
+    if (attachments.length > 0) {
+        emailPayload.attachments = attachments;
+    }
 
-                        from:
-                            EMAIL_FROM,
-
-                        to: [
-                            to
-                        ],
-
-                        subject,
-
-                        html
-                    })
-            }
-        );
+    const response = await fetch(
+        RESEND_API_URL,
+        {
+            method: "POST",
+            headers,
+            body: JSON.stringify(emailPayload)
+        }
+    );
 
     let responseData = null;
 
     try {
-
-        responseData =
-            await response.json();
-
+        responseData = await response.json();
     } catch {
-
         responseData = null;
     }
 
     if (!response.ok) {
-
         const providerMessage =
             responseData?.message ||
             responseData?.error ||
@@ -589,6 +584,542 @@ async function sendEmail({
     }
 
     return responseData;
+}
+
+// ======================================================
+// MEDZONEX PDF INVOICE HELPERS
+// ======================================================
+
+const INVOICE_EMAIL_JOB_COLLECTION =
+    "razorpayInvoiceEmailJobs";
+
+function escapeInvoiceHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    }[char]));
+}
+
+function invoiceDate(value) {
+    if (!value) return "Not available";
+
+    let milliseconds = 0;
+
+    if (typeof value.toMillis === "function") {
+        milliseconds = value.toMillis();
+    } else if (typeof value.seconds === "number") {
+        milliseconds = value.seconds * 1000;
+    } else if (
+        typeof value === "number" ||
+        typeof value === "string"
+    ) {
+        const parsed = new Date(value).getTime();
+        milliseconds = Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    if (!milliseconds) return "Not available";
+
+    return new Date(milliseconds).toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+    }) + " IST";
+}
+
+function invoiceMoney(amount) {
+    return "₹" + Number(amount || 0).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function createInvoicePdf(invoice) {
+    return new Promise((resolve, reject) => {
+        try {
+            const pdf = new PDFDocument({
+                size: "A4",
+                margin: 48,
+                info: {
+                    Title: "MedZoneX Subscription Invoice",
+                    Author: "MedZoneX"
+                }
+            });
+
+            const chunks = [];
+
+            pdf.on("data", chunk => chunks.push(chunk));
+            pdf.on("error", reject);
+            pdf.on("end", () => {
+                resolve(Buffer.concat(chunks));
+            });
+
+            const logoPath = require("path").join(
+                __dirname,
+                "assets",
+                "medzonex-logo.png"
+            );
+
+            if (require("fs").existsSync(logoPath)) {
+                pdf.image(logoPath, 48, 40, {
+                    fit: [180, 60],
+                    align: "left",
+                    valign: "center"
+                });
+            } else {
+                pdf.font("Helvetica-Bold")
+                    .fontSize(26)
+                    .text("MedZoneX", 48, 48);
+            }
+
+            pdf.y = 115;
+
+            pdf.moveDown(0.5);
+
+            pdf.fontSize(17)
+                .text("SUBSCRIPTION PAYMENT INVOICE");
+
+            pdf.moveDown();
+
+            pdf.font("Helvetica")
+                .fontSize(10)
+                .text(`Invoice date: ${invoiceDate(invoice.paidAt)}`)
+                .text("Payment status: Paid");
+
+            pdf.moveDown();
+
+            pdf.font("Helvetica-Bold")
+                .fontSize(12)
+                .text("Customer details");
+
+            pdf.moveDown(0.4);
+
+            pdf.font("Helvetica")
+                .fontSize(10)
+                .text(`Medical store: ${invoice.storeName || "Not provided"}`)
+                .text(`Registered email: ${invoice.email || "Not available"}`)
+                .text(`Mobile number: ${invoice.phone || "Not available"}`);
+
+            pdf.moveDown();
+
+            pdf.font("Helvetica-Bold")
+                .fontSize(12)
+                .text("Subscription details");
+
+            pdf.moveDown(0.4);
+
+            pdf.font("Helvetica")
+                .fontSize(10)
+                .text(`Plan: ${invoice.planName || "MedZoneX Subscription"}`)
+                .text(`Payment ID: ${invoice.paymentId || "Not available"}`)
+                .text(`Subscription ID: ${invoice.subscriptionId || "Not applicable"}`)
+                .text(`Order ID: ${invoice.orderId || "Not applicable"}`)
+                .text(`Subscription start: ${invoiceDate(invoice.periodStart)}`)
+                .text(`Subscription expiry: ${invoiceDate(invoice.periodEnd)}`);
+
+            pdf.moveDown(1.5);
+
+            pdf.font("Helvetica-Bold")
+                .fontSize(12)
+                .text(
+                    `Total paid: INR ${Number(invoice.amount || 0).toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    })}`,
+                    {
+                        align: "right"
+                    }
+                );
+
+            pdf.moveDown(2);
+
+            pdf.font("Helvetica")
+                .fontSize(11)
+                .text("Thank you for subscribing to MedZoneX.");
+
+            pdf.moveDown();
+
+            pdf.text("Regards,");
+            pdf.text("Tanveer, CEO of MedZoneX");
+
+            pdf.moveDown(2);
+
+            pdf.fontSize(9)
+                .text("For invoice queries, contact:");
+
+            pdf.fillColor("#0568C8")
+                .text("support@medzonex.site", {
+                    link: "mailto:support@medzonex.site",
+                    underline: true
+                });
+
+            pdf.fillColor("#000000");
+
+            pdf.end();
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+// ======================================================
+// MEDZONEX INVOICE EMAIL QUEUE WORKER
+// ======================================================
+
+async function processInvoiceEmailJob(jobId) {
+    const jobRef = db
+        .collection(INVOICE_EMAIL_JOB_COLLECTION)
+        .doc(jobId);
+
+    // Claim the job safely so multiple workers don't
+    // intentionally process the same job at once.
+    const claim = await db.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(jobRef);
+
+        if (!snapshot.exists) {
+            return null;
+        }
+
+        const job = snapshot.data();
+        const now = Date.now();
+
+        if (job.status === "sent") {
+            return null;
+        }
+
+        if (
+            job.status === "sending" &&
+            job.updatedAt &&
+            typeof job.updatedAt.toMillis === "function" &&
+            now - job.updatedAt.toMillis() < 5 * 60 * 1000
+        ) {
+            return null;
+        }
+
+        if (!["pending", "retry", "sending"].includes(job.status)) {
+            return null;
+        }
+
+        // Respect the scheduled retry time.
+        if (
+            job.status === "retry" &&
+            job.nextRetryAt &&
+            typeof job.nextRetryAt.toMillis === "function" &&
+            job.nextRetryAt.toMillis() > now
+        ) {
+            return null;
+        }
+
+        const attempts = Number(job.attempts || 0);
+
+        if (attempts >= 5) {
+            transaction.update(jobRef, {
+                status: "failed_permanently",
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            return null;
+        }
+
+        transaction.update(jobRef, {
+            status: "sending",
+            attempts: attempts + 1,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        return job;
+    });
+
+    if (!claim) {
+        return;
+    }
+
+    try {
+        const job = claim;
+
+        // Get customer details from the existing user record.
+        let userData = {};
+
+        if (job.uid) {
+            const userSnapshot = await db
+                .collection("users")
+                .doc(job.uid)
+                .get();
+
+            if (userSnapshot.exists) {
+                userData = userSnapshot.data() || {};
+            }
+        }
+
+        const email =
+            job.email ||
+            userData.email ||
+            "";
+
+        if (!email) {
+            throw new Error(
+                "Customer email is missing for invoice email job."
+            );
+        }
+
+        const storeName =
+            job.storeName ||
+            userData.storeName ||
+            "Not provided";
+
+        const phone =
+            job.phone ||
+            userData.phone ||
+            userData.mobile ||
+            "";
+
+        let subject;
+        let html;
+        let attachments = [];
+
+        if (job.type === "payment_succeeded") {
+            subject = "MedZoneX Subscription Payment Confirmation";
+
+            const pdfBuffer = await createInvoicePdf({
+                storeName,
+                email,
+                phone,
+                planName: job.planName,
+                amount: job.amount,
+                paymentId: job.paymentId,
+                subscriptionId: job.subscriptionId,
+                orderId: job.orderId,
+                paidAt: job.paidAt,
+                periodStart: job.periodStart,
+                periodEnd: job.periodEnd
+            });
+
+            attachments = [
+                {
+                    filename: `MedZoneX-Invoice-${String(
+                        job.paymentId || jobId
+                    ).replace(/[^a-zA-Z0-9_-]/g, "")}.pdf`,
+                    content: pdfBuffer.toString("base64")
+                }
+            ];
+
+            html = `
+                <div style="font-family:Arial,sans-serif;line-height:1.6;color:#222">
+                    <h2>Thank you for subscribing to MedZoneX!</h2>
+
+                    <p>Hello ${escapeInvoiceHtml(storeName)},</p>
+
+                    <p>
+                        Your subscription payment has been verified successfully.
+                    </p>
+
+                    <table style="border-collapse:collapse;width:100%;max-width:550px">
+                        <tr>
+                            <td style="padding:8px;border:1px solid #ddd">Medical store</td>
+                            <td style="padding:8px;border:1px solid #ddd">
+                                ${escapeInvoiceHtml(storeName)}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:8px;border:1px solid #ddd">Plan</td>
+                            <td style="padding:8px;border:1px solid #ddd">
+                                ${escapeInvoiceHtml(job.planName || "MedZoneX Subscription")}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:8px;border:1px solid #ddd">Amount paid</td>
+                            <td style="padding:8px;border:1px solid #ddd">
+                                ${escapeInvoiceHtml(invoiceMoney(job.amount))}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:8px;border:1px solid #ddd">Payment ID</td>
+                            <td style="padding:8px;border:1px solid #ddd">
+                                ${escapeInvoiceHtml(job.paymentId || "Not available")}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:8px;border:1px solid #ddd">Subscription start</td>
+                            <td style="padding:8px;border:1px solid #ddd">
+                                ${escapeInvoiceHtml(invoiceDate(job.periodStart))}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:8px;border:1px solid #ddd">Subscription expiry</td>
+                            <td style="padding:8px;border:1px solid #ddd">
+                                ${escapeInvoiceHtml(invoiceDate(job.periodEnd))}
+                            </td>
+                        </tr>
+                    </table>
+
+                    <p>Your PDF invoice is attached to this email.</p>
+
+                    <p>Thank you for choosing MedZoneX.</p>
+
+                    <p>
+                        Regards,<br>
+                        Tanveer, CEO of MedZoneX
+                    </p>
+
+                    <p>
+                        Support:
+                        <a href="mailto:support@medzonex.site">
+                            support@medzonex.site
+                        </a>
+                    </p>
+                </div>
+            `;
+        } else if (job.type === "payment_failed") {
+            subject = "MedZoneX Subscription Payment Failed";
+
+            html = `
+                <div style="font-family:Arial,sans-serif;line-height:1.6;color:#222">
+                    <h2>Payment unsuccessful</h2>
+
+                    <p>Hello ${escapeInvoiceHtml(storeName)},</p>
+
+                    <p>
+                        We received a payment failure notification for your
+                        MedZoneX subscription.
+                    </p>
+
+                    <p>
+                        <strong>Plan:</strong>
+                        ${escapeInvoiceHtml(job.planName || "MedZoneX Subscription")}
+                    </p>
+
+                    <p>
+                        <strong>Payment ID:</strong>
+                        ${escapeInvoiceHtml(job.paymentId || "Not available")}
+                    </p>
+
+                    <p>
+                        <strong>Amount:</strong>
+                        ${escapeInvoiceHtml(invoiceMoney(job.amount))}
+                    </p>
+
+                    <p>
+                        Please check your payment method and try again
+                        from your MedZoneX account if payment is still required.
+                    </p>
+
+                    <p>
+                        This notification does not, by itself, determine
+                        your subscription status.
+                    </p>
+
+                    <p>
+                        Regards,<br>
+                        Tanveer, CEO of MedZoneX
+                    </p>
+
+                    <p>MedZoneX Support: support@medzonex.site</p>
+                </div>
+            `;
+        } else {
+            throw new Error(
+                `Unsupported invoice email job type: ${job.type}`
+            );
+        }
+
+        const result = await sendEmail({
+            to: email,
+            subject,
+            html,
+            attachments,
+            idempotencyKey: `medzonex-${job.type}-${job.paymentId || jobId}`
+        });
+
+        await jobRef.update({
+            status: "sent",
+            sentAt: admin.firestore.FieldValue.serverTimestamp(),
+            resendMessageId: result?.id || null,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            lastError: admin.firestore.FieldValue.delete()
+        });
+
+        console.log(
+            `[INVOICE EMAIL] Job ${jobId} sent successfully.`
+        );
+    } catch (error) {
+        console.error(
+            `[INVOICE EMAIL] Job ${jobId} failed:`,
+            error.message
+        );
+
+        const latestSnapshot = await jobRef.get();
+        const latestJob = latestSnapshot.exists
+            ? latestSnapshot.data()
+            : {};
+
+        const attempts = Number(latestJob.attempts || 1);
+        const permanentlyFailed = attempts >= 5;
+
+        // Exponential backoff: 1, 2, 4, 8 minutes.
+        const retryDelayMs =
+            60 * 1000 * Math.pow(2, Math.max(0, attempts - 1));
+
+        const nextRetryAt = permanentlyFailed
+            ? null
+            : admin.firestore.Timestamp.fromMillis(
+                Date.now() + retryDelayMs
+            );
+
+        await jobRef.update({
+            status: permanentlyFailed ? "failed_permanently" : "retry",
+            nextRetryAt,
+            lastError: String(
+                error.message || "Email delivery failed"
+            ).slice(0, 1000),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+    }
+}
+
+
+// ======================================================
+// PROCESS PENDING INVOICE EMAIL JOBS
+// ======================================================
+
+let invoiceEmailWorkerRunning = false;
+
+async function runInvoiceEmailWorker() {
+    if (invoiceEmailWorkerRunning) {
+        return;
+    }
+
+    invoiceEmailWorkerRunning = true;
+
+    try {
+        const snapshot = await db
+            .collection(INVOICE_EMAIL_JOB_COLLECTION)
+            .where("status", "in", ["pending", "retry", "sending"])
+            .limit(20)
+            .get();
+
+        for (const document of snapshot.docs) {
+            try {
+                await processInvoiceEmailJob(document.id);
+            } catch (error) {
+                console.error(
+                    `[INVOICE EMAIL] Worker error for ${document.id}:`,
+                    error.message
+                );
+            }
+        }
+    } catch (error) {
+        console.error(
+            "[INVOICE EMAIL] Worker query failed:",
+            error.message
+        );
+    } finally {
+        invoiceEmailWorkerRunning = false;
+    }
 }
 
 // ======================================================
@@ -2000,6 +2531,16 @@ app.post(
             const uid = decodedToken.uid;
             const email = decodedToken.email || "";
 
+            // Fetch registered customer details from Firestore
+            const userSnapshot = await db
+                .collection("users")
+                .doc(uid)
+                .get();
+
+            const userData = userSnapshot.exists
+                ? userSnapshot.data()
+                : {};
+
             const customerPhone = String(
                 req.body.customerPhone || ""
             ).trim();
@@ -2071,6 +2612,27 @@ app.post(
 
                 const actualStatus =
                     String(razorpayExisting.status || "").toLowerCase();
+
+                    // Never reuse a subscription created for a different plan.
+                    const existingPlanKey = String(
+                        existing.planKey || ""
+                    ).trim();
+
+                    const razorpayExistingPlanId = String(
+                        razorpayExisting.plan_id || ""
+                    ).trim();
+
+                    if (
+                        existingPlanKey !== planKey ||
+                        razorpayExistingPlanId !== selectedPlan.razorpayPlanId
+                    ) {
+                        return res.status(409).json({
+                            success: false,
+                            code: "EXISTING_SUBSCRIPTION_PLAN_MISMATCH",
+                            message:
+                                "Your previous subscription belongs to a different plan. Please contact support to safely resolve the pending subscription before choosing another plan."
+                        });
+                    }
 
                 // The subscription exists but has not been authorised.
                 // Reopen Checkout using the SAME subscription ID.
@@ -2165,6 +2727,8 @@ app.post(
                     planKey,
                     planName: selectedPlan.name,
                     amount: selectedPlan.amount,
+                    customerPhone,
+                    storeName: userData.storeName || "Not provided",
 
                     razorpaySubscriptionId:
                         subscription.id,
@@ -2655,6 +3219,13 @@ app.post(
                     );
                 }
 
+                const invoiceJobRef = db
+                    .collection(INVOICE_EMAIL_JOB_COLLECTION)
+                    .doc(`paid_${paymentId}`);
+
+                const invoiceJobSnapshot =
+                    await transaction.get(invoiceJobRef);
+
                 const freshUser = await transaction.get(userRef);
 
                 if (!freshUser.exists) {
@@ -2768,6 +3339,33 @@ app.post(
                         admin.firestore.FieldValue
                             .serverTimestamp()
                 });
+
+                // Create exactly one invoice email job per payment.
+                if (!invoiceJobSnapshot.exists) {
+                    const paidAt = admin.firestore.Timestamp.fromMillis(now);
+
+                    transaction.set(invoiceJobRef, {
+                        type: "payment_succeeded",
+                        uid,
+                        email: userData.email || decodedToken.email || "",
+                        phone: userData.phone || userData.mobile || "",
+                        storeName: userData.storeName || "Not provided",
+                        planKey: freshPaymentData.planKey,
+                        planName: freshPaymentData.planName || freshPlan.name,
+                        amount: Number(freshPlan.amount),
+                        paymentId,
+                        orderId,
+                        subscriptionId: null,
+                        paidAt,
+                        periodStart: admin.firestore.Timestamp.fromMillis(periodStart),
+                        periodEnd: expiry,
+                        status: "pending",
+                        attempts: 0,
+                        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
             });
 
             if (transactionResult?.conflict) {
@@ -3384,6 +3982,36 @@ app.post("/api/razorpay/webhook", async (req, res) => {
                 );
             }
 
+            // ================================================
+            // READ INVOICE EMAIL JOB BEFORE TRANSACTION WRITES
+            // ================================================
+
+            let paymentEmailJobRef = null;
+            let paymentEmailJobSnapshot = null;
+
+            if (
+                eventType === "subscription.charged" &&
+                paymentEntity?.id
+            ) {
+                paymentEmailJobRef = db
+                    .collection(INVOICE_EMAIL_JOB_COLLECTION)
+                    .doc(`paid_${paymentEntity.id}`);
+
+                paymentEmailJobSnapshot =
+                    await transaction.get(paymentEmailJobRef);
+
+            } else if (
+                eventType === "payment.failed" &&
+                paymentEntity?.id
+            ) {
+                paymentEmailJobRef = db
+                    .collection(INVOICE_EMAIL_JOB_COLLECTION)
+                    .doc(`failed_${paymentEntity.id}`);
+
+                paymentEmailJobSnapshot =
+                    await transaction.get(paymentEmailJobRef);
+            }
+
             // Continue with the existing transaction.
             const userSnapshot =
                 await transaction.get(userRef);
@@ -3396,6 +4024,9 @@ app.post("/api/razorpay/webhook", async (req, res) => {
                 currentUser.subscription || {};
 
             const now = Date.now();
+
+            const expectedPlan =
+                MEDZONEX_PLANS[subscriptionRecord.planKey];
 
             const nowTimestamp =
                 admin.firestore.Timestamp.fromMillis(now);
@@ -3504,7 +4135,52 @@ app.post("/api/razorpay/webhook", async (req, res) => {
                                       { merge: true }
                                   );
                               }
+
+                          // QUEUE SUCCESSFUL PAYMENT INVOICE EMAIL
+                          if (
+                              paymentEmailJobRef &&
+                              !paymentEmailJobSnapshot?.exists &&
+                              canChangeAccess &&
+                              !isOlderOrUnverifiableSuccess
+                          ) {
+                              const paidAtSeconds = Number(
+                                  paymentEntity?.created_at ||
+                                  event.created_at ||
+                                  0
+                              );
+
+                              const periodStartSeconds = Number(
+                                  subscriptionEntity?.current_start ||
+                                  now / 1000
+                              );
+
+                              transaction.set(paymentEmailJobRef, {
+                                  type: "payment_succeeded",
+                                  uid: subscriptionRecord.uid,
+                                  email: currentUser.email || subscriptionRecord.email || "",
+                                  phone: subscriptionRecord.customerPhone || currentUser.phone || "",
+                                  storeName: currentUser.storeName || subscriptionRecord.storeName || "Not provided",
+                                  planKey: subscriptionRecord.planKey,
+                                  planName: subscriptionRecord.planName,
+                                  amount: Number(expectedPlan.amount),
+                                  paymentId: paymentEntity.id,
+                                  orderId: null,
+                                  subscriptionId,
+                                  paidAt: admin.firestore.Timestamp.fromMillis(
+                                      paidAtSeconds > 0 ? paidAtSeconds * 1000 : now
+                                  ),
+                                  periodStart: admin.firestore.Timestamp.fromMillis(
+                                      periodStartSeconds * 1000
+                                  ),
+                                  periodEnd: expiry,
+                                  status: "pending",
+                                  attempts: 0,
+                                  createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                                  updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                              });
                           }
+                      }
+
 
                           // ----------------------------------------------
                           // FAILED RECURRING PAYMENT
@@ -3625,7 +4301,33 @@ app.post("/api/razorpay/webhook", async (req, res) => {
                         { merge: true }
                     );
                 }
+
+            // QUEUE FAILED PAYMENT NOTIFICATION
+            if (
+                paymentEmailJobRef &&
+                !paymentEmailJobSnapshot?.exists
+            ) {
+                const failedPlan =
+                    MEDZONEX_PLANS[subscriptionRecord.planKey];
+
+                transaction.set(paymentEmailJobRef, {
+                    type: "payment_failed",
+                    uid: subscriptionRecord.uid,
+                    email: currentUser.email || subscriptionRecord.email || "",
+                    phone: subscriptionRecord.customerPhone || currentUser.phone || "",
+                    storeName: currentUser.storeName || subscriptionRecord.storeName || "Not provided",
+                    planKey: subscriptionRecord.planKey,
+                    planName: subscriptionRecord.planName || failedPlan?.name || "MedZoneX Subscription",
+                    amount: Number(failedPlan?.amount || 0),
+                    paymentId: paymentEntity?.id || null,
+                    subscriptionId,
+                    status: "pending",
+                    attempts: 0,
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                });
             }
+        }
 
             // ----------------------------------------------
             // CANCELLATION
@@ -4237,6 +4939,26 @@ app.listen(
             "Resend status:",
             resendVerified
         );
+
+        // ======================================================
+        // START INVOICE EMAIL WORKER
+        // ======================================================
+
+        setInterval(() => {
+            runInvoiceEmailWorker().catch((error) => {
+                console.error(
+                    "[INVOICE EMAIL] Worker failed:",
+                    error.message
+                );
+            });
+        }, 30 * 1000);
+
+        runInvoiceEmailWorker().catch((error) => {
+            console.error(
+                "[INVOICE EMAIL] Initial worker failed:",
+                error.message
+            );
+        });
 
         // Start unmatched-webhook reconciliation.
             setInterval(() => {

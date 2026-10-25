@@ -2218,6 +2218,7 @@ async function routeUserByAccess(user) {
              access.status === "trial")
         ) {
             showPage("dashboardPage");
+            startSubscriptionCountdown(access);
             await loadDashboard(user);
             return;
         }
@@ -2249,6 +2250,21 @@ async function routeUserByAccess(user) {
             "error"
         );
     }
+}
+
+/* ======================================================
+   SAFE DASHBOARD NAVIGATION
+====================================================== */
+
+async function returnToDashboardSafely() {
+    const user = auth.currentUser;
+
+    if (!user) {
+        console.warn("Dashboard blocked: user is not logged in.");
+        return;
+    }
+
+    await routeUserByAccess(user);
 }
 
 /* ======================================================
@@ -2319,141 +2335,62 @@ $("logoutBtn")
 
 
 /* ======================================================
-   DASHBOARD NAVIGATION
+   DASHBOARD PAGE NAVIGATION
 ====================================================== */
 
 $("openBillingBtn")
-    ?.addEventListener(
-        "click",
-        () => {
-
-            showPage(
-                "billingPage"
-            );
-
-        }
-    );
-
+    ?.addEventListener("click", () => {
+        showPage("billingPage");
+    });
 
 $("openInventoryBtn")
-    ?.addEventListener(
-        "click",
-        () => {
-
-            showPage(
-                "inventoryPage"
-            );
-
-        }
-    );
-
+    ?.addEventListener("click", () => {
+        showPage("inventoryPage");
+    });
 
 $("openPurchaseBtn")
-    ?.addEventListener(
-        "click",
-        () => {
-
-            showPage(
-                "purchasePage"
-            );
-
-        }
-    );
-
+    ?.addEventListener("click", () => {
+        showPage("purchasePage");
+    });
 
 $("closeBillingBtn")
-    ?.addEventListener(
-        "click",
-        () => {
-
-            showPage(
-                "dashboardPage"
-            );
-
-        }
-    );
-
+    ?.addEventListener("click", async () => {
+        await returnToDashboardSafely();
+    });
 
 $("closeInventoryBtn")
-    ?.addEventListener(
-        "click",
-        () => {
-
-            showPage(
-                "dashboardPage"
-            );
-
-        }
-    );
-
-
-$("closePurchaseBtn")
-    ?.addEventListener(
-        "click",
-        () => {
-
-            showPage(
-                "dashboardPage"
-            );
-
-        }
-    );
-
+    ?.addEventListener("click", async () => {
+        await returnToDashboardSafely();
+    });
 
 /* ======================================================
-   ADDITIONAL PAGE BACK NAVIGATION
+   SAFE PAGE BACK NAVIGATION
 ====================================================== */
 
+$("closePurchaseBtn")
+    ?.addEventListener("click", async () => {
+        await returnToDashboardSafely();
+    });
+
 $("backToDashboardFromInventoryBtn")
-    ?.addEventListener(
-        "click",
-        () => {
-
-            showPage(
-                "dashboardPage"
-            );
-
-        }
-    );
-
+    ?.addEventListener("click", async () => {
+        await returnToDashboardSafely();
+    });
 
 $("closeCustomersBtn")
-    ?.addEventListener(
-        "click",
-        () => {
-
-            showPage(
-                "dashboardPage"
-            );
-
-        }
-    );
-
+    ?.addEventListener("click", async () => {
+        await returnToDashboardSafely();
+    });
 
 $("closeProfileBtn")
-    ?.addEventListener(
-        "click",
-        () => {
-
-            showPage(
-                "dashboardPage"
-            );
-
-        }
-    );
-
+    ?.addEventListener("click", async () => {
+        await returnToDashboardSafely();
+    });
 
 $("closeSettingsBtn")
-    ?.addEventListener(
-        "click",
-        () => {
-
-            showPage(
-                "dashboardPage"
-            );
-
-        }
-    );
+    ?.addEventListener("click", async () => {
+        await returnToDashboardSafely();
+    });
 
 
 /* ======================================================
@@ -2821,9 +2758,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document
         .getElementById("dashboardNavBtn")
-        ?.addEventListener("click", () => {
+        ?.addEventListener("click", async () => {
 
-            showPage("dashboardPage");
+            await returnToDashboardSafely();
 
         });
 
@@ -2834,9 +2771,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document
         .getElementById("openCustomersBtn")
-        ?.addEventListener("click", () => {
+        ?.addEventListener("click", async () => {
 
-            showPage("customersPage");
+            const user = auth.currentUser;
+
+            if (!user) {
+                return;
+            }
+
+            const access = await verifySubscriptionAccess(user);
+
+            if (
+                access.success === true &&
+                access.active === true &&
+                ["active", "trial"].includes(access.status)
+            ) {
+                showPage("customersPage");
+            } else {
+                await routeUserByAccess(user);
+            }
 
         });
 
@@ -2847,9 +2800,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document
         .getElementById("openProfileBtn")
-        ?.addEventListener("click", () => {
+        ?.addEventListener("click", async () => {
 
-            showPage("profilePage");
+            const user = auth.currentUser;
+
+            if (!user) {
+                return;
+            }
+
+            const access = await verifySubscriptionAccess(user);
+
+            if (
+                access.success === true &&
+                access.active === true &&
+                ["active", "trial"].includes(access.status)
+            ) {
+                showPage("profilePage");
+            } else {
+                await routeUserByAccess(user);
+            }
 
         });
 
@@ -2860,10 +2829,265 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document
         .getElementById("openSettingsBtn")
-        ?.addEventListener("click", () => {
+        ?.addEventListener("click", async () => {
 
-            showPage("settingsPage");
+            const user = auth.currentUser;
+
+            if (!user) {
+                return;
+            }
+
+            const access = await verifySubscriptionAccess(user);
+
+            if (
+                access.success === true &&
+                access.active === true &&
+                ["active", "trial"].includes(access.status)
+            ) {
+                showPage("settingsPage");
+            } else {
+                await routeUserByAccess(user);
+            }
 
         });
 
-});
+    });
+
+    /* ======================================================
+    MEDZONEX SUBSCRIPTION COUNTDOWN
+    ====================================================== */
+
+    let subscriptionCountdownInterval = null;
+    let subscriptionExpiryTimestamp = 0;
+    let subscriptionCountdownAccessType = "subscription";
+
+    function updateSubscriptionIndicator(status, remainingMs) {
+    const signal = document.getElementById(
+    "sidebarSubscriptionSignal"
+    );
+
+    const badge = document.getElementById(
+        "subscriptionStatusBadge"
+    );
+
+    if (!signal || !badge) return;
+
+    signal.classList.remove(
+        "status-green",
+        "status-yellow",
+        "status-red"
+    );
+
+    badge.classList.remove(
+        "status-green",
+        "status-yellow",
+        "status-red"
+    );
+
+    let label;
+    let color;
+
+    if (status === "expired" || remainingMs <= 0) {
+        label = "EXPIRED";
+        color = "status-red";
+    } else if (remainingMs <= 5 * 24 * 60 * 60 * 1000) {
+        label = "EXPIRING SOON";
+        color = "status-yellow";
+    } else {
+        label = status === "trial" ? "TRIAL ACTIVE" : "ACTIVE";
+        color = "status-green";
+    }
+
+    signal.classList.add(color);
+    badge.classList.add(color);
+    badge.textContent = label;
+    signal.setAttribute("aria-label", label);
+
+    }
+
+    function renderSubscriptionCountdown() {
+    const timer = document.getElementById(
+    "subscriptionCountdownTimer"
+    );
+
+    const label = document.getElementById(
+        "subscriptionCountdownLabel"
+    );
+
+    const expiryDate = document.getElementById(
+        "subscriptionExpiryDate"
+    );
+
+    if (!timer || !label || !expiryDate) return;
+
+    const remainingMs =
+        subscriptionExpiryTimestamp - Date.now();
+
+    if (!Number.isFinite(subscriptionExpiryTimestamp) ||
+        subscriptionExpiryTimestamp <= 0) {
+        timer.textContent = "Expiry time unavailable";
+        label.textContent = "Unable to determine subscription expiry.";
+        expiryDate.textContent = "";
+        updateSubscriptionIndicator("expired", 0);
+        return;
+    }
+
+    if (remainingMs <= 0) {
+        timer.textContent =
+            "0 Days : 0 Hours : 0 Minutes : 0 Seconds";
+
+        label.textContent =
+            "Your access period has expired.";
+
+        updateSubscriptionIndicator("expired", 0);
+
+        clearInterval(subscriptionCountdownInterval);
+        subscriptionCountdownInterval = null;
+
+        // Re-check access with the backend once the local timer reaches zero.
+        const user = auth.currentUser;
+
+        if (user) {
+            verifySubscriptionAccess(user)
+                .then(access => {
+                    if (
+                        access.active !== true ||
+                        !["active", "trial"].includes(access.status)
+                    ) {
+                        showPage("subscriptionPage");
+                    } else {
+                        startSubscriptionCountdown(access);
+                    }
+                })
+                .catch(error => {
+                    console.error(
+                        "Subscription expiry verification failed:",
+                        error
+                    );
+                });
+        }
+
+        return;
+    }
+
+    const totalSeconds = Math.floor(remainingMs / 1000);
+
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    timer.textContent =
+        `${days} Days : ${hours} Hours : ` +
+        `${minutes} Minutes : ${seconds} Seconds`;
+
+    label.textContent =
+        subscriptionCountdownAccessType === "trial"
+            ? "Your free trial ends in:"
+            : "Your subscription expires in:";
+
+    expiryDate.textContent =
+        "Expiry date: " +
+        new Date(subscriptionExpiryTimestamp).toLocaleString(
+            "en-IN",
+            {
+                dateStyle: "medium",
+                timeStyle: "medium"
+            }
+        );
+
+    updateSubscriptionIndicator(
+        subscriptionCountdownAccessType,
+        remainingMs
+    );
+
+    }
+
+    function startSubscriptionCountdown(access) {
+    const card = document.getElementById(
+    "subscriptionCountdownCard"
+    );
+
+    if (!card) return;
+
+    if (
+        !access ||
+        access.success !== true ||
+        access.active !== true ||
+        !["active", "trial"].includes(access.status)
+    ) {
+        card.hidden = true;
+
+        clearInterval(subscriptionCountdownInterval);
+        subscriptionCountdownInterval = null;
+        return;
+    }
+
+    const expiryTimestamp = new Date(
+        access.expiresAt
+    ).getTime();
+
+    if (!Number.isFinite(expiryTimestamp) || expiryTimestamp <= 0) {
+        card.hidden = false;
+
+        document.getElementById(
+            "subscriptionCountdownTimer"
+        ).textContent = "Expiry time unavailable";
+
+        document.getElementById(
+            "subscriptionCountdownLabel"
+        ).textContent = "Please refresh or contact support.";
+
+        return;
+    }
+
+    card.hidden = false;
+
+    subscriptionExpiryTimestamp = expiryTimestamp;
+    subscriptionCountdownAccessType = access.status;
+
+    clearInterval(subscriptionCountdownInterval);
+
+    renderSubscriptionCountdown();
+
+    subscriptionCountdownInterval = setInterval(
+        renderSubscriptionCountdown,
+        1000
+    );
+
+    }
+
+    document
+    .getElementById("openSubscriptionBtn")
+    ?.addEventListener("click", async () => {
+    const user = auth.currentUser;
+
+        if (!user) return;
+
+        try {
+            const access = await verifySubscriptionAccess(user);
+
+            if (
+                access.active === true &&
+                ["active", "trial"].includes(access.status)
+            ) {
+                startSubscriptionCountdown(access);
+            }
+
+            showPage("subscriptionPage");
+        } catch (error) {
+            console.error(
+                "Unable to load subscription details:",
+                error
+            );
+
+            showPage("subscriptionPage");
+        }
+    });
+
+    document
+    .getElementById("subscriptionManageBtn")
+    ?.addEventListener("click", () => {
+    showPage("subscriptionPage");
+    });
+    });

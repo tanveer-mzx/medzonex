@@ -683,6 +683,20 @@
                         <span>Settings</span>
                     </button>
 
+                    <button
+                            class="sidebar-item"
+                            id="openSubscriptionBtn"
+                            type="button"
+                    >
+                        <span class="sidebar-icon">◷</span>
+                        <span>Subscription</span>
+                        <span
+                                id="sidebarSubscriptionSignal"
+                                class="subscription-signal"
+                                aria-label="Subscription status"
+                        ></span>
+                    </button>
+
                 </nav>
 
                 <div class="sidebar-bottom">
@@ -712,6 +726,45 @@
 
             <!-- MAIN DASHBOARD -->
             <main class="dashboard-main">
+
+                <section
+                        id="subscriptionCountdownCard"
+                        class="subscription-countdown-card"
+                        aria-live="polite"
+                >
+                    <div class="subscription-countdown-header">
+                        <div>
+                            <h3>My Subscription</h3>
+                            <p id="subscriptionCountdownLabel">
+                                Checking subscription status...
+                            </p>
+                        </div>
+
+                        <span
+                                id="subscriptionStatusBadge"
+                                class="subscription-status-badge"
+                        >
+            CHECKING
+        </span>
+                    </div>
+
+                    <div
+                            id="subscriptionCountdownTimer"
+                            class="subscription-countdown-timer"
+                    >
+                        -- Days : -- Hours : -- Minutes : -- Seconds
+                    </div>
+
+                    <p id="subscriptionExpiryDate" class="subscription-expiry-date"></p>
+
+                    <button
+                            type="button"
+                            id="subscriptionManageBtn"
+                            class="subscription-manage-btn"
+                    >
+                        Manage Subscription
+                    </button>
+                </section>
 
                 <!-- TOP BAR -->
                 <header class="dashboard-topbar">

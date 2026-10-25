@@ -4,7 +4,21 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "server.js",
+      "**/server.js",
+      ".env",
+      "**/.env",
+      "serviceAccountKey.json",
+      "**/serviceAccountKey.json",
+      "package.json",
+      "**/package.json",
+      "package-lock.json",
+      "**/package-lock.json",
+      "*.backup",
+      "**/*.backup",
+      "*.bak",
+      "**/*.bak"
     ]
   }
 }
