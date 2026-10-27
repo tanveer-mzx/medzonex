@@ -3092,4 +3092,3 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
         window.startSubscriptionCountdown = startSubscriptionCountdown;
-    });
