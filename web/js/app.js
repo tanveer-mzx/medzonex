@@ -2218,7 +2218,7 @@ async function routeUserByAccess(user) {
              access.status === "trial")
         ) {
             showPage("dashboardPage");
-            startSubscriptionCountdown(access);
+            window.startSubscriptionCountdown(access);
             await loadDashboard(user);
             return;
         }
@@ -3090,4 +3090,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ?.addEventListener("click", () => {
     showPage("subscriptionPage");
     });
+
+        window.startSubscriptionCountdown = startSubscriptionCountdown;
     });

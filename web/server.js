@@ -2573,18 +2573,16 @@ app.post(
             if (existing) {
                 const existingSubscriptionId =
                     existing.razorpaySubscriptionId ||
-                    (
-                        String(existing.id || "").startsWith("sub_")
-                            ? existing.id
-                            : null
-                    );
+                    (String(existing.id || "").startsWith("sub_")
+                        ? existing.id
+                        : null);
 
                 if (!existingSubscriptionId) {
                     return res.status(409).json({
                         success: false,
                         code: "SUBSCRIPTION_RECONCILIATION_REQUIRED",
                         message:
-                            "Your previous subscription needs reconciliation. Please reach out us at support@medzonex.site."
+                            "Your previous subscription needs reconciliation. Please contact support@medzonex.site."
                     });
                 }
 
@@ -2592,14 +2590,11 @@ app.post(
 
                 try {
                     razorpayExisting =
-                        await razorpay.subscriptions.fetch(
-                            existingSubscriptionId
-                        );
+                        await razorpay.subscriptions.fetch(existingSubscriptionId);
                 } catch (fetchError) {
                     console.error(
                         "Existing Razorpay subscription lookup failed:",
-                        fetchError?.error?.description ||
-                        fetchError.message
+                        fetchError?.error?.description || fetchError.message
                     );
 
                     return res.status(503).json({
@@ -2610,42 +2605,27 @@ app.post(
                     });
                 }
 
-                const actualStatus =
+                let actualStatus =
                     String(razorpayExisting.status || "").toLowerCase();
 
-                    // Never reuse a subscription created for a different plan.
-                    const existingPlanKey = String(
-                        existing.planKey || ""
-                    ).trim();
+                const existingPlanKey =
+                    String(existing.planKey || "").trim();
 
-                    const razorpayExistingPlanId = String(
-                        razorpayExisting.plan_id || ""
-                    ).trim();
+                const existingRazorpayPlanId =
+                    String(razorpayExisting.plan_id || "").trim();
 
-                    if (
-                        existingPlanKey !== planKey ||
-                        razorpayExistingPlanId !== selectedPlan.razorpayPlanId
-                    ) {
-                        return res.status(409).json({
-                            success: false,
-                            code: "EXISTING_SUBSCRIPTION_PLAN_MISMATCH",
-                            message:
-                                "Your previous subscription belongs to a different plan. Please contact support to safely resolve the pending subscription before choosing another plan."
-                        });
-                    }
+                const samePlan =
+                    existingPlanKey === planKey &&
+                    existingRazorpayPlanId === selectedPlan.razorpayPlanId;
 
-                // The subscription exists but has not been authorised.
-                // Reopen Checkout using the SAME subscription ID.
-                if (actualStatus === "created") {
+                // Reuse only a created subscription belonging to the selected plan.
+                if (actualStatus === "created" && samePlan) {
                     await db
                         .collection(SUBSCRIPTION_COLLECTION)
                         .doc(existing.id)
                         .set({
-                            razorpaySubscriptionId:
-                                existingSubscriptionId,
-
+                            razorpaySubscriptionId: existingSubscriptionId,
                             razorpayStatus: actualStatus,
-
                             updatedAt:
                                 admin.firestore.FieldValue.serverTimestamp()
                         }, { merge: true });
@@ -2655,16 +2635,94 @@ app.post(
                         reusedExistingSubscription: true,
                         keyId: RAZORPAY_KEY_ID,
                         subscriptionId: existingSubscriptionId,
-                        planKey: existing.planKey,
-                        planName: existing.planName,
-                        amount: existing.amount,
+                        planKey,
+                        planName: selectedPlan.name,
+                        amount: selectedPlan.amount,
                         currency: "INR"
                     });
                 }
 
-                // Never create a second subscription while the existing
-                // one is active or undergoing payment/retry processing.
-                if (
+                // Only an unauthorised "created" subscription can be
+                // automatically replaced with another plan.
+                if (actualStatus === "created" && !samePlan) {
+                    checkoutLock = await claimCheckoutLock(
+                        uid,
+                        "recurring_subscription",
+                        planKey
+                    );
+
+                    try {
+                        // Cancellation is an external, potentially uncertain action.
+                        razorpayRequestStarted = true;
+
+                        await razorpay.subscriptions.cancel(
+                            existingSubscriptionId,
+                            false
+                        );
+
+                        const verified =
+                            await razorpay.subscriptions.fetch(
+                                existingSubscriptionId
+                            );
+
+                        actualStatus =
+                            String(verified.status || "").toLowerCase();
+
+                        if (actualStatus !== "cancelled") {
+                            await markCheckoutNeedsReconciliation(
+                                checkoutLock,
+                                existingSubscriptionId,
+                                "old_subscription_cancellation_unconfirmed"
+                            );
+
+                            checkoutLock = null;
+
+                            return res.status(409).json({
+                                success: false,
+                                code: "SUBSCRIPTION_CANCELLATION_UNCONFIRMED",
+                                razorpayStatus: actualStatus,
+                                message:
+                                    "Razorpay has not confirmed cancellation of your previous subscription yet. No new subscription was created. Please retry later or contact support@medzonex.site."
+                            });
+                        }
+
+                        await db
+                            .collection(SUBSCRIPTION_COLLECTION)
+                            .doc(existing.id)
+                            .set({
+                                razorpayStatus: "cancelled",
+                                status: "cancelled",
+                                planSwitchCancelledAt:
+                                    admin.firestore.FieldValue.serverTimestamp(),
+                                updatedAt:
+                                    admin.firestore.FieldValue.serverTimestamp()
+                            }, { merge: true });
+
+                        // The old subscription is now verified as cancelled.
+                        // Continue with new-plan creation while holding the lock.
+                        razorpayRequestStarted = false;
+                    } catch (cancelError) {
+                        console.error(
+                            "Previous subscription cancellation could not be verified:",
+                            cancelError?.error?.description || cancelError.message
+                        );
+
+                        await markCheckoutNeedsReconciliation(
+                            checkoutLock,
+                            existingSubscriptionId,
+                            "old_subscription_cancellation_outcome_uncertain"
+                        );
+
+                        checkoutLock = null;
+
+                        return res.status(409).json({
+                            success: false,
+                            code: "SUBSCRIPTION_CANCELLATION_REQUIRES_REVIEW",
+                            message:
+                                "We could not confirm cancellation of your previous subscription. No new subscription was created. Please contact support@medzonex.site."
+                        });
+                    }
+                } else if (
                     actualStatus === "authenticated" ||
                     actualStatus === "active" ||
                     actualStatus === "pending"
@@ -2674,29 +2732,27 @@ app.post(
                         code: "SUBSCRIPTION_IN_PROGRESS",
                         razorpayStatus: actualStatus,
                         message:
-                            actualStatus === "pending"
-                                ? "Your subscription payment is pending with Razorpay. Please check its status before trying again."
-                                : "Your existing subscription is authorised or active. Please wait while its status is verified."
+                            "Your existing subscription is authorised or undergoing payment processing. Please verify its status before switching plans."
+                    });
+                } else if (actualStatus !== "created") {
+                    return res.status(409).json({
+                        success: false,
+                        code: "SUBSCRIPTION_REQUIRES_REVIEW",
+                        razorpayStatus: actualStatus,
+                        message:
+                            "Your previous subscription needs status reconciliation before another subscription can be created."
                     });
                 }
-
-                // Do not silently create another subscription for other
-                // statuses until the old subscription is reconciled.
-                return res.status(409).json({
-                    success: false,
-                    code: "SUBSCRIPTION_REQUIRES_REVIEW",
-                    razorpayStatus: actualStatus,
-                    message:
-                        "Your previous subscription is no longer awaiting authorisation. Please reconcile its status before creating another subscription."
-                });
             }
 
             // Atomically prevent concurrent checkout requests.
-            checkoutLock = await claimCheckoutLock(
-                uid,
-                "recurring_subscription",
-                planKey
-            );
+            if (!checkoutLock) {
+                checkoutLock = await claimCheckoutLock(
+                    uid,
+                    "recurring_subscription",
+                    planKey
+                );
+            }
 
             // Once the external request starts, its outcome may be uncertain
             // if a network error occurs. Preserve the lock in that case.
