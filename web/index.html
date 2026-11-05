@@ -732,39 +732,45 @@
                         class="subscription-countdown-card"
                         aria-live="polite"
                 >
-                    <div class="subscription-countdown-header">
-                        <div>
+                    <details class="subscription-countdown-details">
+
+                        <summary class="subscription-countdown-header">
                             <h3>My Subscription</h3>
+
+                            <span
+                                id="subscriptionStatusBadge"
+                                class="subscription-status-badge"
+                            >CHECKING</span>
+                        </summary>
+
+                        <div class="subscription-countdown-content">
+
                             <p id="subscriptionCountdownLabel">
                                 Checking subscription status...
                             </p>
+
+                            <div
+                                id="subscriptionCountdownTimer"
+                                class="subscription-countdown-timer"
+                            >
+                                -- Days : -- Hours : -- Minutes : -- Seconds
+                            </div>
+
+                            <p id="subscriptionExpiryDate" class="subscription-expiry-date"></p>
+
+                            <button
+                                type="button"
+                                id="subscriptionManageBtn"
+                                class="subscription-manage-btn"
+                            >
+                                Manage Subscription
+                            </button>
+
                         </div>
 
-                        <span
-                                id="subscriptionStatusBadge"
-                                class="subscription-status-badge"
-                        >
-            CHECKING
-        </span>
-                    </div>
+                    </details>
 
-                    <div
-                            id="subscriptionCountdownTimer"
-                            class="subscription-countdown-timer"
-                    >
-                        -- Days : -- Hours : -- Minutes : -- Seconds
-                    </div>
-
-                    <p id="subscriptionExpiryDate" class="subscription-expiry-date"></p>
-
-                    <button
-                            type="button"
-                            id="subscriptionManageBtn"
-                            class="subscription-manage-btn"
-                    >
-                        Manage Subscription
-                    </button>
-                </section>
+</section>
 
                 <!-- TOP BAR -->
                 <header class="dashboard-topbar">
@@ -777,6 +783,27 @@
                         <h1>
                             Dashboard
                         </h1>
+                    </div>
+
+                    <div class="dashboard-notification-area">
+
+                        <button
+                            type="button"
+                            id="notificationBell"
+                            class="notification-bell"
+                            aria-label="Notifications"
+                            aria-expanded="false"
+                            aria-controls="notificationsPage"
+                        >
+                            <span aria-hidden="true">🔔</span>
+                            <span
+                                id="notificationUnreadCount"
+                                class="notification-unread-count"
+                                hidden
+                            >0</span>
+                        </button>
+
+
                     </div>
 
                     <div class="dashboard-user">
@@ -1195,7 +1222,45 @@
      INVENTORY PAGE
 ================================================== -->
 
-    <section
+        <!-- NOTIFICATIONS PAGE -->
+    <section id="notificationsPage" class="app-page">
+        <div class="notifications-page-shell">
+
+            <header class="notifications-page-header">
+                <button
+                    type="button"
+                    id="notificationsBackBtn"
+                    class="mz-back"
+                    aria-label="Go back"
+                    title="Go back"
+                >←</button>
+
+                <div class="notifications-page-heading">
+                    <p class="dashboard-small-title">ACCOUNT UPDATES</p>
+                    <h1>Notifications</h1>
+                    <p class="notifications-page-subtitle">
+                        Your latest subscription and account updates.
+                    </p>
+                </div>
+
+                <div class="notifications-page-unread" aria-live="polite">
+                    <span id="notificationsPageUnreadCount">0</span>
+                    <small>Unread</small>
+                </div>
+            </header>
+
+            <div
+                id="notificationList"
+                class="notification-list notifications-page-list"
+                aria-live="polite"
+            >
+                <p class="notification-empty">Loading notifications...</p>
+            </div>
+
+        </div>
+    </section>
+
+<section
             id="inventoryPage"
             class="app-page"
     >
@@ -1205,6 +1270,7 @@
             <!-- INVENTORY HEADER -->
             <header class="inventory-header">
 
+                <button type="button" class="mz-back" data-app-back aria-label="Go back" title="Go back">←</button>
                 <div>
 
                     <p class="dashboard-small-title">
@@ -1798,19 +1864,78 @@
             </section>
 
 
+            <!-- MEDICINE DETAILS PANEL -->
+            <section id="medicineDetailsPanel" class="medicine-details-panel" hidden>
+                <div class="medicine-details-toolbar">
+                    <button type="button" id="medicineDetailsBackBtn"
+                        class="details-back-arrow" aria-label="Back to inventory" title="Back to inventory">
+                        ←
+                    </button>
+
+                    <div class="medicine-details-toolbar-actions">
+                        <div class="details-document-actions">
+                            <button type="button" id="medicineDetailsPrintBtn" class="secondary-btn">
+                                Print / Save PDF
+                            </button>
+                        </div>
+                        <div class="details-edit-actions">
+                            <button type="button" id="medicineDetailsEditBtn" class="primary-btn">
+                                Edit
+                            </button>
+                            <button type="button" id="medicineDetailsDeleteBtn" class="details-delete-btn">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <article id="medicineDetailsDocument" class="medicine-details-document">
+                    <header class="medicine-details-document-header">
+                        <div>
+                            <p class="section-kicker">MEDZONEX · INVENTORY RECORD</p>
+                            <h1 id="detailsMedicineName">Medicine Details</h1>
+                            <p id="detailsMedicineSalt" class="medicine-details-subtitle">—</p>
+                        </div>
+                        <div class="medicine-details-record-id">
+                            <span>Record ID</span>
+                            <strong id="detailsMedicineId">—</strong>
+                        </div>
+                    </header>
+
+                    <div id="detailsMedicineStatuses" class="medicine-details-statuses"></div>
+
+                    <section class="medicine-details-group">
+                        <h2>Medicine Information</h2>
+                        <div class="medicine-details-grid">
+                            <div><span>Strength</span><strong id="detailsStrength">—</strong></div>
+                            <div><span>Dosage Form</span><strong id="detailsDosageForm">—</strong></div>
+                            <div><span>Pack Size</span><strong id="detailsPackSize">—</strong></div>
+                            <div><span>Manufacturer</span><strong id="detailsManufacturer">—</strong></div>
+                            <div><span>Batch Number</span><strong id="detailsBatch">—</strong></div>
+                            <div><span>Date Added</span><strong id="detailsCreatedAt">—</strong></div>
+                            <div><span>Expiry Date</span><strong id="detailsExpiry">—</strong></div>
+                        </div>
+                    </section>
+
+                    <section class="medicine-details-group">
+                        <h2>Stock & Pricing</h2>
+                        <div class="medicine-details-grid">
+                            <div><span>Available Quantity</span><strong id="detailsQuantity">—</strong></div>
+                            <div><span>Minimum Stock</span><strong id="detailsMinimumStock">—</strong></div>
+                            <div><span>Purchase Price</span><strong id="detailsPurchasePrice">—</strong></div>
+                            <div><span>Selling Price</span><strong id="detailsSellingPrice">—</strong></div>
+                            <div><span>Stock Value (Purchase)</span><strong id="detailsStockValue">—</strong></div>
+                            <div><span>Potential Sales Value</span><strong id="detailsSalesValue">—</strong></div>
+                        </div>
+                    </section>
+
+                    <footer class="medicine-details-document-footer">
+                        Generated from the MedZoneX inventory record. Verify medicine and expiry details before dispensing.
+                    </footer>
+                </article>
+            </section>
+
             <!-- BACK TO DASHBOARD -->
-
-            <div class="inventory-back-area">
-
-                <button
-                        type="button"
-                        id="backToDashboardFromInventoryBtn"
-                        class="secondary-btn"
-                >
-                    ← Back to Dashboard
-                </button>
-
-            </div>
 
         </div>
 
@@ -1829,6 +1954,7 @@
 
             <header class="inventory-header">
 
+                <button type="button" class="mz-back" data-app-back aria-label="Go back" title="Go back">←</button>
                 <div>
 
                     <p class="dashboard-small-title">
@@ -2314,18 +2440,6 @@
                  BACK
             ================================================== -->
 
-            <div class="inventory-back-area">
-
-                <button
-                        type="button"
-                        id="closeBillingBtn"
-                        class="secondary-btn"
-                >
-                    ← Back to Dashboard
-                </button>
-
-            </div>
-
         </div>
 
     </section>
@@ -2343,6 +2457,7 @@
 
             <header class="inventory-header">
 
+                <button type="button" class="mz-back" data-app-back aria-label="Go back" title="Go back">←</button>
                 <div>
                     <p class="dashboard-small-title">
                         STOCK MANAGEMENT
@@ -2376,34 +2491,82 @@
 
                 </div>
 
-                <div class="empty-dashboard">
+                
+                <div class="mz-purchase-layout">
+                    <div class="mz-purchase-grid">
+                        <section class="mz-purchase-card">
+                            <h3>Supplier Details</h3>
+                            <label for="purchaseSupplier">Existing Supplier</label>
+                            <select id="purchaseSupplier"><option value="">Select supplier</option></select>
+                            <label for="purchaseSupplierName">Supplier Name *</label>
+                            <input id="purchaseSupplierName" type="text" placeholder="Supplier name">
+                            <label for="purchaseSupplierPhone">Supplier Phone</label>
+                            <input id="purchaseSupplierPhone" type="tel" placeholder="Mobile number">
+                            <label for="purchaseDate">Purchase Date *</label>
+                            <input id="purchaseDate" type="date">
+                            <label for="purchaseReference">Invoice / Reference Number</label>
+                            <input id="purchaseReference" type="text" placeholder="Invoice number">
+                            <label for="purchasePaymentMethod">Payment Method</label>
+                            <select id="purchasePaymentMethod">
+                                <option value="cash">Cash</option>
+                                <option value="upi">UPI</option>
+                                <option value="bank">Bank Transfer</option>
+                                <option value="card">Card</option>
+                                <option value="credit">Credit</option>
+                            </select>
+                        </section>
 
-                    <span>🛒</span>
+                        <section class="mz-purchase-card">
+                            <h3>Add Medicine</h3>
+                            <label for="purchaseMedicineSearch">Search Existing Medicine</label>
+                            <input id="purchaseMedicineSearch" type="search" placeholder="Search medicine, salt or batch">
+                            <div id="purchaseMedicineResults" class="purchase-search-results"></div>
+                            <div class="mz-purchase-fields">
+                                <div><label for="purchaseMedicineName">Medicine Name *</label><input id="purchaseMedicineName" type="text"></div>
+                                <div><label for="purchaseMedicineSalt">Salt / Composition</label><input id="purchaseMedicineSalt" type="text"></div>
+                                <div><label for="purchaseMedicineManufacturer">Manufacturer</label><input id="purchaseMedicineManufacturer" type="text"></div>
+                                <div><label for="purchaseMedicineBatch">Batch Number *</label><input id="purchaseMedicineBatch" type="text"></div>
+                                <div><label for="purchaseMedicineExpiry">Expiry Date *</label><input id="purchaseMedicineExpiry" type="date"></div>
+                                <div><label for="purchaseMedicinePurchasePrice">Purchase Price *</label><input id="purchaseMedicinePurchasePrice" type="number" min="0" step="0.01"></div>
+                                <div><label for="purchaseMedicineSellingPrice">Selling Price *</label><input id="purchaseMedicineSellingPrice" type="number" min="0" step="0.01"></div>
+                                <div><label for="purchaseMedicineQuantity">Quantity *</label><input id="purchaseMedicineQuantity" type="number" min="1" step="1"></div>
+                            </div>
+                            <button id="addPurchaseItemBtn" type="button" class="primary-btn">+ Add Medicine</button>
+                        </section>
+                    </div>
 
-                    <p>
-                        Purchase Management
-                    </p>
+                    <section class="mz-purchase-card">
+                        <h3>Purchase Items</h3>
+                        <div id="purchaseItemsList"><div class="purchase-empty">No medicines added.</div></div>
+                    </section>
 
-                    <small>
-                        Your purchase workspace will appear here.
-                    </small>
+                    <section class="mz-purchase-card">
+                        <h3>Payment Summary</h3>
+                        <div class="mz-purchase-total-row"><span>Subtotal</span><strong id="purchaseSubtotal">₹0.00</strong></div>
+                        <label for="purchaseDiscount">Discount (₹)</label>
+                        <input id="purchaseDiscount" type="number" min="0" step="0.01" value="0">
+                        <div class="mz-purchase-total-row"><span>Discount</span><strong id="purchaseDiscountAmount">₹0.00</strong></div>
+                        <div class="mz-purchase-total-row"><span>Grand Total</span><strong id="purchaseGrandTotal">₹0.00</strong></div>
+                        <label for="purchasePaidAmount">Amount Paid (₹)</label>
+                        <input id="purchasePaidAmount" type="number" min="0" step="0.01" value="0">
+                        <div class="mz-purchase-total-row"><span>Balance Due</span><strong id="purchaseBalance">₹0.00</strong></div>
+                        <div id="purchaseMessage" class="purchase-message" role="status"></div>
+                        <div class="mz-purchase-actions">
+                            <button id="clearPurchaseBtn" type="button" class="secondary-btn">Clear Form</button>
+                            <button id="savePurchaseBtn" type="button" class="primary-btn">Save Purchase</button>
+                        </div>
+                    </section>
 
+                    <section class="mz-purchase-card">
+                        <div class="mz-purchase-history-heading">
+                            <h3>Purchase History</h3>
+                            <button id="refreshPurchaseHistoryBtn" type="button" class="secondary-btn">Refresh</button>
+                        </div>
+                        <div id="purchaseHistoryList">Purchase history will appear here.</div>
+                    </section>
                 </div>
 
             </section>
-
-
-            <div class="inventory-back-area">
-
-                <button
-                        type="button"
-                        id="closePurchaseBtn"
-                        class="secondary-btn"
-                >
-                    ← Back to Dashboard
-                </button>
-
-            </div>
 
         </div>
 
@@ -2472,19 +2635,6 @@
 
             </section>
 
-
-            <div class="inventory-back-area">
-
-                <button
-                        type="button"
-                        id="closeCustomersBtn"
-                        class="secondary-btn"
-                >
-                    ← Back to Dashboard
-                </button>
-
-            </div>
-
         </div>
 
     </section>
@@ -2503,6 +2653,7 @@
 
             <header class="inventory-header">
 
+                <button type="button" class="mz-back" data-app-back aria-label="Go back" title="Go back">←</button>
                 <div>
                     <p class="dashboard-small-title">
                         ACCOUNT
@@ -2536,34 +2687,124 @@
 
                 </div>
 
-                <div class="empty-dashboard">
+                
 
-                    <span>◉</span>
+<div id="profileViewPanel" class="mz-profile-view">
 
-                    <p>
-                        Profile
-                    </p>
+  <div class="mz-profile-view-header">
+    <div>
+      <span class="section-kicker">YOUR ACCOUNT</span>
+      <h2>Pharmacy Profile</h2>
+      <p>Your registered pharmacy information.</p>
+    </div>
+    <button type="button" id="editProfileBtn" class="mz-edit-profile-btn">
+      ✎ Edit Profile
+    </button>
+  </div>
 
-                    <small>
-                        Your profile settings will appear here.
-                    </small>
+  <div class="mz-profile-identity">
+    <div class="mz-profile-avatar" id="mzProfileAvatar">M</div>
+    <div>
+      <h2 id="viewStoreName">Your Pharmacy</h2>
+      <p id="viewOwnerName">Owner details not added</p>
+      <span id="viewProfileEmail"></span>
+    </div>
+  </div>
 
-                </div>
+  <div class="mz-profile-view-grid">
+    <div class="mz-profile-detail"><small>Mobile Number</small><strong id="viewPhone"></strong></div>
+    <div class="mz-profile-detail"><small>Pharmacy Address</small><strong id="viewAddress"></strong></div>
+    <div class="mz-profile-detail"><small>City</small><strong id="viewCity"></strong></div>
+    <div class="mz-profile-detail"><small>State</small><strong id="viewState"></strong></div>
+    <div class="mz-profile-detail"><small>PIN Code</small><strong id="viewPincode"></strong></div>
+    <div class="mz-profile-detail"><small>GSTIN</small><strong id="viewGSTIN"></strong></div>
+    <div class="mz-profile-detail"><small>Drug Licence Number</small><strong id="viewDrugLicence"></strong></div>
+    <div class="mz-profile-detail"><small>Licence Expiry</small><strong id="viewLicenceExpiry"></strong></div>
+  </div>
+</div>
+
+<div id="profileEditPanel" style="display:none;">
+<div class="mz-account-layout">
+    <section class="mz-account-card">
+        <h3>Pharmacy Information</h3>
+        <p class="mz-account-description">Your pharmacy details used across your account.</p>
+
+        <div class="mz-account-fields">
+            <div>
+                <label for="profileStoreName">Pharmacy / Store Name *</label>
+                <input id="profileStoreName" type="text" required placeholder="Pharmacy name">
+            </div>
+
+            <div>
+                <label for="profileOwnerName">Owner Name</label>
+                <input id="profileOwnerName" type="text" placeholder="Owner full name">
+            </div>
+
+            <div>
+                <label for="profilePhone">Mobile Number</label>
+                <input id="profilePhone" type="tel" maxlength="15" placeholder="Mobile number">
+            </div>
+
+            <div>
+                <label for="profileEmail">Registered Email</label>
+                <input id="profileEmail" type="email" readonly>
+            </div>
+
+            <div class="mz-account-full">
+                <label for="profileAddress">Pharmacy Address</label>
+                <textarea id="profileAddress" rows="3" placeholder="Complete pharmacy address"></textarea>
+            </div>
+
+            <div>
+                <label for="profileCity">City</label>
+                <input id="profileCity" type="text">
+            </div>
+
+            <div>
+                <label for="profileState">State</label>
+                <input id="profileState" type="text">
+            </div>
+
+            <div>
+                <label for="profilePincode">PIN Code</label>
+                <input id="profilePincode" type="text" maxlength="6" inputmode="numeric">
+            </div>
+        </div>
+    </section>
+
+    <section class="mz-account-card">
+        <h3>Business & Licence Details</h3>
+
+        <div class="mz-account-fields">
+            <div>
+                <label for="profileGSTIN">GSTIN</label>
+                <input id="profileGSTIN" type="text" maxlength="15" placeholder="15-character GSTIN">
+            </div>
+
+            <div>
+                <label for="profileDrugLicence">Drug Licence Number</label>
+                <input id="profileDrugLicence" type="text" placeholder="Licence number">
+            </div>
+
+            <div>
+                <label for="profileLicenceExpiry">Drug Licence Expiry</label>
+                <input id="profileLicenceExpiry" type="date">
+            </div>
+        </div>
+
+        <div id="profileMessage" class="mz-account-message" role="status"></div>
+
+        
+<div class="mz-profile-form-actions">
+  <button id="cancelProfileBtn" type="button" class="mz-cancel-profile-btn">Cancel</button>
+  <button id="saveProfileBtn" type="button" class="primary-btn">Save Profile</button>
+</div>
+    </section>
+</div>
+</div>
+
 
             </section>
-
-
-            <div class="inventory-back-area">
-
-                <button
-                        type="button"
-                        id="closeProfileBtn"
-                        class="secondary-btn"
-                >
-                    ← Back to Dashboard
-                </button>
-
-            </div>
 
         </div>
 
@@ -2583,6 +2824,7 @@
 
             <header class="inventory-header">
 
+                <button type="button" class="mz-back" data-app-back aria-label="Go back" title="Go back">←</button>
                 <div>
                     <p class="dashboard-small-title">
                         MEDZONEX
@@ -2616,34 +2858,88 @@
 
                 </div>
 
-                <div class="empty-dashboard">
+                
+<div class="mz-account-layout">
 
-                    <span>⚙</span>
+    <section class="mz-account-card">
+        <h3>Inventory Alerts</h3>
 
-                    <p>
-                        Settings
-                    </p>
+        <div class="mz-setting-row">
+            <div>
+                <strong>Low Stock Alert</strong>
+                <small>Save your preferred low-stock threshold.</small>
+            </div>
+            <input id="settingLowStockEnabled" type="checkbox" checked>
+        </div>
 
-                    <small>
-                        Your application settings will appear here.
-                    </small>
+        <label for="settingLowStockThreshold">Low Stock Threshold (units)</label>
+        <input id="settingLowStockThreshold" type="number" min="0" step="1" value="10">
 
-                </div>
+        <div class="mz-setting-row">
+            <div>
+                <strong>Expiry Alert</strong>
+                <small>Save how early you want expiry alerts.</small>
+            </div>
+            <input id="settingExpiryEnabled" type="checkbox" checked>
+        </div>
+
+        <label for="settingExpiryDays">Expiry Alert Before (days)</label>
+        <input id="settingExpiryDays" type="number" min="1" max="365" value="90">
+    </section>
+
+    <section class="mz-account-card">
+        <h3>Invoice Preferences</h3>
+
+        <label for="settingInvoicePrefix">Invoice Prefix</label>
+        <input id="settingInvoicePrefix" type="text" maxlength="20" value="MZX">
+
+        <label for="settingInvoiceStart">Starting Invoice Number</label>
+        <input id="settingInvoiceStart" type="number" min="1" step="1" value="1">
+
+        <div class="mz-setting-row">
+            <div>
+                <strong>Show Pharmacy Address on Invoice</strong>
+                <small>Save address display preference.</small>
+            </div>
+            <input id="settingInvoiceAddress" type="checkbox" checked>
+        </div>
+
+        <div class="mz-setting-row">
+            <div>
+                <strong>Auto Print Invoice</strong>
+                <small>Save your preferred print setting.</small>
+            </div>
+            <input id="settingAutoPrint" type="checkbox">
+        </div>
+    </section>
+
+    <section class="mz-account-card">
+        <h3>Tax Preferences</h3>
+
+        <label for="settingDefaultGST">Default GST Rate (%)</label>
+        <select id="settingDefaultGST">
+            <option value="0">0%</option>
+            <option value="5">5%</option>
+            <option value="12">12%</option>
+            <option value="18">18%</option>
+            <option value="28">28%</option>
+        </select>
+
+        <small class="mz-account-description">
+            This saves a preference only. It does not change billing tax calculations.
+        </small>
+    </section>
+
+    <section class="mz-account-card">
+        <div id="settingsMessage" class="mz-account-message" role="status"></div>
+
+        <button id="saveSettingsBtn" type="button" class="primary-btn">
+            Save Settings
+        </button>
+    </section>
+</div>
 
             </section>
-
-
-            <div class="inventory-back-area">
-
-                <button
-                        type="button"
-                        id="closeSettingsBtn"
-                        class="secondary-btn"
-                >
-                    ← Back to Dashboard
-                </button>
-
-            </div>
 
         </div>
 
@@ -2662,7 +2958,9 @@
 
             <header class="inventory-header">
 
-                <div>
+                <button type="button" class="mz-back" data-subscription-back aria-label="Go back" title="Go back">←</button>
+
+<div>
 
                     <p class="dashboard-small-title">
                         MEDZONEX SUBSCRIPTION
@@ -2678,8 +2976,25 @@
 
                 </div>
 
+            
+                
+
+            
+
+                <button
+                        type="button"
+                        class="sidebar-item logout-item"
+                        id="subscriptionLogoutBtn"
+                        style="width:auto; flex-shrink:0;"
+                >
+                    <span class="sidebar-icon">↪</span>
+                    <span>Logout</span>
+                </button>
+
             </header>
 
+
+                
 
             <!-- CUSTOMER PHONE -->
 
@@ -2837,19 +3152,6 @@
 
             </section>
 
-
-            <div class="inventory-back-area">
-
-                <button
-                        type="button"
-                        id="closeSubscriptionBtn"
-                        class="secondary-btn"
-                >
-                    ← Back to Dashboard
-                </button>
-
-            </div>
-
         </div>
 
     </section>
@@ -2975,6 +3277,12 @@
         src="js/subscription.js"
 ></script>
 
+<script type="module" src="js/sales.js"></script>
+
+
+<script type="module" src="js/purchases.js"></script>
+
+<script type="module" src="js/profile-settings.js"></script>
 
 </body>
 </html>

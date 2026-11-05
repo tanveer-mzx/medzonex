@@ -1878,30 +1878,10 @@ function updatePurchaseSummary(
 // ============================================================
 
 function openPurchases() {
-
-    document
-        .querySelectorAll(".app-page")
-        .forEach(page => {
-
-            page.style.display = "none";
-
-        });
-
-
-    const page =
-        document.getElementById(
-            "purchasesPage"
-        );
-
-
-    if (page) {
-
-        page.style.display = "block";
-
-        initPurchases();
-
+    if (window.MedZoneX?.showPage) {
+        window.MedZoneX.showPage("purchasePage");
     }
-
+    return initPurchases();
 }
 
 

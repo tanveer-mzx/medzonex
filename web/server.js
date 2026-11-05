@@ -593,6 +593,24 @@ async function sendEmail({
 const INVOICE_EMAIL_JOB_COLLECTION =
     "razorpayInvoiceEmailJobs";
 
+const SUBSCRIPTION_REMINDER_JOB_COLLECTION =
+    "subscriptionReminderJobs";
+
+const SUBSCRIPTION_EMAIL_URL =
+    "https://medzonex.site/?openSubscription=1";
+
+function reminderTimestampMillis(value) {
+    if (!value) return 0;
+    if (typeof value.toMillis === "function") return value.toMillis();
+    if (typeof value.seconds === "number") return value.seconds * 1000;
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
+        const parsed = new Date(value).getTime();
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+}
+
 function escapeInvoiceHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, (char) => ({
         "&": "&amp;",
@@ -601,6 +619,341 @@ function escapeInvoiceHtml(value) {
         '"': "&quot;",
         "'": "&#39;"
     }[char]));
+}
+
+const SUBSCRIPTION_REMINDER_MAX_LATE_MS = 30 * 60 * 1000;
+
+function buildSubscriptionDashboardNotificationData(jobId, job, storeName) {
+    const key = String(job.reminderKey || "");
+    const isTrial = job.type === "trial";
+
+    const title = isTrial
+        ? "Your MedZoneX free trial reminder"
+        : "Your MedZoneX subscription reminder";
+
+    let message;
+
+    if (isTrial) {
+        if (key === "2h") {
+            message = "Your free trial started 2 hours ago. You have approximately 46 hours remaining.";
+        } else if (key === "24h") {
+            message = "Your free trial has approximately 24 hours remaining.";
+        } else if (key === "48h" || key === "expiry") {
+            message = "Your 48-hour free trial has expired. Subscribe now to continue using MedZoneX.";
+        } else if (key === "49h" || key === "expired_1h") {
+            message = "Your free trial expired 1 hour ago. Subscribe now to restore access.";
+        } else {
+            message = "Your free trial is approaching its end.";
+        }
+    } else {
+        if (key === "72h") {
+            message = "Your subscription expires in 3 days. Renew early to avoid interruption.";
+        } else if (key === "48h") {
+            message = "Your subscription expires in 2 days. Renew early to avoid interruption.";
+        } else if (key === "24h") {
+            message = "Your subscription expires in 1 day. Renew early to avoid interruption.";
+        } else if (key === "expiry") {
+            message = "Your MedZoneX subscription has reached its expiry time. Renew now to continue using the service.";
+        } else if (key === "expired_1h") {
+            message = "Your MedZoneX subscription expired 1 hour ago. Renew now to restore access.";
+        } else {
+            message = "Your MedZoneX subscription is approaching its expiry date.";
+        }
+    }
+
+    return {
+        type: isTrial ? "trial_expiry" : "subscription_expiry",
+        title,
+        message,
+        isRead: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        readAt: null,
+        actionText: "Subscribe Now",
+        actionUrl: SUBSCRIPTION_EMAIL_URL,
+        source: "subscription_reminder",
+        reminderJobId: jobId,
+        storeName: storeName || "MedZoneX Customer",
+        expiresAt: job.periodEndMs
+            ? admin.firestore.Timestamp.fromMillis(Number(job.periodEndMs))
+            : null
+    };
+}
+
+function getSubscriptionReminderEligibility(job, userData, now = Date.now()) {
+    if (!job || !userData || !job.uid || !["trial", "paid"].includes(job.type)) {
+        return { eligible: false, reason: "invalid_job_or_user" };
+    }
+
+    const key = String(job.reminderKey || "");
+    let expectedDueAt = 0;
+
+    if (job.type === "trial") {
+        const trialStart = reminderTimestampMillis(userData.trialStartedAt);
+        const trialExpiry = trialStart + 48 * 60 * 60 * 1000;
+        const jobTrialStart = reminderTimestampMillis(job.trialStartedAt);
+
+        if (
+            trialStart <= 0 ||
+            (jobTrialStart > 0 && jobTrialStart !== trialStart)
+        ) {
+            return { eligible: false, reason: "trial_changed" };
+        }
+
+        const offsets = {
+            "2h": 2 * 60 * 60 * 1000,
+            "24h": 24 * 60 * 60 * 1000,
+            "48h": 48 * 60 * 60 * 1000,
+            "49h": 49 * 60 * 60 * 1000
+        };
+
+        if (!Object.prototype.hasOwnProperty.call(offsets, key)) {
+            return { eligible: false, reason: "unknown_trial_reminder_key" };
+        }
+
+        expectedDueAt = trialStart + offsets[key];
+
+        const subscription = userData.subscription || {};
+        const paidExpiry = reminderTimestampMillis(subscription.currentPeriodEnd);
+        const hasPaidSubscription =
+            String(subscription.status || "").toLowerCase() === "active" &&
+            paidExpiry > now;
+
+        if (hasPaidSubscription) {
+            return { eligible: false, reason: "paid_subscription_active" };
+        }
+
+        if (key === "2h" || key === "24h") {
+            if (now >= trialExpiry) {
+                return { eligible: false, reason: "trial_pre_expiry_window_passed" };
+            }
+        } else if (key === "48h") {
+            if (now < trialExpiry) {
+                return { eligible: false, reason: "trial_not_expired_yet" };
+            }
+        } else if (key === "49h" && now < trialExpiry + 60 * 60 * 1000) {
+            return { eligible: false, reason: "trial_post_expiry_window_not_started" };
+        }
+    } else {
+        const subscription = userData.subscription || {};
+        const currentExpiry = reminderTimestampMillis(subscription.currentPeriodEnd);
+        const expectedExpiry = Number(job.periodEndMs || 0);
+
+        if (expectedExpiry <= 0 || currentExpiry !== expectedExpiry) {
+            return { eligible: false, reason: "subscription_period_changed" };
+        }
+
+        const isManualPayment = job.provider === "manual";
+        const samePayment = isManualPayment
+            ? (
+                Boolean(job.paymentId) &&
+                subscription.lastPaymentId === job.paymentId
+            ) || (
+                Boolean(job.orderId) &&
+                subscription.lastOrderId === job.orderId
+            )
+            : Boolean(job.subscriptionId) &&
+              subscription.razorpaySubscriptionId === job.subscriptionId;
+
+        if (!samePayment) {
+            return { eligible: false, reason: "subscription_payment_changed" };
+        }
+
+        const allowedStatus = ["active", "cancelled", "expired"].includes(
+            String(subscription.status || "").toLowerCase()
+        );
+
+        if (!allowedStatus) {
+            return { eligible: false, reason: "subscription_status_not_eligible" };
+        }
+
+        const offsets = {
+            "72h": -72 * 60 * 60 * 1000,
+            "48h": -48 * 60 * 60 * 1000,
+            "24h": -24 * 60 * 60 * 1000,
+            "expiry": 0,
+            "expired_1h": 60 * 60 * 1000
+        };
+
+        if (!Object.prototype.hasOwnProperty.call(offsets, key)) {
+            return { eligible: false, reason: "unknown_paid_reminder_key" };
+        }
+
+        expectedDueAt = expectedExpiry + offsets[key];
+
+        if (["72h", "48h", "24h"].includes(key) && now >= expectedExpiry) {
+            return { eligible: false, reason: "subscription_pre_expiry_window_passed" };
+        }
+
+        if (key === "expiry" && now < expectedExpiry) {
+            return { eligible: false, reason: "subscription_not_expired_yet" };
+        }
+
+        if (key === "expired_1h" && now < expectedExpiry + 60 * 60 * 1000) {
+            return { eligible: false, reason: "subscription_post_expiry_window_not_started" };
+        }
+    }
+
+    if (now < expectedDueAt) {
+        return { eligible: false, reason: "reminder_not_due_yet" };
+    }
+
+    if (now - expectedDueAt > SUBSCRIPTION_REMINDER_MAX_LATE_MS) {
+        return { eligible: false, reason: "reminder_window_missed" };
+    }
+
+    return { eligible: true, expectedDueAt };
+}
+
+async function authorizeSubscriptionReminderSend(jobId, claimedJob, storeName) {
+    const jobRef = db
+        .collection(SUBSCRIPTION_REMINDER_JOB_COLLECTION)
+        .doc(jobId);
+
+    const userRef = db.collection("users").doc(claimedJob.uid);
+
+    const notificationRef = userRef
+        .collection("notifications")
+        .doc("reminder_" + jobId);
+
+    return db.runTransaction(async (transaction) => {
+        const jobSnapshot = await transaction.get(jobRef);
+        const userSnapshot = await transaction.get(userRef);
+        const notificationSnapshot = await transaction.get(notificationRef);
+
+        if (!jobSnapshot.exists || !userSnapshot.exists) {
+            if (jobSnapshot.exists) {
+                transaction.update(jobRef, {
+                    status: "obsolete",
+                    obsoleteReason: userSnapshot.exists ? "job_missing" : "user_not_found",
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                });
+            }
+            return { authorized: false };
+        }
+
+        const currentJob = jobSnapshot.data() || {};
+
+        if (
+            currentJob.status !== "sending" ||
+            currentJob.sendAttemptId !== claimedJob.sendAttemptId
+        ) {
+            return { authorized: false, reason: "job_lease_lost" };
+        }
+
+        const userData = userSnapshot.data() || {};
+        const eligibility = getSubscriptionReminderEligibility(
+            currentJob,
+            userData,
+            Date.now()
+        );
+
+        if (!eligibility.eligible) {
+            transaction.update(jobRef, {
+                status: "obsolete",
+                obsoleteReason: eligibility.reason,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+            return { authorized: false, reason: eligibility.reason };
+        }
+
+        if (!notificationSnapshot.exists) {
+            transaction.create(
+                notificationRef,
+                buildSubscriptionDashboardNotificationData(
+                    jobId,
+                    currentJob,
+                    userData.storeName || currentJob.storeName || storeName
+                )
+            );
+        }
+
+        // This write shares the user document with both manual and recurring
+        // renewal transactions, fencing authorizations against committed renewals.
+        transaction.update(userRef, {
+            subscriptionReminderDispatch: {
+                jobId,
+                sendAttemptId: claimedJob.sendAttemptId,
+                authorizedAt: admin.firestore.FieldValue.serverTimestamp()
+            }
+        });
+
+        transaction.update(jobRef, {
+            sendAuthorizedAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        return { authorized: true, userData, job: currentJob };
+    });
+}
+
+async function cleanupOldSubscriptionReminders(uid, currentPaymentId) {
+    if (!uid) return;
+
+    try {
+        const jobsSnapshot = await db
+            .collection(SUBSCRIPTION_REMINDER_JOB_COLLECTION)
+            .where("uid", "==", uid)
+            .get();
+
+        const oldJobs = jobsSnapshot.docs.filter((document) => {
+            const job = document.data();
+
+            return (
+                job.type === "paid" &&
+                ["pending", "retry", "sending"].includes(job.status) &&
+                job.paymentId !== currentPaymentId
+            );
+        });
+
+        for (let index = 0; index < oldJobs.length; index += 450) {
+            const batch = db.batch();
+
+            oldJobs.slice(index, index + 450).forEach((document) => {
+                batch.update(document.ref, {
+                    status: "obsolete",
+                    obsoleteReason: "subscription_renewed",
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                });
+            });
+
+            await batch.commit();
+        }
+
+        const notificationsSnapshot = await db
+            .collection("users")
+            .doc(uid)
+            .collection("notifications")
+            .where("source", "==", "subscription_reminder")
+            .get();
+
+        const oldNotifications = notificationsSnapshot.docs.filter((document) => {
+            const notification = document.data();
+            return notification.isResolved !== true;
+        });
+
+        for (let index = 0; index < oldNotifications.length; index += 450) {
+            const batch = db.batch();
+
+            oldNotifications.slice(index, index + 450).forEach((document) => {
+                batch.update(document.ref, {
+                    isResolved: true,
+                    resolvedAt: admin.firestore.FieldValue.serverTimestamp()
+                });
+            });
+
+            await batch.commit();
+        }
+
+        console.log(
+            "[SUBSCRIPTION REMINDER] Renewal cleanup completed for " + uid
+        );
+
+    } catch (error) {
+        console.error(
+            "[SUBSCRIPTION REMINDER] Renewal cleanup failed for " + uid + ":",
+            error.message
+        );
+    }
 }
 
 function invoiceDate(value) {
@@ -1121,6 +1474,303 @@ async function runInvoiceEmailWorker() {
         invoiceEmailWorkerRunning = false;
     }
 }
+
+// ======================================================
+// SUBSCRIPTION REMINDER EMAIL WORKER
+// ======================================================
+
+async function processSubscriptionReminderJob(jobId) {
+    const jobRef = db
+        .collection(SUBSCRIPTION_REMINDER_JOB_COLLECTION)
+        .doc(jobId);
+
+    const sendAttemptId = crypto.randomUUID();
+
+    const claim = await db.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(jobRef);
+
+        if (!snapshot.exists) return null;
+
+        const job = snapshot.data();
+        const now = Date.now();
+        const dueAt = reminderTimestampMillis(job.dueAt);
+
+        if (["sent", "obsolete", "failed_permanently"].includes(job.status)) {
+            return null;
+        }
+
+        if (dueAt <= 0 || dueAt > now) return null;
+
+        if (
+            job.status === "retry" &&
+            reminderTimestampMillis(job.nextRetryAt) > now
+        ) {
+            return null;
+        }
+
+        if (
+            job.status === "sending" &&
+            reminderTimestampMillis(job.updatedAt) > 0 &&
+            now - reminderTimestampMillis(job.updatedAt) < 5 * 60 * 1000
+        ) {
+            return null;
+        }
+
+        if (!["pending", "retry", "sending"].includes(job.status)) {
+            return null;
+        }
+
+        const attempts = Number(job.attempts || 0);
+
+        if (attempts >= 5) {
+            transaction.update(jobRef, {
+                status: "failed_permanently",
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+            return null;
+        }
+
+        transaction.update(jobRef, {
+            status: "sending",
+            attempts: attempts + 1,
+            sendAttemptId,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        return { ...job, sendAttemptId };
+    });
+
+    if (!claim) return;
+
+    try {
+        if (!claim.uid || !["trial", "paid"].includes(claim.type)) {
+            throw new Error("Invalid subscription reminder job.");
+        }
+
+        const authorization = await authorizeSubscriptionReminderSend(
+            jobId,
+            claim,
+            claim.storeName || "MedZoneX Customer"
+        );
+
+        if (!authorization.authorized) {
+            console.log(
+                "[SUBSCRIPTION REMINDER] Authorization denied for " +
+                jobId + ": " + (authorization.reason || "not_eligible")
+            );
+            return;
+        }
+
+        const job = authorization.job;
+        const userData = authorization.userData || {};
+        const storeName =
+            userData.storeName || job.storeName || "MedZoneX Customer";
+
+        const email = userData.email || job.email || "";
+
+        if (!email) {
+            throw new Error("Customer email is missing.");
+        }
+
+        const safeStoreName = escapeInvoiceHtml(storeName);
+        const safePlanName = escapeInvoiceHtml(
+            job.planName || "MedZoneX Subscription"
+        );
+
+        const buttonText = "Subscribe Now";
+        const reminderKey = String(job.reminderKey || "");
+
+        let subject;
+        let timingText;
+
+        if (job.type === "trial") {
+            if (reminderKey === "2h") {
+                subject = "Your MedZoneX free trial is in progress";
+                timingText = "Your free trial started 2 hours ago. You have approximately 46 hours remaining.";
+            } else if (reminderKey === "24h") {
+                subject = "24 hours remaining in your MedZoneX free trial";
+                timingText = "Your free trial has approximately 24 hours remaining.";
+            } else if (reminderKey === "48h" || reminderKey === "expiry") {
+                subject = "Your MedZoneX free trial has expired";
+                timingText = "Your 48-hour free trial has expired. Subscribe now to continue using MedZoneX.";
+            } else if (reminderKey === "49h" || reminderKey === "expired_1h") {
+                subject = "Your MedZoneX free trial expired 1 hour ago";
+                timingText = "Your free trial expired 1 hour ago. Subscribe now to restore access.";
+            } else {
+                subject = "A reminder about your MedZoneX free trial";
+                timingText = "Your 48-hour free trial is approaching its end.";
+            }
+        } else {
+            if (reminderKey === "72h") {
+                subject = "Your MedZoneX subscription expires in 3 days";
+                timingText = "Your subscription expires in approximately 3 days. Renew early to avoid interruption.";
+            } else if (reminderKey === "48h") {
+                subject = "Your MedZoneX subscription expires in 2 days";
+                timingText = "Your subscription expires in approximately 2 days. Renew early to avoid interruption.";
+            } else if (reminderKey === "24h") {
+                subject = "Your MedZoneX subscription expires in 24 hours";
+                timingText = "Your subscription expires in approximately 24 hours. Renew now to avoid interruption.";
+            } else if (reminderKey === "expiry") {
+                subject = "Your MedZoneX subscription has expired";
+                timingText = "Your MedZoneX subscription has reached its expiry time. Renew now to continue using the service.";
+            } else if (reminderKey === "expired_1h") {
+                subject = "Your MedZoneX subscription expired 1 hour ago";
+                timingText = "Your MedZoneX subscription expired 1 hour ago. Renew now to restore access.";
+            } else {
+                subject = "Your MedZoneX subscription is approaching expiry";
+                timingText = "Your MedZoneX subscription is approaching its expiry date.";
+            }
+        }
+
+        const expiryText = job.type === "paid"
+            ? new Date(Number(job.periodEndMs)).toLocaleString("en-IN", {
+                timeZone: "Asia/Kolkata",
+                dateStyle: "medium",
+                timeStyle: "short"
+            }) + " IST"
+            : "";
+
+        const html =
+            '<div style="font-family:Arial,sans-serif;line-height:1.7;color:#222;max-width:600px;margin:auto">' +
+                '<h2>MedZoneX Subscription Reminder</h2>' +
+                '<p>Hello ' + safeStoreName + ',</p>' +
+                '<p>' + timingText + '</p>' +
+                (job.type === "paid"
+                    ? '<p><strong>Plan:</strong> ' + safePlanName + '</p>' +
+                      '<p><strong>Expiry:</strong> ' + escapeInvoiceHtml(expiryText) + '</p>'
+                    : '<p>Your trial gives you access to MedZoneX pharmacy management features.</p>') +
+                '<p style="margin:28px 0">' +
+                    '<a href="' + SUBSCRIPTION_EMAIL_URL + '" ' +
+                    'style="background:#2563eb;color:#fff;padding:13px 24px;' +
+                    'text-decoration:none;border-radius:7px;display:inline-block;font-weight:bold">' +
+                    buttonText +
+                    '</a>' +
+                '</p>' +
+                '<p>If you have already subscribed, you can ignore this reminder.</p>' +
+                '<p>Regards,<br>MedZoneX Team</p>' +
+                '<p>Support: <a href="mailto:support@medzonex.site">support@medzonex.site</a></p>' +
+            '</div>';
+
+        const result = await sendEmail({
+            to: email,
+            subject,
+            html,
+            idempotencyKey: "medzonex-subscription-reminder-" + jobId
+        });
+
+        await db.runTransaction(async (transaction) => {
+            const latestSnapshot = await transaction.get(jobRef);
+            if (!latestSnapshot.exists) return;
+
+            const latestJob = latestSnapshot.data() || {};
+
+            if (latestJob.sendAttemptId !== sendAttemptId) return;
+
+            if (latestJob.status === "obsolete") {
+                transaction.update(jobRef, {
+                    emailAcceptedAfterObsolete: true,
+                    emailAcceptedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    resendMessageId: result?.id || null,
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                });
+                return;
+            }
+
+            if (latestJob.status !== "sending") return;
+
+            transaction.update(jobRef, {
+                status: "sent",
+                sentAt: admin.firestore.FieldValue.serverTimestamp(),
+                resendMessageId: result?.id || null,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                lastError: admin.firestore.FieldValue.delete(),
+                nextRetryAt: admin.firestore.FieldValue.delete()
+            });
+        });
+
+        console.log("[SUBSCRIPTION REMINDER] Resend accepted job " + jobId);
+
+    } catch (error) {
+        console.error(
+            "[SUBSCRIPTION REMINDER] Job " + jobId + " failed:",
+            error.message
+        );
+
+        await db.runTransaction(async (transaction) => {
+            const latestSnapshot = await transaction.get(jobRef);
+            if (!latestSnapshot.exists) return;
+
+            const latestJob = latestSnapshot.data() || {};
+
+            // A stale attempt must never overwrite a newer attempt or renewal cleanup.
+            if (
+                latestJob.sendAttemptId !== sendAttemptId ||
+                latestJob.status !== "sending"
+            ) {
+                return;
+            }
+
+            const attempts = Number(latestJob.attempts || 1);
+            const permanentlyFailed = attempts >= 5;
+
+            const retryDelayMs =
+                60 * 1000 * Math.pow(2, Math.max(0, attempts - 1));
+
+            const retryAt = permanentlyFailed
+                ? null
+                : admin.firestore.Timestamp.fromMillis(Date.now() + retryDelayMs);
+
+            transaction.update(jobRef, {
+                status: permanentlyFailed ? "failed_permanently" : "retry",
+                dueAt: retryAt || latestJob.dueAt,
+                nextRetryAt: retryAt || admin.firestore.FieldValue.delete(),
+                lastError: String(error.message || "Reminder email failed").slice(0, 1000),
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+        });
+    }
+}
+
+let subscriptionReminderWorkerRunning = false;
+
+async function runSubscriptionReminderWorker() {
+    if (subscriptionReminderWorkerRunning) return;
+
+    subscriptionReminderWorkerRunning = true;
+
+    try {
+        const nowTimestamp =
+            admin.firestore.Timestamp.fromMillis(Date.now());
+
+        const snapshot = await db
+            .collection(SUBSCRIPTION_REMINDER_JOB_COLLECTION)
+            .where("status", "in", ["pending", "retry", "sending"])
+            .where("dueAt", "<=", nowTimestamp)
+            .orderBy("dueAt", "asc")
+            .limit(50)
+            .get();
+
+        for (const document of snapshot.docs) {
+            try {
+                await processSubscriptionReminderJob(document.id);
+            } catch (error) {
+                console.error(
+                    "[SUBSCRIPTION REMINDER] Worker error for " +
+                    document.id + ":",
+                    error.message
+                );
+            }
+        }
+    } catch (error) {
+        console.error(
+            "[SUBSCRIPTION REMINDER] Worker query failed:",
+            error.message
+        );
+    } finally {
+        subscriptionReminderWorkerRunning = false;
+    }
+}
+
 
 // ======================================================
 // OTP SETTINGS
@@ -2512,6 +3162,158 @@ async function verifySubscriptionAccess(uid) {
 }
 
 // ======================================================
+// SCHEDULE TRIAL REMINDER EMAILS
+// POST /api/reminders/trial/schedule
+// ======================================================
+
+app.post("/api/reminders/trial/schedule", async (req, res) => {
+    try {
+        const decodedToken = await authenticateFirebaseRequest(req);
+        const uid = decodedToken.uid;
+
+        const userRef = db.collection("users").doc(uid);
+        const now = Date.now();
+
+        const result = await db.runTransaction(async (transaction) => {
+            const userSnapshot = await transaction.get(userRef);
+
+            if (!userSnapshot.exists) {
+                const error = new Error("User account was not found.");
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const userData = userSnapshot.data() || {};
+            const subscription = userData.subscription || {};
+            const trialStartMs = reminderTimestampMillis(
+                userData.trialStartedAt
+            );
+
+            if (trialStartMs <= 0) {
+                const error = new Error("Trial start date is unavailable.");
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const paidExpiryMs = reminderTimestampMillis(
+                subscription.currentPeriodEnd
+            );
+
+            if (
+                subscription.status === "active" &&
+                paidExpiryMs > now
+            ) {
+                return { scheduled: 0, reason: "paid_subscription_active" };
+            }
+
+            const trialExpiryMs = trialStartMs + 48 * 60 * 60 * 1000;
+
+            if (now >= trialExpiryMs) {
+                return { scheduled: 0, reason: "trial_already_expired" };
+            }
+
+            const reminderDefinitions = [
+                { key: "2h", offsetMs: 2 * 60 * 60 * 1000 },
+                { key: "24h", offsetMs: 24 * 60 * 60 * 1000 },
+                { key: "48h", offsetMs: 48 * 60 * 60 * 1000 },
+                { key: "49h", offsetMs: 49 * 60 * 60 * 1000 }
+            ];
+
+            const jobs = reminderDefinitions.map((item) => {
+                const jobId = "trial_" + uid + "_" + item.key;
+
+                return {
+                    ref: db
+                        .collection(SUBSCRIPTION_REMINDER_JOB_COLLECTION)
+                        .doc(jobId),
+                    jobId,
+                    dueAt: admin.firestore.Timestamp.fromMillis(
+                        trialStartMs + item.offsetMs
+                    ),
+                    reminderKey: item.key
+                };
+            });
+
+            // All reads happen before writes in this transaction.
+            const jobSnapshots = [];
+
+            for (const job of jobs) {
+                jobSnapshots.push(
+                    await transaction.get(job.ref)
+                );
+            }
+
+            let scheduled = 0;
+
+            jobs.forEach((job, index) => {
+                const existingSnapshot = jobSnapshots[index];
+
+                if (existingSnapshot.exists) {
+                    const existingJob = existingSnapshot.data() || {};
+                    const scheduledDueAt = reminderTimestampMillis(job.dueAt);
+
+                    if (
+                        existingJob.status === "failed_permanently" &&
+                        scheduledDueAt >= now - SUBSCRIPTION_REMINDER_MAX_LATE_MS
+                    ) {
+                        transaction.update(job.ref, {
+                            status: "pending",
+                            attempts: 0,
+                            dueAt: job.dueAt,
+                            nextRetryAt: admin.firestore.FieldValue.delete(),
+                            lastError: admin.firestore.FieldValue.delete(),
+                            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                        });
+                        scheduled++;
+                    }
+
+                    return;
+                }
+
+                transaction.create(job.ref, {
+                    type: "trial",
+                    reminderKey: job.reminderKey,
+                    uid,
+                    email: userData.email || decodedToken.email || "",
+                    storeName: userData.storeName || "",
+                    dueAt: job.dueAt,
+                    trialStartedAt: admin.firestore.Timestamp.fromMillis(
+                        trialStartMs
+                    ),
+                    status: "pending",
+                    attempts: 0,
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                });
+
+                scheduled++;
+            });
+
+            return { scheduled, reason: "trial_reminders_scheduled" };
+        });
+
+        return res.status(200).json({
+            success: true,
+            ...result
+        });
+
+    } catch (error) {
+        console.error(
+            "[TRIAL REMINDER] Scheduling failed:",
+            error.message
+        );
+
+        return res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.statusCode
+                ? error.message
+                : "Unable to schedule trial reminders."
+        });
+    }
+});
+
+
+// ======================================================
 // CREATE RAZORPAY RECURRING SUBSCRIPTION
 // POST /api/subscription/create
 // ======================================================
@@ -3282,6 +4084,17 @@ app.post(
                 const invoiceJobSnapshot =
                     await transaction.get(invoiceJobRef);
 
+                // Read manual payment dashboard notification before writes.
+                const safeManualPaymentId = String(paymentId)
+                    .replace(/[^a-zA-Z0-9_-]/g, "_");
+
+                const manualPaymentNotificationRef = userRef
+                    .collection("notifications")
+                    .doc("payment_" + safeManualPaymentId);
+
+                const manualPaymentNotificationSnapshot =
+                    await transaction.get(manualPaymentNotificationRef);
+
                 const freshUser = await transaction.get(userRef);
 
                 if (!freshUser.exists) {
@@ -3292,6 +4105,27 @@ app.post(
 
                 const currentSubscription =
                     userData.subscription || {};
+
+                // Prepare and read all manual-payment reminder jobs
+                // before any transaction writes.
+                const manualReminderDefinitions = [
+                    { key: "72h", offsetMs: -72 * 60 * 60 * 1000 },
+                    { key: "48h", offsetMs: -48 * 60 * 60 * 1000 },
+                    { key: "24h", offsetMs: -24 * 60 * 60 * 1000 },
+                    { key: "expiry", offsetMs: 0 },
+                    { key: "expired_1h", offsetMs: 60 * 60 * 1000 }
+                ];
+
+                const manualReminderJobs = manualReminderDefinitions.map((item) => ({
+                    key: item.key,
+                    offsetMs: item.offsetMs,
+                    ref: db.collection(SUBSCRIPTION_REMINDER_JOB_COLLECTION)
+                        .doc(`manual_${paymentId}_${item.key}`)
+                }));
+
+                for (const reminder of manualReminderJobs) {
+                    reminder.snapshot = await transaction.get(reminder.ref);
+                }
 
                 const existingExpiry =
                     currentSubscription.currentPeriodEnd
@@ -3357,6 +4191,35 @@ app.post(
                         periodStart
                     );
 
+                const periodEndMs = expiry.toMillis();
+
+                // Create idempotent reminder jobs for manual Razorpay payments.
+                for (const reminder of manualReminderJobs) {
+                    if (reminder.snapshot?.exists) continue;
+
+                    transaction.create(reminder.ref, {
+                        type: "paid",
+                        provider: "manual",
+                        reminderKey: reminder.key,
+                        uid,
+                        email: userData.email || decodedToken.email || "",
+                        storeName: userData.storeName || "Not provided",
+                        paymentId,
+                        orderId,
+                        subscriptionId: null,
+                        planKey,
+                        planName: freshPaymentData.planName || freshPlan.name,
+                        periodEndMs,
+                        dueAt: admin.firestore.Timestamp.fromMillis(
+                            periodEndMs + reminder.offsetMs
+                        ),
+                        status: "pending",
+                        attempts: 0,
+                        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
                 transaction.set(
                     userRef,
                     {
@@ -3396,6 +4259,28 @@ app.post(
                             .serverTimestamp()
                 });
 
+                // Create one dashboard notification per Razorpay payment ID.
+                if (!manualPaymentNotificationSnapshot.exists) {
+                    transaction.create(manualPaymentNotificationRef, {
+                        type: "payment_succeeded",
+                        title: "Payment successful",
+                        message:
+                            "Your MedZoneX subscription payment of ₹" +
+                            Number(freshPlan.amount).toLocaleString("en-IN") +
+                            " was successful.",
+                        isRead: false,
+                        readAt: null,
+                        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                        source: "payment",
+                        paymentId,
+                        orderId,
+                        subscriptionId: null,
+                        amount: Number(freshPlan.amount),
+                        currency: "INR",
+                        storeName: userData.storeName || "MedZoneX Customer"
+                    });
+                }
+
                 // Create exactly one invoice email job per payment.
                 if (!invoiceJobSnapshot.exists) {
                     const paidAt = admin.firestore.Timestamp.fromMillis(now);
@@ -3422,6 +4307,11 @@ app.post(
                     });
                 }
 
+                return {
+                    applied: true,
+                    alreadyPaid: false
+                };
+
             });
 
             if (transactionResult?.conflict) {
@@ -3432,6 +4322,16 @@ app.post(
                     message:
                         "Payment was received, but could not be applied automatically. Please contact support."
                 });
+            }
+
+            if (
+                transactionResult?.applied &&
+                !transactionResult?.alreadyPaid
+            ) {
+                await cleanupOldSubscriptionReminders(
+                    uid,
+                    paymentId
+                );
             }
 
             return res.json({
@@ -3678,10 +4578,12 @@ app.post("/api/razorpay/webhook", async (req, res) => {
         const paymentEntity =
             event.payload?.payment?.entity || null;
 
-        const subscriptionId =
+        let subscriptionId =
             subscriptionEntity?.id ||
             paymentEntity?.subscription_id ||
             null;
+
+        let failedInvoice = null;
 
        // ----------------------------------------------
        // 4. CLAIM OR RECOVER WEBHOOK EVENT
@@ -3740,7 +4642,10 @@ app.post("/api/razorpay/webhook", async (req, res) => {
 
                const MAX_WEBHOOK_ATTEMPTS = 10;
 
-               if (attemptCount >= MAX_WEBHOOK_ATTEMPTS) {
+               if (
+                   attemptCount >= MAX_WEBHOOK_ATTEMPTS &&
+                   existingEvent.manualRecoveryRequested !== true
+               ) {
                    claimResult = "retry_limit_reached";
                    return;
                }
@@ -3756,6 +4661,9 @@ app.post("/api/razorpay/webhook", async (req, res) => {
                    processingStartedAt:
                        admin.firestore.FieldValue.serverTimestamp(),
                    attemptCount: attemptCount + 1,
+                   manualRecoveryRequested: false,
+                   recoveryClaimedAt:
+                       admin.firestore.FieldValue.serverTimestamp(),
                    recoveredAt:
                        admin.firestore.FieldValue.serverTimestamp()
                });
@@ -3828,6 +4736,47 @@ app.post("/api/razorpay/webhook", async (req, res) => {
 
        eventClaimed = true;
 
+        // Resolve subscription ID from the failed payment invoice.
+        if (
+            eventType === "payment.failed" &&
+            paymentEntity?.invoice_id
+        ) {
+            try {
+                failedInvoice = await razorpay.invoices.fetch(
+                    paymentEntity.invoice_id
+                );
+
+                if (
+                    failedInvoice?.id !== paymentEntity.invoice_id ||
+                    !failedInvoice?.subscription_id
+                ) {
+                    throw new Error(
+                        "Invoice subscription relationship is missing or invalid."
+                    );
+                }
+
+                if (
+                    subscriptionId &&
+                    subscriptionId !== failedInvoice.subscription_id
+                ) {
+                    throw new Error(
+                        "Payment and invoice subscription IDs do not match."
+                    );
+                }
+
+                subscriptionId =
+                    subscriptionId || failedInvoice.subscription_id;
+
+                console.log(
+                    "Resolved failed payment subscription through invoice."
+                );
+            } catch (invoiceError) {
+                console.error(
+                    "Failed payment invoice lookup failed:",
+                    invoiceError.message
+                );
+            }
+        }
 
         // 5. Locate MedZoneX subscription.
         let subscriptionRecord = null;
@@ -3955,13 +4904,67 @@ app.post("/api/razorpay/webhook", async (req, res) => {
             .doc(subscriptionId);
 
         // 6. Validate recurring payment failure linkage.
-        if (
-            eventType === "payment.failed" &&
-            paymentEntity?.subscription_id !== subscriptionId
-        ) {
-            throw new Error(
-                "Failed payment does not match the subscription."
-            );
+        if (eventType === "payment.failed") {
+            if (
+                !paymentEntity?.id ||
+                !paymentEntity?.invoice_id ||
+                !subscriptionId
+            ) {
+                throw new Error(
+                    "Failed payment is missing required identifiers."
+                );
+            }
+
+            // If Razorpay supplied subscription_id directly,
+            // it must match the resolved subscription.
+            if (
+                paymentEntity.subscription_id &&
+                paymentEntity.subscription_id !== subscriptionId
+            ) {
+                throw new Error(
+                    "Failed payment subscription ID mismatch."
+                );
+            }
+
+            // If subscription_id was missing, require the
+            // verified invoice fetched earlier.
+            if (
+                !paymentEntity.subscription_id &&
+                (
+                    !failedInvoice ||
+                    failedInvoice.id !== paymentEntity.invoice_id ||
+                    failedInvoice.subscription_id !== subscriptionId
+                )
+            ) {
+                throw new Error(
+                    "Failed payment invoice relationship could not be verified."
+                );
+            }
+
+            const failedPlan =
+                MEDZONEX_PLANS[subscriptionRecord.planKey];
+
+            if (!failedPlan) {
+                throw new Error(
+                    "Failed payment subscription has an invalid plan."
+                );
+            }
+
+            if (
+                !failedInvoice ||
+                failedInvoice.id !== paymentEntity.invoice_id ||
+                failedInvoice.subscription_id !== subscriptionId ||
+                failedInvoice.order_id !== paymentEntity.order_id ||
+                Number(failedInvoice.amount) !== Number(paymentEntity.amount) ||
+                Number(paymentEntity.amount) !==
+                    Number(failedPlan.amount) * 100 ||
+                failedInvoice.currency !== "INR" ||
+                paymentEntity.currency !== "INR"
+            ) {
+                throw new Error(
+                    "Failed payment invoice, order, amount or currency validation failed."
+                );
+            }
         }
 
         // Validate recurring payment before granting subscription access.
@@ -4016,7 +5019,10 @@ app.post("/api/razorpay/webhook", async (req, res) => {
         }
 
         // 7. Update subscription and user atomically.
+        let successfulRenewalApplied = false;
+
         await db.runTransaction(async (transaction) => {
+            successfulRenewalApplied = false;
             // First, verify that this handler still owns the event.
             const eventSnapshot =
                 await transaction.get(eventRef);
@@ -4068,6 +5074,26 @@ app.post("/api/razorpay/webhook", async (req, res) => {
                     await transaction.get(paymentEmailJobRef);
             }
 
+            // Read payment notification before transaction writes.
+            let paymentNotificationRef = null;
+            let paymentNotificationSnapshot = null;
+
+            if (
+                ["subscription.charged", "payment.failed"].includes(eventType) &&
+                paymentEntity?.id &&
+                uid
+            ) {
+                const safePaymentId = String(paymentEntity.id)
+                    .replace(/[^a-zA-Z0-9_-]/g, "_");
+
+                paymentNotificationRef = userRef
+                    .collection("notifications")
+                    .doc("payment_" + safePaymentId);
+
+                paymentNotificationSnapshot =
+                    await transaction.get(paymentNotificationRef);
+            }
+
             // Continue with the existing transaction.
             const userSnapshot =
                 await transaction.get(userRef);
@@ -4105,9 +5131,61 @@ app.post("/api/razorpay/webhook", async (req, res) => {
                 belongsToCurrentSubscription &&
                 !hasManualPayment;
 
+            // Read all paid reminder jobs before transaction writes.
+            let paidReminderJobs = [];
+
+            if (eventType === "subscription.charged" && paymentEntity?.id) {
+                const safeSubscriptionId = subscriptionId.replace(/[^a-zA-Z0-9_-]/g, "_");
+
+                const reminderDefinitions = [
+                    { key: "72h", offsetMs: -72 * 60 * 60 * 1000 },
+                    { key: "48h", offsetMs: -48 * 60 * 60 * 1000 },
+                    { key: "24h", offsetMs: -24 * 60 * 60 * 1000 },
+                    { key: "expiry", offsetMs: 0 },
+                    { key: "expired_1h", offsetMs: 60 * 60 * 1000 }
+                ];
+
+                paidReminderJobs = reminderDefinitions.map((item) => ({
+                    key: item.key,
+                    offsetMs: item.offsetMs,
+                    ref: db.collection(SUBSCRIPTION_REMINDER_JOB_COLLECTION)
+                        .doc(`paid_${safeSubscriptionId}_${paymentEntity.id}_${item.key}`)
+                }));
+
+                for (const job of paidReminderJobs) {
+                    job.snapshot = await transaction.get(job.ref);
+                }
+            }
+
                           // ----------------------------------------------
                           // SUCCESSFUL RECURRING CHARGE
                           // ----------------------------------------------
+
+                              if (
+                                  paymentNotificationRef &&
+                                  !paymentNotificationSnapshot?.exists
+                              ) {
+                                  transaction.create(paymentNotificationRef, {
+                                      type: "payment_succeeded",
+                                      title: "Payment successful",
+                                      message:
+                                          "Your MedZoneX subscription payment of ₹" +
+                                          Number(expectedPlan.amount).toLocaleString("en-IN") +
+                                          " was successful.",
+                                      isRead: false,
+                                      readAt: null,
+                                      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                                      source: "payment",
+                                      paymentId: paymentEntity.id,
+                                      subscriptionId,
+                                      amount: Number(expectedPlan.amount),
+                                      currency: "INR",
+                                      storeName: currentUser.storeName ||
+                                          subscriptionRecord.storeName ||
+                                          "MedZoneX Customer"
+                                  });
+                              }
+
                           if (eventType === "subscription.charged") {
                               const periodEndSeconds = Number(
                                   subscriptionEntity?.current_end || 0
@@ -4190,6 +5268,41 @@ app.post("/api/razorpay/webhook", async (req, res) => {
                                       },
                                       { merge: true }
                                   );
+
+                                  // PAID SUBSCRIPTION EXPIRY REMINDERS
+                                  if (
+                                      canChangeAccess &&
+                                      !isOlderOrUnverifiableSuccess
+                                  ) {
+                                      const periodEndMs = expiry.toMillis();
+
+                                      for (const reminder of paidReminderJobs) {
+                                          if (reminder.snapshot?.exists) continue;
+
+                                          const dueAtMs =
+                                              periodEndMs + reminder.offsetMs;
+
+                                          transaction.create(reminder.ref, {
+                                              type: "paid",
+                                              reminderKey: reminder.key,
+                                              uid: subscriptionRecord.uid,
+                                              email: currentUser.email || subscriptionRecord.email || "",
+                                              storeName: currentUser.storeName || subscriptionRecord.storeName || "Not provided",
+                                              subscriptionId,
+                                              paymentId: paymentEntity?.id || null,
+                                              planKey: subscriptionRecord.planKey,
+                                              planName: subscriptionRecord.planName || "MedZoneX Subscription",
+                                              periodEndMs,
+                                              dueAt: admin.firestore.Timestamp.fromMillis(dueAtMs),
+                                              status: "pending",
+                                              attempts: 0,
+                                              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                                              updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                                          });
+                                      }
+                                  }
+
+                                  successfulRenewalApplied = true;
                               }
 
                           // QUEUE SUCCESSFUL PAYMENT INVOICE EMAIL
@@ -4243,6 +5356,35 @@ app.post("/api/razorpay/webhook", async (req, res) => {
                           // Lock immediately, unless a newer successful
                           // payment has already been recorded.
                           // ----------------------------------------------
+
+
+                if (
+                    paymentNotificationRef &&
+                    !paymentNotificationSnapshot?.exists
+                ) {
+                    const failedPlan =
+                        MEDZONEX_PLANS[subscriptionRecord.planKey];
+
+                    transaction.create(paymentNotificationRef, {
+                        type: "payment_failed",
+                        title: "Payment failed",
+                        message:
+                            "Your MedZoneX subscription payment of ₹" +
+                            Number(failedPlan?.amount || 0).toLocaleString("en-IN") +
+                            " failed. Please check your payment method and try again.",
+                        isRead: false,
+                        readAt: null,
+                        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                        source: "payment",
+                        paymentId: paymentEntity.id,
+                        subscriptionId,
+                        amount: Number(failedPlan?.amount || 0),
+                        currency: "INR",
+                        storeName: currentUser.storeName ||
+                            subscriptionRecord.storeName ||
+                            "MedZoneX Customer"
+                    });
+                }
 
             else if (eventType === "payment.failed") {
                 const failedPaymentCreatedAt = Number(
@@ -4589,10 +5731,21 @@ app.post("/api/razorpay/webhook", async (req, res) => {
             // Mark the event processed atomically with subscription updates.
             transaction.update(eventRef, {
                 status: "processed",
+                subscriptionId: subscriptionId || null,
                 processedAt:
                     admin.firestore.FieldValue.serverTimestamp()
             });
         });
+
+        if (
+            eventType === "subscription.charged" &&
+            successfulRenewalApplied
+        ) {
+            await cleanupOldSubscriptionReminders(
+                uid,
+                paymentEntity?.id || null
+            );
+        }
 
         return res.status(200).json({
             success: true,
@@ -4910,7 +6063,7 @@ async function reconcileUnmatchedRazorpayWebhooks() {
                     data.nextRetryAt?.toMillis?.() || 0;
 
                 return (
-                    attempts < 10 &&
+                    (attempts < 10 || data.manualRecoveryRequested === true) &&
                     nextRetryAt <= now &&
                     data.eventPayload
                 );
@@ -5012,6 +6165,26 @@ app.listen(
         runInvoiceEmailWorker().catch((error) => {
             console.error(
                 "[INVOICE EMAIL] Initial worker failed:",
+                error.message
+            );
+        });
+
+        // ======================================================
+        // START SUBSCRIPTION REMINDER EMAIL WORKER
+        // ======================================================
+
+        setInterval(() => {
+            runSubscriptionReminderWorker().catch((error) => {
+                console.error(
+                    "[SUBSCRIPTION REMINDER] Worker failed:",
+                    error.message
+                );
+            });
+        }, 30 * 1000);
+
+        runSubscriptionReminderWorker().catch((error) => {
+            console.error(
+                "[SUBSCRIPTION REMINDER] Initial worker failed:",
                 error.message
             );
         });

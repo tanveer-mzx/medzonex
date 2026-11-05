@@ -18,7 +18,13 @@ import {
     doc,
     setDoc,
     getDoc,
-    serverTimestamp
+    serverTimestamp,
+    collection,
+    query,
+    orderBy,
+    limit,
+    onSnapshot,
+    updateDoc
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 
@@ -28,6 +34,17 @@ import {
 
 const API_BASE_URL =
     "https://medzonex-backend.onrender.com";
+
+// Preserve subscription-page intent when a customer opens an email link.
+const OPEN_SUBSCRIPTION_KEY = "medzonex_open_subscription";
+
+if (new URLSearchParams(window.location.search).get("openSubscription") === "1") {
+    sessionStorage.setItem(OPEN_SUBSCRIPTION_KEY, "1");
+
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.searchParams.delete("openSubscription");
+    window.history.replaceState({}, "", cleanUrl);
+}
 
 
 function apiUrl(path) {
@@ -50,16 +67,13 @@ const $ = (id) =>
 
 let currentAuthSection = "loginSection";
 
+const medZoneXPageHistory = [];
 
-function showPage(pageId) {
+function showPage(pageId, options = {}) {
 
-    document
-        .querySelectorAll(".app-page")
-        .forEach((page) => {
-
-            page.classList.remove("active");
-
-        });
+    // Capture the active page BEFORE hiding pages.
+    const currentPage = document.querySelector(".app-page.active");
+    const currentId = currentPage?.id;
 
     const page = $(pageId);
 
@@ -72,8 +86,50 @@ function showPage(pageId) {
         return;
     }
 
+    if (currentId && currentId !== pageId && options.fromBack !== true) {
+        medZoneXPageHistory.push(currentId);
+    }
+
+    document
+        .querySelectorAll(".app-page")
+        .forEach((page) => {
+            page.classList.remove("active");
+        });
+
+    if (pageId === "dashboardPage" || pageId === "welcomePage" || pageId === "authPage") {
+        if (options.fromBack !== true) medZoneXPageHistory.length = 0;
+    }
+
     page.classList.add("active");
 }
+
+
+function backPage() {
+    while (medZoneXPageHistory.length) {
+        const previousId = medZoneXPageHistory.pop();
+        const previousPage = document.getElementById(previousId);
+
+        if (previousPage) {
+            showPage(previousId, { fromBack: true });
+            return true;
+        }
+    }
+
+    const active = document.querySelector(".app-page.active");
+    if (active?.id !== "dashboardPage" && document.getElementById("dashboardPage")) {
+        showPage("dashboardPage", { fromBack: true });
+        return true;
+    }
+
+    return false;
+}
+
+
+document.addEventListener("click", event => {
+    if (event.target.closest("[data-app-back]")) {
+        backPage();
+    }
+});
 
 
 function showAuthSection(
@@ -1089,6 +1145,56 @@ $("signupBtn")
                 );
 
 
+                
+                const automaticPrefix = String(storeName || "")
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, "")
+                    .slice(0, 3) || "MZX";
+
+                await setDoc(
+                    doc(db, "users", user.uid, "settings", "preferences"),
+                    {
+                        invoicePrefix: automaticPrefix,
+                        invoiceStart: 1
+                    },
+                    { merge: true }
+                );
+
+// Schedule trial reminder emails without blocking signup.
+                try {
+                    const reminderToken = await user.getIdToken();
+
+                    const reminderResponse = await fetch(
+                        apiUrl("/api/reminders/trial/schedule"),
+                        {
+                            method: "POST",
+                            headers: {
+                                "Authorization": `Bearer ${reminderToken}`,
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({})
+                        }
+                    );
+
+                    if (!reminderResponse.ok) {
+                        console.error(
+                            "[TRIAL REMINDER] Scheduling request failed:",
+                            reminderResponse.status
+                        );
+                    } else {
+                        const reminderResult = await reminderResponse.json();
+                        console.log(
+                            "[TRIAL REMINDER] Scheduling result:",
+                            reminderResult
+                        );
+                    }
+                } catch (reminderError) {
+                    console.error(
+                        "[TRIAL REMINDER] Could not schedule reminders:",
+                        reminderError.message
+                    );
+                }
+
                 setMessage(
                     "signupMessage",
                     "Account created successfully.",
@@ -1994,8 +2100,269 @@ async function loadDashboard(
 
     }
 
+
+    startDashboardNotifications(user);
+
+    if (window.MedZoneXSales?.refresh) {
+        await window.MedZoneXSales.refresh();
+    }
+
 }
 
+
+
+// ======================================================
+// DASHBOARD SUBSCRIPTION NOTIFICATIONS
+// ======================================================
+
+let dashboardNotificationUnsubscribe = null;
+let dashboardNotificationUserId = null;
+
+function stopDashboardNotifications() {
+    if (dashboardNotificationUnsubscribe) {
+        dashboardNotificationUnsubscribe();
+        dashboardNotificationUnsubscribe = null;
+    }
+
+    dashboardNotificationUserId = null;
+}
+
+function startDashboardNotifications(user) {
+    if (!user) return;
+
+    stopDashboardNotifications();
+    dashboardNotificationUserId = user.uid;
+
+    const bell = $("notificationBell");
+    const backButton = $("notificationsBackBtn");
+    const list = $("notificationList");
+    const countElement = $("notificationUnreadCount");
+    const pageCountElement = $("notificationsPageUnreadCount");
+
+    if (!bell || !backButton || !list || !countElement || !pageCountElement) {
+        console.warn("Notification UI elements not found.");
+        return;
+    }
+
+    if (!bell.dataset.bound) {
+        bell.dataset.bound = "true";
+
+        bell.addEventListener("click", () => {
+            showPage("notificationsPage");
+            bell.setAttribute("aria-expanded", "true");
+        });
+
+        backButton.addEventListener("click", () => {
+            backPage();
+            bell.setAttribute("aria-expanded", "false");
+        });
+
+        list.addEventListener("click", async (event) => {
+            const readButton = event.target.closest(
+                "[data-notification-read]"
+            );
+
+            const subscribeButton = event.target.closest(
+                "[data-notification-subscribe]"
+            );
+
+            if (subscribeButton) {
+                const fallbackUrl =
+                    "https://medzonex.site/?openSubscription=1";
+
+                try {
+                    const targetUrl = new URL(
+                        subscribeButton.dataset.notificationActionUrl || fallbackUrl,
+                        window.location.origin
+                    );
+
+                    const allowedOrigins = new Set([
+                        window.location.origin,
+                        "https://medzonex.site",
+                        "https://www.medzonex.site"
+                    ]);
+
+                    if (!allowedOrigins.has(targetUrl.origin)) {
+                        console.warn("Blocked untrusted notification action URL.");
+                        return;
+                    }
+
+                    window.location.assign(targetUrl.href);
+                } catch (error) {
+                    console.error("Invalid notification action URL:", error);
+                }
+
+                return;
+            }
+
+            if (!readButton) return;
+
+            const currentUserId = dashboardNotificationUserId;
+            const notificationId =
+                readButton.dataset.notificationRead;
+
+            if (!currentUserId || !notificationId) return;
+
+            readButton.disabled = true;
+
+            try {
+                await updateDoc(
+                    doc(
+                        db,
+                        "users",
+                        currentUserId,
+                        "notifications",
+                        notificationId
+                    ),
+                    {
+                        isRead: true,
+                        readAt: serverTimestamp()
+                    }
+                );
+            } catch (error) {
+                console.error(
+                    "Unable to mark notification as read:",
+                    error
+                );
+
+                readButton.disabled = false;
+            }
+        });
+    }
+
+    list.innerHTML =
+        '<p class="notification-empty">Loading notifications...</p>';
+
+    const notificationsQuery = query(
+        collection(
+            db,
+            "users",
+            user.uid,
+            "notifications"
+        ),
+        orderBy("createdAt", "desc"),
+        limit(30)
+    );
+
+    dashboardNotificationUnsubscribe = onSnapshot(
+        notificationsQuery,
+
+        (snapshot) => {
+            const notifications = snapshot.docs.map((item) => ({
+                id: item.id,
+                ...item.data()
+            }));
+
+            const unreadCount = notifications.filter(
+                (item) =>
+                    item.isRead !== true &&
+                    item.isResolved !== true
+            ).length;
+
+            const unreadLabel =
+                unreadCount > 99 ? "99+" : String(unreadCount);
+
+            countElement.textContent = unreadLabel;
+            pageCountElement.textContent = unreadLabel;
+            countElement.hidden = unreadCount === 0;
+
+            list.replaceChildren();
+
+            if (!notifications.length) {
+                const empty = document.createElement("p");
+                empty.className = "notification-empty";
+                empty.textContent = "No notifications yet.";
+                list.appendChild(empty);
+                return;
+            }
+
+            notifications.forEach((item) => {
+                const card = document.createElement("article");
+
+                card.className =
+                    "notification-card" +
+                    (item.isRead ? " is-read" : " is-unread") +
+                    (item.isResolved ? " is-resolved" : "");
+
+                const title = document.createElement("strong");
+                title.textContent =
+                    item.title || "Subscription update";
+
+                const message = document.createElement("p");
+                message.textContent =
+                    item.message || "You have a new notification.";
+
+                const content = document.createElement("div");
+                content.className = "notification-card-content";
+                content.append(title, message);
+
+                card.appendChild(content);
+
+                if (item.isResolved === true) {
+                    const status = document.createElement("span");
+                    status.className = "notification-status";
+                    status.textContent = "Resolved";
+                    card.appendChild(status);
+                } else {
+                    const actions = document.createElement("div");
+                    actions.className = "notification-actions";
+
+                    if (item.isRead !== true) {
+                        const readButton =
+                            document.createElement("button");
+
+                        readButton.type = "button";
+                        readButton.textContent = "Mark as read";
+                        readButton.dataset.notificationRead = item.id;
+
+                        actions.appendChild(readButton);
+                    }
+
+                    if (item.source === "subscription_reminder") {
+                        const subscribeButton =
+                            document.createElement("button");
+
+                        subscribeButton.type = "button";
+                        subscribeButton.textContent =
+                            item.actionText || "Subscribe Now";
+
+                        subscribeButton.className =
+                            "notification-subscribe-btn";
+
+                        subscribeButton.dataset.notificationSubscribe =
+                            item.id;
+                        subscribeButton.dataset.notificationActionUrl =
+                            item.actionUrl || "https://medzonex.site/?openSubscription=1";
+
+                        actions.appendChild(subscribeButton);
+                    }
+
+                    if (actions.childElementCount) {
+                        card.appendChild(actions);
+                    }
+                }
+
+                list.appendChild(card);
+            });
+        },
+
+        (error) => {
+            console.error(
+                "Notification listener error:",
+                error
+            );
+
+            list.replaceChildren();
+
+            const errorMessage = document.createElement("p");
+            errorMessage.className = "notification-empty";
+            errorMessage.textContent =
+                "Unable to load notifications. Please check your connection.";
+
+            list.appendChild(errorMessage);
+        }
+    );
+}
 
 function calculateTrialStatus(
     data
@@ -2277,9 +2644,19 @@ onAuthStateChanged(
 
         if (user) {
 
-            await routeUserByAccess(user);
+            const openSubscription =
+                sessionStorage.getItem(OPEN_SUBSCRIPTION_KEY) === "1";
+
+            if (openSubscription) {
+                sessionStorage.removeItem(OPEN_SUBSCRIPTION_KEY);
+                showPage("subscriptionPage");
+            } else {
+                await routeUserByAccess(user);
+            }
 
         } else {
+
+            stopDashboardNotifications();
 
             const dashboard =
                 $("dashboardPage");
@@ -2334,23 +2711,48 @@ $("logoutBtn")
     );
 
 
+$("subscriptionLogoutBtn")?.addEventListener("click", async () => {
+    try {
+        await signOut(auth);
+        showPage("welcomePage");
+    } catch (error) {
+        console.error("SUBSCRIPTION LOGOUT ERROR:", error);
+    }
+});
+
 /* ======================================================
    DASHBOARD PAGE NAVIGATION
 ====================================================== */
 
 $("openBillingBtn")
-    ?.addEventListener("click", () => {
+    ?.addEventListener("click", async () => {
         showPage("billingPage");
+
+        if (window.MedZoneXBilling?.loadBillingInventory) {
+            await window.MedZoneXBilling.loadBillingInventory();
+        } else {
+            console.error("Billing API not available.");
+        }
     });
 
 $("openInventoryBtn")
-    ?.addEventListener("click", () => {
+    ?.addEventListener("click", async () => {
         showPage("inventoryPage");
+        if (window.MedZoneXInventory?.loadInventory) {
+            await window.MedZoneXInventory.loadInventory();
+        } else {
+            console.error("Inventory API not available.");
+        }
     });
 
 $("openPurchaseBtn")
-    ?.addEventListener("click", () => {
+    ?.addEventListener("click", async () => {
         showPage("purchasePage");
+        if (window.MedZoneXPurchases?.initPurchases) {
+            await window.MedZoneXPurchases.initPurchases();
+        } else {
+            console.error("Purchases module is not available.");
+        }
     });
 
 $("closeBillingBtn")
@@ -2523,6 +2925,8 @@ window.MedZoneX = {
     apiUrl,
 
     showPage,
+
+    backPage,
 
     showAuthSection,
 
@@ -2816,6 +3220,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ["active", "trial"].includes(access.status)
             ) {
                 showPage("profilePage");
+                window.MedZoneXProfileSettings?.loadProfile();
             } else {
                 await routeUserByAccess(user);
             }
@@ -2845,6 +3250,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ["active", "trial"].includes(access.status)
             ) {
                 showPage("settingsPage");
+                window.MedZoneXProfileSettings?.loadSettings();
             } else {
                 await routeUserByAccess(user);
             }

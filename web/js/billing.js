@@ -1349,8 +1349,7 @@ async function saveBill() {
             getBillsCollection();
 
 
-        const billNumber =
-            generateBillNumber();
+        let billNumber = '';
 
 
         /*
@@ -1362,7 +1361,62 @@ async function saveBill() {
             db,
             async (transaction) => {
 
-                const stockReferences = [];
+                
+                // Read invoice configuration and counter first.
+                const settingsRef = doc(
+                    db, "users", user.uid, "settings", "preferences"
+                );
+
+                const counterRef = doc(
+                    db, "users", user.uid, "counters", "invoice"
+                );
+
+                const profileRef = doc(db, "users", user.uid);
+
+                const settingsSnapshot = await transaction.get(settingsRef);
+                const counterSnapshot = await transaction.get(counterRef);
+                const profileSnapshot = await transaction.get(profileRef);
+
+                const invoiceSettings = settingsSnapshot.exists()
+                    ? settingsSnapshot.data()
+                    : {};
+
+                const profile = profileSnapshot.exists()
+                    ? profileSnapshot.data()
+                    : {};
+
+                const automaticPrefix = String(profile.storeName || "")
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, "")
+                    .slice(0, 3) || "MZX";
+
+                const prefix = String(
+                    invoiceSettings.invoicePrefix || automaticPrefix
+                )
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, "")
+                    .slice(0, 20) || "MZX";
+
+                const startingNumber = Math.max(
+                    1,
+                    Math.floor(Number(invoiceSettings.invoiceStart) || 1)
+                );
+
+                const previousNumber = counterSnapshot.exists()
+                    ? Math.max(
+                        0,
+                        Math.floor(
+                            Number(counterSnapshot.data().lastNumber) || 0
+                        )
+                    )
+                    : startingNumber - 1;
+
+                const nextNumber = previousNumber + 1;
+
+                billNumber = prefix + "-" +
+                    String(nextNumber).padStart(3, "0");
+
+const stockReferences = [];
 
                 const stockSnapshots = [];
 
@@ -1493,6 +1547,15 @@ async function saveBill() {
 
 
                 transaction.set(
+                    counterRef,
+                    {
+                        lastNumber: nextNumber,
+                        updatedAt: serverTimestamp()
+                    },
+                    { merge: true }
+                );
+
+                transaction.set(
                     billReference,
                     {
 
@@ -1567,6 +1630,9 @@ async function saveBill() {
         showBillingMessage(
             `Bill ${billNumber} saved successfully.`,
             "success"
+        );
+        window.dispatchEvent(
+            new CustomEvent("medzonex:bill-saved")
         );
 
 

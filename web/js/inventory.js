@@ -468,322 +468,254 @@ async function loadInventory() {
 
 
 // ============================================================
-// RENDER INVENTORY
+// MEDICINE DETAILS VIEW STATE
 // ============================================================
 
-function renderInventory(items) {
+let lastRenderedInventoryItems = [];
+let currentDetailsMedicineId = null;
 
-    const container =
-        $("inventoryList");
-
-    if (!container) {
-        return;
+function setText(id, value) {
+    const element = $(id);
+    if (element) {
+        element.textContent =
+            value === null || value === undefined || value === ''
+                ? "—"
+                : String(value);
     }
-
-    container.innerHTML =
-        "";
-
-    if (!items.length) {
-
-        container.innerHTML = `
-            <div class="inventory-empty">
-
-                <div class="inventory-empty-icon">
-                    📦
-                </div>
-
-                <h3>
-                    No medicines found
-                </h3>
-
-                <p>
-                    Add your first medicine to start managing stock.
-                </p>
-
-            </div>
-        `;
-
-        return;
-
-    }
-
-    items.forEach(
-        (item) => {
-
-            const stockStatus =
-                getStockStatus(item);
-
-            const expiryStatus =
-                getExpiryStatus(item);
-
-            const quantity =
-                Number(
-                    item.quantity || 0
-                );
-
-            const sellingPrice =
-                Number(
-                    item.sellingPrice || 0
-                );
-
-            const purchasePrice =
-                Number(
-                    item.purchasePrice || 0
-                );
-
-            const stockValue =
-                purchasePrice *
-                quantity;
-
-            const card =
-                document.createElement(
-                    "div"
-                );
-
-            card.className =
-                "inventory-item";
-
-            card.innerHTML = `
-
-                <div class="inventory-item-main">
-
-                    <div class="inventory-medicine-icon">
-                        💊
-                    </div>
-
-                    <div class="inventory-medicine-info">
-
-                        <h3>
-                            ${escapeHtml(
-                                item.name ||
-                                "Unnamed Medicine"
-                            )}
-                        </h3>
-
-                        <p>
-                            ${escapeHtml(
-                                item.salt ||
-                                "Salt not added"
-                            )}
-                        </p>
-
-                        <small>
-                            ${escapeHtml(
-                                item.manufacturer ||
-                                "Manufacturer not added"
-                            )}
-                        </small>
-
-                    </div>
-
-                </div>
-
-
-                <div class="inventory-item-details">
-
-                    <div class="inventory-detail">
-
-                        <span>
-                            Batch
-                        </span>
-
-                        <strong>
-                            ${escapeHtml(
-                                item.batch ||
-                                "-"
-                            )}
-                        </strong>
-
-                    </div>
-
-
-                    <div class="inventory-detail">
-
-                        <span>
-                            Expiry
-                        </span>
-
-                        <strong>
-                            ${escapeHtml(
-                                formatDate(
-                                    item.expiry
-                                )
-                            )}
-                        </strong>
-
-                    </div>
-
-
-                    <div class="inventory-detail">
-
-                        <span>
-                            Quantity
-                        </span>
-
-                        <strong>
-                            ${quantity}
-                        </strong>
-
-                    </div>
-
-
-                    <div class="inventory-detail">
-
-                        <span>
-                            Purchase
-                        </span>
-
-                        <strong>
-                            ${money(
-                                purchasePrice
-                            )}
-                        </strong>
-
-                    </div>
-
-
-                    <div class="inventory-detail">
-
-                        <span>
-                            Selling
-                        </span>
-
-                        <strong>
-                            ${money(
-                                sellingPrice
-                            )}
-                        </strong>
-
-                    </div>
-
-
-                    <div class="inventory-detail">
-
-                        <span>
-                            Stock Value
-                        </span>
-
-                        <strong>
-                            ${money(
-                                stockValue
-                            )}
-                        </strong>
-
-                    </div>
-
-                </div>
-
-
-                <div class="inventory-item-status">
-
-                    <span
-                        class="inventory-status inventory-status-${escapeHtml(
-                            stockStatus.status
-                        )}"
-                    >
-                        ${escapeHtml(
-                            stockStatus.label
-                        )}
-                    </span>
-
-                    <span
-                        class="inventory-status inventory-expiry-${escapeHtml(
-                            expiryStatus.status
-                        )}"
-                    >
-                        ${escapeHtml(
-                            expiryStatus.label
-                        )}
-                    </span>
-
-                </div>
-
-
-                <div class="inventory-item-actions">
-
-                    <button
-                        type="button"
-                        class="inventory-edit-btn"
-                        data-id="${escapeHtml(
-                            item.id
-                        )}"
-                    >
-                        Edit
-                    </button>
-
-                    <button
-                        type="button"
-                        class="inventory-delete-btn"
-                        data-id="${escapeHtml(
-                            item.id
-                        )}"
-                    >
-                        Delete
-                    </button>
-
-                </div>
-
-            `;
-
-            container.appendChild(
-                card
-            );
-
-        }
+}
+
+function openMedicineDetails(medicineId) {
+    const medicine = inventoryItems.find(
+        (item) => item.id === medicineId
     );
 
+    if (!medicine) {
+        showInventoryMessage("Medicine not found.");
+        return;
+    }
 
-    // Edit buttons
+    currentDetailsMedicineId = medicineId;
 
-    container
-        .querySelectorAll(
-            ".inventory-edit-btn"
-        )
-        .forEach(
-            (button) => {
+    setText("detailsMedicineName", medicine.name || "Unnamed Medicine");
+    setText("detailsMedicineSalt", medicine.salt || "Salt / generic name not added");
+    setText("detailsMedicineId", medicine.id);
+    setText("detailsStrength", medicine.strength);
+    setText("detailsDosageForm", medicine.dosageForm);
+    setText("detailsPackSize", medicine.packSize);
+    setText("detailsManufacturer", medicine.manufacturer);
+    setText("detailsBatch", medicine.batch);
+    setText("detailsCreatedAt", formatDate(medicine.createdAt));
+    setText("detailsExpiry", formatDate(medicine.expiry));
+    setText("detailsQuantity", Number(medicine.quantity || 0));
+    setText("detailsMinimumStock", Number(medicine.minimumStock ?? 5));
+    setText("detailsPurchasePrice", money(Number(medicine.purchasePrice || 0)));
+    setText("detailsSellingPrice", money(Number(medicine.sellingPrice || 0)));
+    setText(
+        "detailsStockValue",
+        money(Number(medicine.purchasePrice || 0) * Number(medicine.quantity || 0))
+    );
+    setText(
+        "detailsSalesValue",
+        money(Number(medicine.sellingPrice || 0) * Number(medicine.quantity || 0))
+    );
 
-                button.addEventListener(
-                    "click",
-                    () => {
+    const statuses = $("detailsMedicineStatuses");
+    if (statuses) {
+        const stock = getStockStatus(medicine);
+        const expiry = getExpiryStatus(medicine);
 
-                        editMedicine(
-                            button.dataset.id
-                        );
+        statuses.innerHTML = `
+            <span class="inventory-status inventory-status-${escapeHtml(stock.status)}">
+                ${escapeHtml(stock.label)}
+            </span>
+            <span class="inventory-status inventory-expiry-${escapeHtml(expiry.status)}">
+                ${escapeHtml(expiry.label)}
+            </span>
+        `;
+    }
 
-                    }
-                );
+    const hideSelectors = [
+        ".inventory-header",
+        "#inventoryMessage",
+        ".inventory-summary-grid",
+        "#inventoryFormSection",
+        ".inventory-list-section",
+        ".inventory-back-area"
+    ];
 
-            }
-        );
+    hideSelectors.forEach((selector) => {
+        const element = document.querySelector(selector);
+        if (element) element.style.display = "none";
+    });
 
+    const panel = $("medicineDetailsPanel");
+    if (panel) {
+        panel.hidden = false;
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+}
 
-    // Delete buttons
+function closeMedicineDetails() {
+    const panel = $("medicineDetailsPanel");
+    if (panel) panel.hidden = true;
 
-    container
-        .querySelectorAll(
-            ".inventory-delete-btn"
-        )
-        .forEach(
-            (button) => {
+    [
+        ".inventory-header",
+        ".inventory-summary-grid",
+        ".inventory-list-section",
+        ".inventory-back-area"
+    ].forEach((selector) => {
+        const element = document.querySelector(selector);
+        if (element) element.style.display = "";
+    });
 
-                button.addEventListener(
-                    "click",
-                    () => {
+    const message = $("inventoryMessage");
+    if (message) message.style.display = "";
 
-                        deleteMedicine(
-                            button.dataset.id
-                        );
+    currentDetailsMedicineId = null;
 
-                    }
-                );
+    if (Array.isArray(lastRenderedInventoryItems)) {
+        renderInventory(lastRenderedInventoryItems);
+    }
 
-            }
-        );
-
+    const list = $(".inventory-list-section");
+    if (list) {
+        list.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
 }
 
 
 // ============================================================
+// RENDER INVENTORY
+// ============================================================
+
+function renderInventory(items) {
+    const container = $("inventoryList");
+    if (!container) return;
+
+    lastRenderedInventoryItems = [...items];
+    container.innerHTML = "";
+
+    if (!items.length) {
+        container.innerHTML = `
+            <div class="inventory-empty">
+                <div class="inventory-empty-icon">📦</div>
+                <h3>No medicines found</h3>
+                <p>Add your first medicine to start managing stock.</p>
+            </div>
+        `;
+        return;
+    }
+
+    items.forEach((item, index) => {
+        const stockStatus = getStockStatus(item);
+        const expiryStatus = getExpiryStatus(item);
+        const quantity = Number(item.quantity || 0);
+        const sellingPrice = Number(item.sellingPrice || 0);
+        const purchasePrice = Number(item.purchasePrice || 0);
+        const stockValue = purchasePrice * quantity;
+
+        const card = document.createElement("article");
+        card.className = "inventory-item";
+        card.tabIndex = 0;
+        card.setAttribute("role", "button");
+        card.setAttribute(
+            "aria-label",
+            `View details for ${item.name || "medicine"}`
+        );
+        card.dataset.id = item.id;
+
+        card.innerHTML = `
+            <div class="inventory-item-main">
+                <span class="inventory-serial">${index + 1}</span>
+                <div class="inventory-medicine-icon">💊</div>
+                <div class="inventory-medicine-info">
+                    <h3>${escapeHtml(item.name || "Unnamed Medicine")}</h3>
+                    <p>${escapeHtml(item.salt || "Salt not added")}</p>
+                    <small>${escapeHtml(item.manufacturer || "Manufacturer not added")}</small>
+                    <span class="inventory-added-date">
+                        Added: ${escapeHtml(formatDate(item.createdAt))}
+                    </span>
+                </div>
+            </div>
+
+            <div class="inventory-item-details">
+                <div class="inventory-detail">
+                    <span>Batch</span>
+                    <strong>${escapeHtml(item.batch || "-")}</strong>
+                </div>
+                <div class="inventory-detail">
+                    <span>Expiry</span>
+                    <strong>${escapeHtml(formatDate(item.expiry))}</strong>
+                </div>
+                <div class="inventory-detail">
+                    <span>Quantity</span>
+                    <strong>${quantity}</strong>
+                </div>
+                <div class="inventory-detail">
+                    <span>Purchase</span>
+                    <strong>${money(purchasePrice)}</strong>
+                </div>
+                <div class="inventory-detail">
+                    <span>Selling</span>
+                    <strong>${money(sellingPrice)}</strong>
+                </div>
+                <div class="inventory-detail">
+                    <span>Stock Value</span>
+                    <strong>${money(stockValue)}</strong>
+                </div>
+            </div>
+
+            <div class="inventory-item-status">
+                <span class="inventory-status inventory-status-${escapeHtml(stockStatus.status)}">
+                    ${escapeHtml(stockStatus.label)}
+                </span>
+                <span class="inventory-status inventory-expiry-${escapeHtml(expiryStatus.status)}">
+                    ${escapeHtml(expiryStatus.label)}
+                </span>
+            </div>
+
+            <div class="inventory-item-actions">
+                <button type="button" class="inventory-edit-btn" data-id="${escapeHtml(item.id)}">
+                    Edit
+                </button>
+                <button type="button" class="inventory-delete-btn" data-id="${escapeHtml(item.id)}">
+                    Delete
+                </button>
+            </div>
+        `;
+
+        card.addEventListener("click", (event) => {
+            if (event.target.closest("button")) return;
+            openMedicineDetails(item.id);
+        });
+
+        card.addEventListener("keydown", (event) => {
+            if (event.target !== card) return;
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openMedicineDetails(item.id);
+            }
+        });
+
+        container.appendChild(card);
+    });
+
+    container.querySelectorAll(".inventory-edit-btn").forEach((button) => {
+        button.addEventListener("click", (event) => {
+            event.stopPropagation();
+            editMedicine(button.dataset.id);
+        });
+    });
+
+    container.querySelectorAll(".inventory-delete-btn").forEach((button) => {
+        button.addEventListener("click", (event) => {
+            event.stopPropagation();
+            deleteMedicine(button.dataset.id);
+        });
+    });
+}
+
 // SEARCH INVENTORY
 // ============================================================
 
@@ -943,6 +875,9 @@ function clearMedicineForm() {
 
         "medicineName",
         "medicineSalt",
+        "medicineStrength",
+        "medicineDosageForm",
+        "medicinePackSize",
         "medicineManufacturer",
         "medicineBatch",
         "medicineExpiry",
@@ -1174,70 +1109,20 @@ async function recognizeMedicineFromImage(file) {
 // ============================================================
 
 function getMedicineFormData() {
-
-    const name =
-        $("medicineName")?.value.trim() ||
-        "";
-
-    const salt =
-        $("medicineSalt")?.value.trim() ||
-        "";
-
-    const manufacturer =
-        $("medicineManufacturer")?.value.trim() ||
-        "";
-
-    const batch =
-        $("medicineBatch")?.value.trim() ||
-        "";
-
-    const expiry =
-        $("medicineExpiry")?.value ||
-        "";
-
-    const purchasePrice =
-        Number(
-            $("medicinePurchasePrice")?.value
-        );
-
-    const sellingPrice =
-        Number(
-            $("medicineSellingPrice")?.value
-        );
-
-    const quantity =
-        Number(
-            $("medicineQuantity")?.value
-        );
-
-    const minimumStock =
-        Number(
-            $("medicineMinimumStock")?.value
-        );
-
-
     return {
-
-        name,
-
-        salt,
-
-        manufacturer,
-
-        batch,
-
-        expiry,
-
-        purchasePrice,
-
-        sellingPrice,
-
-        quantity,
-
-        minimumStock
-
+        name: $("medicineName")?.value.trim() || "",
+        salt: $("medicineSalt")?.value.trim() || "",
+        strength: $("medicineStrength")?.value.trim() || "",
+        manufacturer: $("medicineManufacturer")?.value.trim() || "",
+        dosageForm: $("medicineDosageForm")?.value.trim() || "",
+        packSize: $("medicinePackSize")?.value.trim() || "",
+        batch: $("medicineBatch")?.value.trim() || "",
+        expiry: $("medicineExpiry")?.value || "",
+        purchasePrice: Number($("medicinePurchasePrice")?.value),
+        sellingPrice: Number($("medicineSellingPrice")?.value),
+        quantity: Number($("medicineQuantity")?.value),
+        minimumStock: Number($("medicineMinimumStock")?.value)
     };
-
 }
 
 
@@ -1445,8 +1330,17 @@ async function saveMedicine() {
                     salt:
                         data.salt,
 
+                    strength:
+                        data.strength,
+
                     manufacturer:
                         data.manufacturer,
+
+                    dosageForm:
+                        data.dosageForm,
+
+                    packSize:
+                        data.packSize,
 
                     batch:
                         data.batch,
@@ -1497,10 +1391,19 @@ async function saveMedicine() {
                             data.name,
 
                         salt:
-                            data.salt,
+                        data.salt,
 
-                        manufacturer:
-                            data.manufacturer,
+                    strength:
+                        data.strength,
+
+                    manufacturer:
+                        data.manufacturer,
+
+                    dosageForm:
+                        data.dosageForm,
+
+                    packSize:
+                        data.packSize,
 
                         batch:
                             data.batch,
@@ -1648,10 +1551,19 @@ async function editMedicine(
     }
 
     if ($("medicineSalt")) {
+        $("medicineSalt").value = medicine.salt || "";
+    }
 
-        $("medicineSalt").value =
-            medicine.salt || "";
+    if ($("medicineStrength")) {
+        $("medicineStrength").value = medicine.strength || "";
+    }
 
+    if ($("medicineDosageForm")) {
+        $("medicineDosageForm").value = medicine.dosageForm || "";
+    }
+
+    if ($("medicinePackSize")) {
+        $("medicinePackSize").value = medicine.packSize || "";
     }
 
     if ($("medicineManufacturer")) {
@@ -2194,11 +2106,53 @@ $("showExpiringSoonBtn")?.addEventListener(
 
 
 // ============================================================
+
+// ============================================================
+// MEDICINE DETAILS BUTTONS
+// ============================================================
+
+$("medicineDetailsBackBtn")?.addEventListener(
+    "click",
+    closeMedicineDetails
+);
+
+$("medicineDetailsEditBtn")?.addEventListener("click", () => {
+    if (currentDetailsMedicineId) {
+        const id = currentDetailsMedicineId;
+        closeMedicineDetails();
+        editMedicine(id);
+    }
+});
+
+$("medicineDetailsDeleteBtn")?.addEventListener("click", async () => {
+    if (!currentDetailsMedicineId) return;
+
+    const id = currentDetailsMedicineId;
+    await deleteMedicine(id);
+
+    if (!inventoryItems.some((item) => item.id === id)) {
+        closeMedicineDetails();
+    }
+});
+
+$("medicineDetailsPrintBtn")?.addEventListener("click", () => {
+    document.body.classList.add("medicine-details-printing");
+
+    const cleanup = () => {
+        document.body.classList.remove("medicine-details-printing");
+        window.removeEventListener("afterprint", cleanup);
+    };
+
+    window.addEventListener("afterprint", cleanup);
+    window.print();
+});
+
 // PUBLIC API
 // ============================================================
 
 window.MedZoneXInventory = {
 
+    openMedicineDetails,
     loadInventory,
 
     searchInventory,
@@ -2221,7 +2175,8 @@ window.MedZoneXInventory = {
 
     showAllInventory,
 
-    getInventory() {
+
+        getInventory() {
 
         return [
             ...inventoryItems

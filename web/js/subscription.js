@@ -339,71 +339,52 @@ document
    BACK TO DASHBOARD
 ===================================================== */
 
-$("closeSubscriptionBtn")
-    ?.addEventListener("click", async () => {
-        try {
-            const user = auth.currentUser;
+document.addEventListener("click", async (event) => {
+    if (!event.target.closest("[data-subscription-back]")) return;
 
-            if (!user) {
-                showSubscriptionMessage(
-                    "Please log in again."
-                );
-                return;
-            }
+    try {
+        const user = auth.currentUser;
 
-            const idToken = await user.getIdToken();
-
-            const response = await fetch(
-                `${API_BASE_URL}/api/subscription/status`,
-                {
-                    headers: {
-                        "Authorization": `Bearer ${idToken}`
-                    }
-                }
-            );
-
-            const access = await response.json();
-
-            if (
-                response.ok &&
-                access.success === true &&
-                access.active === true &&
-                (
-                    access.status === "active" ||
-                    access.status === "trial"
-                )
-            ) {
-                if (
-                    typeof window.MedZoneX?.showPage ===
-                    "function"
-                ) {
-                    window.MedZoneX.showPage(
-                        "dashboardPage"
-                    );
-                }
-
-                return;
-            }
-
-            showSubscriptionMessage(
-                "Your trial has expired or your subscription is inactive. Please choose a plan."
-            );
-
-        } catch (error) {
-            console.error(
-                "Subscription access verification error:",
-                error
-            );
-
-            showSubscriptionMessage(
-                "Unable to verify access. Please try again."
-            );
+        if (!user) {
+            showSubscriptionMessage("Please log in again.");
+            return;
         }
-    });
 
-/* =====================================================
-   PUBLIC API
-===================================================== */
+        const idToken = await user.getIdToken();
+
+        const response = await fetch(
+            `${API_BASE_URL}/api/subscription/status`,
+            {
+                headers: {
+                    "Authorization": `Bearer ${idToken}`
+                }
+            }
+        );
+
+        const access = await response.json();
+
+        if (
+            response.ok &&
+            access.success === true &&
+            access.active === true &&
+            ["active", "trial"].includes(access.status)
+        ) {
+            if (typeof window.MedZoneX?.backPage === "function") {
+                window.MedZoneX.backPage();
+            } else {
+                window.MedZoneX?.showPage?.("dashboardPage");
+            }
+            return;
+        }
+
+        showSubscriptionMessage(
+            "Your trial has expired or your subscription is inactive. Please choose a plan."
+        );
+    } catch (error) {
+        console.error("Subscription access verification error:", error);
+        showSubscriptionMessage("Unable to verify access. Please try again.");
+    }
+});
 
 window.MedZoneXSubscription = {
     startSubscription
