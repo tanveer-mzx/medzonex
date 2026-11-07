@@ -623,6 +623,25 @@ function escapeInvoiceHtml(value) {
 
 const SUBSCRIPTION_REMINDER_MAX_LATE_MS = 30 * 60 * 1000;
 
+function getPaidSubscriptionReminderDefinitions(planKey, scheduleVersion = 1) {
+    if (planKey === "monthly" && Number(scheduleVersion) >= 2) {
+        return [
+            { key: "day28", offsetMs: -48 * 60 * 60 * 1000 },
+            { key: "day29", offsetMs: -24 * 60 * 60 * 1000 },
+            { key: "expiry", offsetMs: 0 },
+            { key: "expired_1h", offsetMs: 60 * 60 * 1000 }
+        ];
+    }
+
+    return [
+        { key: "72h", offsetMs: -72 * 60 * 60 * 1000 },
+        { key: "48h", offsetMs: -48 * 60 * 60 * 1000 },
+        { key: "24h", offsetMs: -24 * 60 * 60 * 1000 },
+        { key: "expiry", offsetMs: 0 },
+        { key: "expired_1h", offsetMs: 60 * 60 * 1000 }
+    ];
+}
+
 function buildSubscriptionDashboardNotificationData(jobId, job, storeName) {
     const key = String(job.reminderKey || "");
     const isTrial = job.type === "trial";
@@ -646,7 +665,11 @@ function buildSubscriptionDashboardNotificationData(jobId, job, storeName) {
             message = "Your free trial is approaching its end.";
         }
     } else {
-        if (key === "72h") {
+        if (key === "day28") {
+            message = "Your monthly subscription expires in 2 days. Renew early to avoid interruption.";
+        } else if (key === "day29") {
+            message = "Your monthly subscription expires in 1 day. Renew early to avoid interruption.";
+        } else if (key === "72h") {
             message = "Your subscription expires in 3 days. Renew early to avoid interruption.";
         } else if (key === "48h") {
             message = "Your subscription expires in 2 days. Renew early to avoid interruption.";
@@ -766,21 +789,23 @@ function getSubscriptionReminderEligibility(job, userData, now = Date.now()) {
             return { eligible: false, reason: "subscription_status_not_eligible" };
         }
 
-        const offsets = {
-            "72h": -72 * 60 * 60 * 1000,
-            "48h": -48 * 60 * 60 * 1000,
-            "24h": -24 * 60 * 60 * 1000,
-            "expiry": 0,
-            "expired_1h": 60 * 60 * 1000
-        };
+        const reminderDefinitions =
+            getPaidSubscriptionReminderDefinitions(
+                job.planKey,
+                job.scheduleVersion || 1
+            );
 
-        if (!Object.prototype.hasOwnProperty.call(offsets, key)) {
+        const reminderDefinition = reminderDefinitions.find(
+            (item) => item.key === key
+        );
+
+        if (!reminderDefinition) {
             return { eligible: false, reason: "unknown_paid_reminder_key" };
         }
 
-        expectedDueAt = expectedExpiry + offsets[key];
+        expectedDueAt = expectedExpiry + reminderDefinition.offsetMs;
 
-        if (["72h", "48h", "24h"].includes(key) && now >= expectedExpiry) {
+        if (reminderDefinition.offsetMs < 0 && now >= expectedExpiry) {
             return { eligible: false, reason: "subscription_pre_expiry_window_passed" };
         }
 
@@ -1601,7 +1626,13 @@ async function processSubscriptionReminderJob(jobId) {
                 timingText = "Your 48-hour free trial is approaching its end.";
             }
         } else {
-            if (reminderKey === "72h") {
+            if (reminderKey === "day28") {
+                subject = "Your MedZoneX monthly subscription expires in 2 days";
+                timingText = "Your monthly subscription expires in approximately 2 days. Renew early to avoid interruption.";
+            } else if (reminderKey === "day29") {
+                subject = "Your MedZoneX monthly subscription expires tomorrow";
+                timingText = "Your monthly subscription expires in approximately 24 hours. Renew now to avoid interruption.";
+            } else if (reminderKey === "72h") {
                 subject = "Your MedZoneX subscription expires in 3 days";
                 timingText = "Your subscription expires in approximately 3 days. Renew early to avoid interruption.";
             } else if (reminderKey === "48h") {
@@ -4108,13 +4139,8 @@ app.post(
 
                 // Prepare and read all manual-payment reminder jobs
                 // before any transaction writes.
-                const manualReminderDefinitions = [
-                    { key: "72h", offsetMs: -72 * 60 * 60 * 1000 },
-                    { key: "48h", offsetMs: -48 * 60 * 60 * 1000 },
-                    { key: "24h", offsetMs: -24 * 60 * 60 * 1000 },
-                    { key: "expiry", offsetMs: 0 },
-                    { key: "expired_1h", offsetMs: 60 * 60 * 1000 }
-                ];
+                const manualReminderDefinitions =
+                    getPaidSubscriptionReminderDefinitions(planKey, 2);
 
                 const manualReminderJobs = manualReminderDefinitions.map((item) => ({
                     key: item.key,
@@ -4200,6 +4226,7 @@ app.post(
                     transaction.create(reminder.ref, {
                         type: "paid",
                         provider: "manual",
+                        scheduleVersion: 2,
                         reminderKey: reminder.key,
                         uid,
                         email: userData.email || decodedToken.email || "",
@@ -5137,13 +5164,8 @@ app.post("/api/razorpay/webhook", async (req, res) => {
             if (eventType === "subscription.charged" && paymentEntity?.id) {
                 const safeSubscriptionId = subscriptionId.replace(/[^a-zA-Z0-9_-]/g, "_");
 
-                const reminderDefinitions = [
-                    { key: "72h", offsetMs: -72 * 60 * 60 * 1000 },
-                    { key: "48h", offsetMs: -48 * 60 * 60 * 1000 },
-                    { key: "24h", offsetMs: -24 * 60 * 60 * 1000 },
-                    { key: "expiry", offsetMs: 0 },
-                    { key: "expired_1h", offsetMs: 60 * 60 * 1000 }
-                ];
+                const reminderDefinitions =
+                    getPaidSubscriptionReminderDefinitions(subscriptionRecord.planKey, 2);
 
                 paidReminderJobs = reminderDefinitions.map((item) => ({
                     key: item.key,
@@ -5286,6 +5308,7 @@ app.post("/api/razorpay/webhook", async (req, res) => {
                                               type: "paid",
                                               reminderKey: reminder.key,
                                               uid: subscriptionRecord.uid,
+                                              scheduleVersion: 2,
                                               email: currentUser.email || subscriptionRecord.email || "",
                                               storeName: currentUser.storeName || subscriptionRecord.storeName || "Not provided",
                                               subscriptionId,
