@@ -194,7 +194,7 @@ async function loadBillingInventory() {
     if (!user) {
 
         showBillingMessage(
-            "Please login first."
+            ""
         );
 
         return;
