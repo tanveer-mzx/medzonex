@@ -3498,3 +3498,34 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
         window.startSubscriptionCountdown = startSubscriptionCountdown;
+
+/* MEDZONEX HOMEPAGE MANUAL AD DRAG SCROLL */
+(() => {
+    const slider = document.getElementById("welcomeAds");
+    if (!slider) return;
+
+    let isDragging = false;
+    let startX = 0;
+    let scrollStart = 0;
+
+    slider.addEventListener("mousedown", (e) => {
+        if (e.target.closest("a, button")) return;
+        isDragging = true;
+        startX = e.pageX;
+        scrollStart = slider.scrollLeft;
+        slider.style.cursor = "grabbing";
+        e.preventDefault();
+    });
+
+    window.addEventListener("mouseup", () => {
+        isDragging = false;
+        slider.style.cursor = "grab";
+    });
+
+    window.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        slider.scrollLeft = scrollStart - (e.pageX - startX);
+    });
+
+    slider.style.cursor = "grab";
+})();

@@ -3755,3 +3755,1777 @@ button {
         padding: 16px;
     }
 }
+
+/* =====================================================
+   MEDZONEX NEW WELCOME PAGE
+   MIDNIGHT BLACK + WHITE + LIME GREEN
+===================================================== */
+
+#welcomePage {
+    --mzx-black: #0B0B0C;
+    --mzx-white: #FFFFFF;
+    --mzx-lime: #C6F432;
+
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100svh;
+    padding: 35px 4%;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    isolation: isolate;
+
+    background:
+        radial-gradient(ellipse at 50% 45%, rgba(198,244,50,.075), transparent 38%),
+        radial-gradient(ellipse at 10% 80%, rgba(198,244,50,.035), transparent 30%),
+        var(--mzx-black);
+    color: var(--mzx-white);
+}
+
+#welcomePage .welcome-background {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        linear-gradient(90deg, transparent 49.9%, rgba(198,244,50,.07) 50%, transparent 50.1%),
+        radial-gradient(circle at center, transparent 0, transparent 55%, rgba(0,0,0,.35) 100%);
+}
+
+#welcomePage .welcome-content {
+    position: relative;
+    z-index: 3;
+    width: 340px;
+    max-width: 90%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+#welcomePage .main-logo {
+    width: 112px;
+    height: 112px;
+    object-fit: contain;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 0 24px rgba(198,244,50,.22));
+}
+
+#welcomePage .brand-name {
+    color: var(--mzx-white);
+    font-size: clamp(38px, 4vw, 48px);
+    font-weight: 850;
+    letter-spacing: -1.8px;
+}
+
+#welcomePage .welcome-tagline {
+    margin-top: 9px;
+    color: #B9B9B9;
+    font-size: 15px;
+    letter-spacing: .5px;
+}
+
+#welcomePage .large-btn {
+    width: 240px;
+    max-width: 100%;
+    margin-top: 30px;
+    padding: 15px 25px;
+    border: 1px solid var(--mzx-lime);
+    border-radius: 12px;
+    background: var(--mzx-lime);
+    color: #11130A;
+    font-size: 16px;
+    font-weight: 800;
+    box-shadow: 0 0 30px rgba(198,244,50,.16);
+    transition: .25s ease;
+}
+
+#welcomePage .large-btn:hover {
+    background: #D8FF62;
+    box-shadow: 0 0 38px rgba(198,244,50,.30);
+    transform: translateY(-3px);
+}
+
+#welcomePage .welcome-caption {
+    margin-top: 17px;
+    color: #777777;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+#welcomePage .welcome-feature {
+    position: absolute;
+    z-index: 2;
+    top: 39%;
+    width: min(23%, 285px);
+    padding: 25px 23px;
+    border: 1px solid rgba(198,244,50,.20);
+    border-radius: 19px;
+    background: linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.015));
+    box-shadow: 0 18px 55px rgba(0,0,0,.22);
+    backdrop-filter: blur(12px);
+}
+
+#welcomePage .welcome-feature-left {
+    left: 5%;
+}
+
+#welcomePage .welcome-feature-right {
+    right: 5%;
+}
+
+#welcomePage .feature-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    margin-bottom: 17px;
+    border-radius: 12px;
+    background: rgba(198,244,50,.12);
+    color: var(--mzx-lime);
+    font-size: 25px;
+}
+
+#welcomePage .feature-label {
+    display: block;
+    margin-bottom: 11px;
+    color: var(--mzx-lime);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+#welcomePage .welcome-feature h2 {
+    color: #FFFFFF;
+    font-size: clamp(19px, 2vw, 25px);
+    line-height: 1.2;
+    letter-spacing: -.6px;
+}
+
+#welcomePage .welcome-feature p {
+    margin-top: 13px;
+    color: #A7A7A7;
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+#welcomePage .feature-line {
+    width: 42px;
+    height: 3px;
+    margin-top: 19px;
+    border-radius: 5px;
+    background: var(--mzx-lime);
+}
+
+#welcomePage .welcome-feature > small {
+    display: block;
+    margin-top: 12px;
+    color: #777777;
+    font-size: 8px;
+    letter-spacing: 1px;
+}
+
+#welcomePage .welcome-support {
+    position: absolute;
+    z-index: 5;
+    top: 25px;
+    right: 4%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    text-decoration: none;
+    color: #FFFFFF;
+}
+
+#welcomePage .welcome-support span {
+    color: #AAAAAA;
+    font-size: 11px;
+}
+
+#welcomePage .welcome-support strong {
+    color: var(--mzx-lime);
+    font-size: 13px;
+}
+
+#welcomePage .welcome-support small {
+    color: #777777;
+    font-size: 10px;
+}
+
+#welcomePage .welcome-support:hover strong {
+    color: #FFFFFF;
+}
+
+#welcomePage .welcome-ads {
+    position: absolute;
+    z-index: 3;
+    left: 50%;
+    bottom: 22px;
+    transform: translateX(-50%);
+    width: min(570px, 65%);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 13px;
+}
+
+#welcomePage .welcome-ad-card {
+    height: 82px;
+    overflow: hidden;
+    border: 1px solid rgba(198,244,50,.20);
+    border-radius: 11px;
+    background: #171717;
+    transition: .25s ease;
+}
+
+#welcomePage .welcome-ad-card:hover {
+    border-color: var(--mzx-lime);
+    transform: translateY(-4px);
+}
+
+#welcomePage .welcome-ad-card img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* TABLET */
+
+@media (max-width: 950px) {
+    #welcomePage {
+        padding: 100px 25px 145px;
+    }
+
+    #welcomePage .welcome-feature {
+        top: auto;
+        bottom: 125px;
+        width: 28%;
+        padding: 17px;
+    }
+
+    #welcomePage .welcome-feature-left {
+        left: 2%;
+    }
+
+    #welcomePage .welcome-feature-right {
+        right: 2%;
+    }
+
+    #welcomePage .welcome-feature p {
+        font-size: 11px;
+    }
+
+    #welcomePage .welcome-ads {
+        width: 58%;
+        gap: 8px;
+    }
+}
+
+/* MOBILE */
+
+@media (max-width: 650px) {
+    #welcomePage {
+        min-height: 100svh;
+        padding: 100px 18px 25px;
+        flex-direction: column;
+        justify-content: flex-start;
+        overflow-y: auto;
+    }
+
+    #welcomePage .welcome-support {
+        top: 17px;
+        right: 18px;
+    }
+
+    #welcomePage .welcome-content {
+        margin: 35px auto 0;
+        width: 100%;
+    }
+
+    #welcomePage .main-logo {
+        width: 88px;
+        height: 88px;
+    }
+
+    #welcomePage .brand-name {
+        font-size: 38px;
+    }
+
+    #welcomePage .welcome-feature {
+        position: relative;
+        inset: auto;
+        width: 100%;
+        max-width: 420px;
+        margin-top: 25px;
+        padding: 18px;
+    }
+
+    #welcomePage .welcome-feature h2 {
+        font-size: 21px;
+    }
+
+    #welcomePage .welcome-feature p {
+        font-size: 12px;
+    }
+
+    #welcomePage .welcome-ads {
+        position: relative;
+        inset: auto;
+        transform: none;
+        width: 100%;
+        max-width: 420px;
+        margin: 22px auto 10px;
+        gap: 7px;
+    }
+
+    #welcomePage .welcome-ad-card {
+        height: 68px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #welcomePage *,
+    #welcomePage *::before,
+    #welcomePage *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* HOMEPAGE SINGLE AD AUTO SLIDER */
+
+#welcomePage .welcome-ads {
+    position: absolute;
+    z-index: 4;
+    left: 50%;
+    bottom: 22px;
+    transform: translateX(-50%);
+    width: min(650px, 75%);
+    height: 125px;
+    overflow: hidden;
+    border: 1px solid rgba(198,244,50,.25);
+    border-radius: 15px;
+    background: #151515;
+    box-shadow: 0 12px 40px rgba(0,0,0,.35);
+}
+
+#welcomePage .welcome-ad-track {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transition: transform .65s cubic-bezier(.22,.61,.36,1);
+    will-change: transform;
+}
+
+#welcomePage .welcome-ad-slide {
+    flex: 0 0 100%;
+    width: 100%;
+    height: 100%;
+}
+
+#welcomePage .welcome-ad-slide img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+@media (max-width: 950px) {
+    #welcomePage .welcome-ads {
+        width: 58%;
+        height: 100px;
+    }
+}
+
+@media (max-width: 650px) {
+    #welcomePage .welcome-ads {
+        position: relative;
+        left: auto;
+        bottom: auto;
+        transform: none;
+        width: 100%;
+        max-width: 420px;
+        height: 115px;
+        margin: 22px auto 10px;
+    }
+}
+
+
+/* MEDZONEX HOMEPAGE - LARGE MANUAL HORIZONTAL ADS */
+
+#welcomePage .welcome-ads {
+    position: absolute;
+    z-index: 5;
+    left: 50%;
+    bottom: 22px;
+    transform: translateX(-50%);
+    display: block;
+    width: min(1100px, 92%);
+    height: 230px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    grid-template-columns: none;
+    gap: 0;
+    border: none;
+    border-radius: 16px;
+    background: transparent;
+    box-shadow: none;
+    scrollbar-width: thin;
+    scrollbar-color: #C6F432 #222;
+    scroll-behavior: smooth;
+}
+
+#welcomePage .welcome-ad-track {
+    display: flex;
+    flex-direction: row;
+    gap: 18px;
+    width: max-content;
+    height: 100%;
+    transform: none !important;
+    transition: none;
+}
+
+#welcomePage .welcome-ad-slide {
+    flex: 0 0 680px;
+    width: 680px;
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid rgba(198,244,50,.3);
+    border-radius: 15px;
+    background: #151515;
+    scroll-snap-align: start;
+}
+
+#welcomePage .welcome-ad-slide img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+#welcomePage .welcome-ads {
+    scroll-snap-type: x mandatory;
+}
+
+@media (max-width: 950px) {
+    #welcomePage .welcome-ads {
+        width: 92%;
+        height: 190px;
+    }
+
+    #welcomePage .welcome-ad-slide {
+        flex-basis: 560px;
+        width: 560px;
+    }
+}
+
+@media (max-width: 650px) {
+    #welcomePage .welcome-ads {
+        position: relative;
+        left: auto;
+        bottom: auto;
+        transform: none;
+        width: 100%;
+        max-width: 100%;
+        height: 165px;
+        margin: 22px auto 10px;
+    }
+
+    #welcomePage .welcome-ad-slide {
+        flex-basis: 88vw;
+        width: 88vw;
+    }
+}
+
+/* MEDZONEX HOMEPAGE - FULL VERTICAL SCROLL LAYOUT */
+
+#welcomePage {
+    display: flex !important;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100svh;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 110px 4% 50px;
+    gap: 22px;
+}
+
+/* BRAND CONTENT FIRST */
+#welcomePage .welcome-content {
+    order: 1;
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto 20px;
+}
+
+/* FEATURE PANELS */
+#welcomePage .welcome-feature {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    flex: 1 1 42%;
+    width: auto;
+    max-width: 520px;
+    margin: 0;
+}
+
+#welcomePage .welcome-feature-left {
+    order: 2;
+}
+
+#welcomePage .welcome-feature-right {
+    order: 3;
+}
+
+/* ADS STACK VERTICALLY */
+#welcomePage .welcome-ads {
+    order: 4;
+    position: relative;
+    left: auto;
+    bottom: auto;
+    transform: none;
+    display: block;
+    width: 100%;
+    max-width: 1400px;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    margin: 25px auto 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+}
+
+#welcomePage .welcome-ad-track {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 25px;
+    width: 100%;
+    height: auto;
+    transform: none !important;
+    transition: none;
+}
+
+#welcomePage .welcome-ad-slide {
+    flex: none;
+    width: 52%;
+    max-width: 700px;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border: 1px solid rgba(198,244,50,.3);
+    border-radius: 15px;
+}
+
+#welcomePage .welcome-ad-slide:nth-child(odd) {
+    align-self: flex-start;
+}
+
+#welcomePage .welcome-ad-slide:nth-child(even) {
+    align-self: flex-end;
+}
+
+#welcomePage .welcome-ad-slide img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* TABLET */
+@media (max-width: 950px) {
+    #welcomePage {
+        padding: 100px 4% 40px;
+    }
+
+    #welcomePage .welcome-ad-slide {
+        width: 65%;
+    }
+}
+
+/* MOBILE */
+@media (max-width: 650px) {
+    #welcomePage {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 100px 18px 35px;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    #welcomePage .welcome-content {
+        order: 1;
+        margin: 25px auto;
+    }
+
+    #welcomePage .welcome-feature {
+        flex: none;
+        width: 100%;
+        max-width: 420px;
+        margin: 8px auto;
+    }
+
+    #welcomePage .welcome-feature-left {
+        order: 2;
+    }
+
+    #welcomePage .welcome-feature-right {
+        order: 3;
+    }
+
+    #welcomePage .welcome-ads {
+        order: 4;
+        width: 100%;
+        margin: 20px auto 0;
+    }
+
+    #welcomePage .welcome-ad-track {
+        gap: 20px;
+    }
+
+    #welcomePage .welcome-ad-slide {
+        width: 90%;
+        max-width: 420px;
+        aspect-ratio: 16 / 9;
+    }
+
+    #welcomePage .welcome-ad-slide:nth-child(odd) {
+        align-self: flex-start;
+    }
+
+    #welcomePage .welcome-ad-slide:nth-child(even) {
+        align-self: flex-end;
+    }
+}
+
+/* HOMEPAGE AD IMAGE + TEXT PANELS */
+
+#welcomePage .welcome-ad-track {
+    gap: 28px;
+}
+
+#welcomePage .welcome-ad-slide {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 1100px;
+    aspect-ratio: auto;
+    min-height: 260px;
+    height: auto;
+    border: 1px solid rgba(198,244,50,.22);
+    border-radius: 18px;
+    background: #151515;
+    overflow: hidden;
+}
+
+#welcomePage .welcome-ad-image {
+    width: 52%;
+    height: 260px;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+#welcomePage .welcome-ad-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #0B0B0C;
+}
+
+#welcomePage .welcome-ad-copy {
+    flex: 1;
+    padding: 28px;
+    text-align: left;
+}
+
+#welcomePage .welcome-ad-copy span {
+    color: #C6F432;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+#welcomePage .welcome-ad-copy h2 {
+    color: #FFFFFF;
+    font-size: clamp(20px, 2.3vw, 30px);
+    line-height: 1.2;
+    margin: 13px 0;
+}
+
+#welcomePage .welcome-ad-copy p {
+    color: #BBBBBB;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+#welcomePage .welcome-ad-copy strong {
+    display: block;
+    color: #C6F432;
+    margin-top: 14px;
+}
+
+@media (max-width: 650px) {
+    #welcomePage .welcome-ad-slide {
+        flex-direction: column;
+        width: 100%;
+        min-height: auto;
+    }
+
+    #welcomePage .welcome-ad-image {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+    }
+
+    #welcomePage .welcome-ad-copy {
+        padding: 22px;
+    }
+
+    #welcomePage .welcome-ad-copy h2 {
+        font-size: 23px;
+    }
+}
+
+/* MEDZONEX BRAND THEME - PROFILE & NOTIFICATIONS */
+
+/* PROFILE */
+#profilePage .mz-profile-view {
+    background: #171717;
+    border: 1px solid rgba(198,244,50,.22);
+    color: #FFFFFF;
+    box-shadow: 0 10px 35px rgba(0,0,0,.25);
+}
+
+#profilePage .mz-profile-view-header h2,
+#profilePage .mz-profile-identity h2 {
+    color: #FFFFFF;
+}
+
+#profilePage .mz-profile-view-header p,
+#profilePage .mz-profile-identity p,
+#profilePage .mz-profile-identity span {
+    color: #A3A3A3;
+}
+
+#profilePage .mz-edit-profile-btn,
+#profilePage .mz-profile-avatar {
+    background: #C6F432;
+    color: #0B0B0C;
+    border-color: #C6F432;
+}
+
+#profilePage .mz-profile-identity {
+    background: #202020;
+    border-color: rgba(198,244,50,.2);
+}
+
+#profilePage .mz-profile-detail {
+    background: #111111;
+    border-color: #303030;
+}
+
+#profilePage .mz-profile-detail small {
+    color: #A3A3A3;
+}
+
+#profilePage .mz-profile-detail strong {
+    color: #FFFFFF;
+}
+
+#profilePage .mz-cancel-profile-btn {
+    background: #202020;
+    border-color: #444444;
+    color: #FFFFFF;
+}
+
+/* SALES SEARCH */
+#mzSalesSearch {
+    background: #171717;
+    border-color: #383838;
+    color: #FFFFFF;
+}
+
+#mzSalesSearch:focus {
+    border-color: #C6F432;
+    box-shadow: 0 0 0 3px rgba(198,244,50,.12);
+}
+
+#mzSalesSearch::placeholder {
+    color: #A3A3A3;
+}
+
+/* NOTIFICATION PANEL */
+.notification-panel {
+    background: #171717;
+    border-color: rgba(198,244,50,.2);
+}
+
+.notification-card.is-unread {
+    background: rgba(198,244,50,.07);
+}
+
+.notification-actions .notification-subscribe-btn {
+    background: #C6F432;
+    color: #0B0B0C;
+}
+
+.notification-actions .notification-subscribe-btn:hover {
+    background: #D8FF62;
+}
+
+.notification-status {
+    color: #72D6A0;
+}
+
+/* SUBSCRIPTION ACCORDION */
+.subscription-countdown-details > summary::after {
+    color: #C6F432;
+}
+
+/* FULL PAGE NOTIFICATIONS */
+#notificationsPage {
+    background: #0B0B0C;
+}
+
+.notifications-page-shell {
+    background: #171717;
+    border-color: rgba(198,244,50,.2);
+}
+
+.notifications-page-unread {
+    background: rgba(198,244,50,.08);
+    border-color: rgba(198,244,50,.35);
+}
+
+.notifications-page-unread span {
+    color: #C6F432;
+}
+
+.notifications-page-list .notification-card.is-unread {
+    border-color: rgba(198,244,50,.35);
+    background: rgba(198,244,50,.07);
+}
+
+/* MEDZONEX GLOBAL BRAND - DASHBOARD */
+
+#dashboardPage,
+.dashboard {
+    background: #0B0B0C !important;
+    color: #FFFFFF;
+}
+
+.dashboard-header {
+    background: #111111;
+    border-color: #303030;
+}
+
+.dashboard-header p,
+.dashboard-welcome p {
+    color: #A3A3A3;
+}
+
+.dashboard-card {
+    background: #171717;
+    border-color: #303030;
+    color: #FFFFFF;
+}
+
+.dashboard-card:hover {
+    border-color: #C6F432;
+    box-shadow: 0 8px 25px rgba(198,244,50,.08);
+}
+
+.dashboard-card small {
+    color: #A3A3A3;
+}
+
+/* SIDEBAR */
+.dashboard-sidebar {
+    background: #111111;
+    border-color: #303030;
+}
+
+.sidebar-item {
+    color: #BDBDBD;
+}
+
+.sidebar-item:hover {
+    background: rgba(198,244,50,.08);
+    color: #FFFFFF;
+}
+
+.sidebar-item.active {
+    background: rgba(198,244,50,.14);
+    color: #C6F432;
+    box-shadow: inset 0 0 0 1px rgba(198,244,50,.25);
+}
+
+.sidebar-brand-text strong {
+    color: #FFFFFF;
+}
+
+/* DASHBOARD HEADINGS */
+.dashboard-topbar h1,
+.section-heading h2,
+.panel-heading h2 {
+    color: #FFFFFF;
+}
+
+.dashboard-small-title,
+.section-kicker {
+    color: #C6F432;
+}
+
+/* USER AVATAR */
+.dashboard-avatar {
+    background: #C6F432;
+    color: #0B0B0C;
+}
+
+/* DASHBOARD ADVERTISEMENT CONTROLS */
+.ad-carousel {
+    background: #171717;
+    border-color: #303030;
+}
+
+.ad-overlay span {
+    color: #C6F432;
+}
+
+.ad-dot.active {
+    background: #C6F432;
+}
+
+/* STATISTICS */
+.stat-card {
+    background: #171717;
+    border-color: #303030;
+}
+
+.stat-card:hover {
+    border-color: rgba(198,244,50,.35);
+}
+
+.stat-value {
+    color: #FFFFFF;
+}
+
+.sales-card {
+    background: linear-gradient(
+        135deg,
+        rgba(198,244,50,.12),
+        #171717
+    );
+}
+
+/* DASHBOARD PANELS */
+.dashboard-panel {
+    background: #171717;
+    border-color: #303030;
+}
+
+.text-btn {
+    color: #C6F432;
+}
+
+/* =====================================================
+   MEDZONEX BRAND THEME — INVENTORY, BILLING & PURCHASE
+   Colors only: preserve layout and functionality
+===================================================== */
+
+/* INVENTORY */
+#inventoryPage,
+#inventoryPage .inventory-shell {
+    background: #0B0B0C;
+    color: #FFFFFF;
+}
+
+#inventoryPage .inventory-header h1,
+#inventoryPage .inventory-section-header h2,
+#inventoryPage .inventory-medicine-info h3 {
+    color: #FFFFFF;
+}
+
+#inventoryPage .inventory-subtitle,
+#inventoryPage .inventory-summary-label,
+#inventoryPage .inventory-medicine-info small,
+#inventoryPage .inventory-added-date,
+#inventoryPage .inventory-detail span {
+    color: #A3A3A3;
+}
+
+#inventoryPage .inventory-summary-card,
+#inventoryPage .inventory-item {
+    background: #171717;
+    border-color: #303030;
+    color: #FFFFFF;
+}
+
+#inventoryPage .inventory-summary-value,
+#inventoryPage .inventory-detail strong {
+    color: #FFFFFF;
+}
+
+#inventoryPage .inventory-item:hover {
+    background: #1D1D1D;
+    border-color: #C6F432;
+}
+
+#inventoryPage .inventory-medicine-info p {
+    color: #C6F432;
+}
+
+#inventoryPage .inventory-medicine-icon,
+#inventoryPage .inventory-serial {
+    background: rgba(198,244,50,.12);
+    color: #C6F432;
+}
+
+#inventoryPage .inventory-search-box {
+    background: #171717;
+    border-color: #383838;
+    color: #FFFFFF;
+}
+
+#inventoryPage .inventory-search-box input {
+    background: transparent;
+    color: #FFFFFF;
+}
+
+#inventoryPage .inventory-search-box input::placeholder {
+    color: #A3A3A3;
+}
+
+#inventoryPage .inventory-filter-btn {
+    background: #171717;
+    border-color: #383838;
+    color: #FFFFFF;
+}
+
+#inventoryPage .inventory-filter-btn:hover,
+#inventoryPage .inventory-filter-btn.active {
+    background: rgba(198,244,50,.14);
+    border-color: #C6F432;
+    color: #C6F432;
+}
+
+#inventoryPage .inventory-item-actions button,
+#inventoryPage .details-edit-actions button {
+    background: #242424;
+    border-color: #444444;
+    color: #FFFFFF;
+}
+
+#inventoryPage .inventory-item-actions .inventory-edit-btn,
+#inventoryPage .details-edit-actions .primary-btn {
+    background: #C6F432;
+    border-color: #C6F432;
+    color: #0B0B0C;
+}
+
+#inventoryPage .inventory-empty {
+    color: #A3A3A3;
+    border-color: #555555;
+}
+
+#inventoryPage .inventory-empty h3 {
+    color: #FFFFFF;
+}
+
+#inventoryPage .inventory-list {
+    scrollbar-color: #C6F432 transparent;
+}
+
+#inventoryPage .inventory-list::-webkit-scrollbar-thumb {
+    background: #C6F432;
+}
+
+/* MEDICINE DETAILS DOCUMENT — ON-SCREEN VIEW */
+#medicineDetailsDocument {
+    background: #171717;
+    color: #FFFFFF;
+    border-color: #383838;
+}
+
+#medicineDetailsDocument h1,
+#medicineDetailsDocument h2,
+#medicineDetailsDocument strong {
+    color: #FFFFFF;
+}
+
+#medicineDetailsDocument .medicine-details-subtitle,
+#medicineDetailsDocument .medicine-details-record-id span,
+#medicineDetailsDocument .medicine-details-grid span,
+#medicineDetailsDocument .medicine-details-document-footer {
+    color: #A3A3A3;
+}
+
+#medicineDetailsDocument .medicine-details-document-header,
+#medicineDetailsDocument .medicine-details-group h2,
+#medicineDetailsDocument .medicine-details-grid > div,
+#medicineDetailsDocument .medicine-details-document-footer {
+    border-color: #383838;
+}
+
+/* BILLING AND CUSTOMER SALES RECORDS */
+#billingPage,
+#billingPage .dashboard-panel {
+    background: #0B0B0C;
+    color: #FFFFFF;
+}
+
+#billingPage .dashboard-panel {
+    background: #171717;
+    border-color: #303030;
+}
+
+#billingItemsContainer {
+    scrollbar-color: #C6F432 transparent;
+}
+
+#billingItemsContainer::-webkit-scrollbar-thumb {
+    background: #C6F432;
+}
+
+#billingItemsContainer > .inventory-item {
+    background: #171717;
+    border-color: #383838;
+    color: #FFFFFF;
+}
+
+#billingItemsContainer > .inventory-item:hover {
+    border-color: #C6F432;
+}
+
+#billingPage input,
+#billingPage select,
+#billingPage textarea {
+    background-color: #171717;
+    border-color: #383838;
+    color: #FFFFFF;
+}
+
+#billingPage input::placeholder,
+#billingPage textarea::placeholder {
+    color: #A3A3A3;
+}
+
+#billingPage input:focus,
+#billingPage select:focus,
+#billingPage textarea:focus {
+    border-color: #C6F432;
+    outline-color: #C6F432;
+}
+
+.mz-sale-row,
+.mz-record-row {
+    border-color: #303030;
+    color: #FFFFFF;
+}
+
+.mz-sale-row:hover,
+.mz-record-row:hover {
+    background: rgba(198,244,50,.07);
+}
+
+.mz-sale-row small,
+.mz-record-row small,
+.mz-empty {
+    color: #A3A3A3;
+}
+
+.mz-back {
+    border-color: #444444;
+    color: #C6F432;
+}
+
+/* CUSTOMER PURCHASE STATEMENT — SCREEN VIEW */
+.mz-customer-purchase,
+.mz-customer-purchase table {
+    color: #FFFFFF;
+}
+
+.mz-purchase-heading {
+    border-color: #383838;
+}
+
+.mz-customer-purchase th,
+.mz-customer-purchase td {
+    border-color: #444444;
+}
+
+/* PURCHASE WORKSPACE */
+#purchasePage,
+#purchasePage .dashboard-panel {
+    background: #0B0B0C;
+    color: #FFFFFF;
+}
+
+#purchasePage .dashboard-panel,
+#purchasePage .mz-purchase-card {
+    background: #171717 !important;
+    color: #FFFFFF !important;
+    border-color: #383838 !important;
+}
+
+#purchasePage .mz-purchase-card h3,
+#purchasePage .mz-purchase-card strong,
+#purchasePage .mz-purchase-card label,
+#purchasePage .mz-purchase-total-row,
+#purchasePage .mz-purchase-history-heading {
+    color: #FFFFFF !important;
+}
+
+#purchasePage .mz-purchase-card input,
+#purchasePage .mz-purchase-card select {
+    background: #0B0B0C !important;
+    color: #FFFFFF !important;
+    border-color: #444444 !important;
+}
+
+#purchasePage .mz-purchase-card input::placeholder {
+    color: #A3A3A3 !important;
+}
+
+#purchasePage .purchase-search-item,
+#purchasePage .purchase-history-card,
+#purchasePage .purchase-item-card {
+    background: #111111 !important;
+    color: #FFFFFF !important;
+    border-color: #383838 !important;
+}
+
+#purchasePage .purchase-search-item span,
+#purchasePage .purchase-search-item small,
+#purchasePage .purchase-item-card span,
+#purchasePage .purchase-item-card small {
+    color: #A3A3A3 !important;
+}
+
+#purchasePage .mz-purchase-total-row {
+    border-color: #383838 !important;
+}
+
+#purchasePage .mz-purchase-grand {
+    color: #C6F432 !important;
+}
+
+#purchasePage .purchase-empty,
+#purchasePage .purchase-loading {
+    color: #A3A3A3 !important;
+}
+
+/* BRAND PRIMARY BUTTONS */
+#inventoryPage .primary-btn,
+#billingPage .primary-btn,
+#purchasePage .primary-btn {
+    background: #C6F432;
+    border-color: #C6F432;
+    color: #0B0B0C;
+}
+
+#inventoryPage .primary-btn:hover,
+#billingPage .primary-btn:hover,
+#purchasePage .primary-btn:hover {
+    background: #D5FF45;
+    border-color: #D5FF45;
+}
+
+/* PRINT DOCUMENTS KEEP WHITE PAPER FOR READABILITY */
+@media print {
+    #medicineDetailsDocument,
+    .mz-paper {
+        background: #FFFFFF !important;
+        color: #111111 !important;
+        border-color: #DDDDDD !important;
+    }
+}
+
+/* =====================================================
+   MEDZONEX AUTH BRAND THEME — LOGIN / SIGNUP / OTP
+===================================================== */
+
+#authPage {
+    background: #0B0B0C;
+    color: #FFFFFF;
+}
+
+#authPage .auth-background {
+    background:
+        radial-gradient(
+            circle at 15% 20%,
+            rgba(198,244,50,.09),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 85% 80%,
+            rgba(198,244,50,.05),
+            transparent 30%
+        );
+}
+
+#authPage .auth-card {
+    background: linear-gradient(145deg, #1B1B1B, #111111);
+    border-color: rgba(198,244,50,.22);
+    color: #FFFFFF;
+    box-shadow:
+        0 30px 100px rgba(0,0,0,.55),
+        inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+#authPage .auth-logo-area h1,
+#authPage .auth-section h1,
+#authPage .auth-section h2 {
+    color: #FFFFFF;
+}
+
+#authPage .auth-logo-area p {
+    color: #A3A3A3;
+}
+
+#authPage .back-btn {
+    color: #A3A3A3;
+}
+
+#authPage .back-btn:hover {
+    color: #C6F432;
+}
+
+#authPage .form-group label,
+#authPage .otp-area label {
+    color: #E5E5E5;
+}
+
+#authPage .form-group input,
+#authPage .otp-area input {
+    background: #0B0B0C;
+    border-color: #383838;
+    color: #FFFFFF;
+}
+
+#authPage .form-group input:focus,
+#authPage .otp-area input:focus {
+    border-color: #C6F432;
+    box-shadow: 0 0 0 3px rgba(198,244,50,.12);
+}
+
+#authPage .form-group input::placeholder,
+#authPage .otp-area input::placeholder {
+    color: #777777;
+}
+
+#authPage .otp-area {
+    background: rgba(198,244,50,.055);
+    border-color: rgba(198,244,50,.2);
+}
+
+#authPage .otp-timer {
+    color: #A3A3A3;
+}
+
+#authPage .otp-timer.ready {
+    color: #C6F432;
+}
+
+#authPage .resend-btn {
+    background: rgba(198,244,50,.08);
+    color: #C6F432;
+}
+
+#authPage .primary-btn {
+    background: #C6F432;
+    border-color: #C6F432;
+    color: #0B0B0C;
+}
+
+#authPage .primary-btn:hover {
+    background: #D5FF45;
+    border-color: #D5FF45;
+}
+
+#authPage a {
+    color: #C6F432;
+}
+
+#authPage a:hover {
+    color: #D5FF45;
+}
+
+/* =====================================================
+   MEDZONEX BRAND THEME — DASHBOARD & SUBSCRIPTION
+===================================================== */
+
+/* Dashboard background and modal */
+#dashboardPage {
+    background: #0B0B0C !important;
+}
+
+#dashboardPage .modal-card,
+#dashboardPage .dashboard-modal-card {
+    background: #171717;
+    color: #FFFFFF;
+    border-color: #383838;
+}
+
+#dashboardPage .modal-card p,
+#dashboardPage .dashboard-modal-card > p {
+    color: #A3A3A3;
+}
+
+/* Sidebar */
+#dashboardPage .dashboard-sidebar {
+    background: #111111;
+    border-color: #303030;
+}
+
+#dashboardPage .sidebar-item.active {
+    background: rgba(198,244,50,.14);
+    color: #C6F432;
+    box-shadow: inset 0 0 0 1px rgba(198,244,50,.25);
+}
+
+#dashboardPage .sidebar-item:hover {
+    background: rgba(198,244,50,.08);
+    color: #FFFFFF;
+}
+
+/* Dashboard headings */
+#dashboardPage .dashboard-small-title,
+#dashboardPage .section-kicker {
+    color: #C6F432;
+}
+
+/* Avatar */
+#dashboardPage .dashboard-avatar {
+    background: #C6F432;
+    color: #0B0B0C;
+}
+
+/* Dashboard ad controls — images and slider unchanged */
+#dashboardPage .ad-carousel {
+    background: #171717;
+    border-color: #303030;
+}
+
+#dashboardPage .ad-overlay span {
+    color: #C6F432;
+}
+
+#dashboardPage .ad-dot.active {
+    background: #C6F432;
+}
+
+/* Dashboard statistics */
+#dashboardPage .stat-card {
+    background: #171717;
+    border-color: #303030;
+}
+
+#dashboardPage .stat-card:hover {
+    border-color: rgba(198,244,50,.35);
+}
+
+#dashboardPage .sales-card {
+    background: linear-gradient(135deg, rgba(198,244,50,.12), #171717);
+}
+
+/* Dashboard panels */
+#dashboardPage .dashboard-panel {
+    background: #171717;
+    border-color: #303030;
+}
+
+#dashboardPage .text-btn {
+    color: #C6F432;
+}
+
+/* Quick actions */
+#dashboardPage .quick-action {
+    background: #171717;
+    border-color: #303030;
+    color: #FFFFFF;
+}
+
+#dashboardPage .quick-action:hover {
+    background: #202020;
+    border-color: #C6F432;
+}
+
+#dashboardPage .quick-action > span {
+    background: rgba(198,244,50,.12);
+    color: #C6F432;
+}
+
+/* Dashboard primary small button */
+#dashboardPage .primary-small-btn {
+    background: #C6F432;
+    color: #0B0B0C;
+}
+
+/* Customer care */
+#dashboardPage .care-icon,
+#dashboardPage .care-contact > span {
+    background: rgba(198,244,50,.12);
+    color: #C6F432;
+}
+
+#dashboardPage .care-contact {
+    background: #202020;
+    color: #FFFFFF;
+}
+
+/* Subscription countdown */
+.subscription-countdown-card {
+    background: #171717;
+    border-color: #383838;
+    color: #FFFFFF;
+}
+
+.subscription-countdown-header h3 {
+    color: #FFFFFF;
+}
+
+.subscription-countdown-header p,
+.subscription-expiry-date {
+    color: #A3A3A3;
+}
+
+.subscription-manage-btn {
+    background: #C6F432;
+    color: #0B0B0C;
+}
+
+.subscription-manage-btn:hover {
+    background: #D5FF45;
+}
+
+/* Preserve subscription status meanings */
+.subscription-status-badge.status-green {
+    color: #166534;
+    background: #dcfce7;
+}
+
+.subscription-status-badge.status-yellow {
+    color: #854d0e;
+    background: #fef9c3;
+}
+
+.subscription-status-badge.status-red {
+    color: #991b1b;
+    background: #fee2e2;
+}
+
+/* =====================================================
+   MEDZONEX BRAND THEME — PROFILE, SETTINGS & NOTIFICATIONS
+===================================================== */
+
+/* PROFILE AND SETTINGS CARDS */
+#profilePage .mz-account-card,
+#settingsPage .mz-account-card,
+#profilePage .mz-profile-view {
+    background: #171717 !important;
+    color: #FFFFFF !important;
+    border-color: #383838 !important;
+    box-shadow: 0 8px 28px rgba(0,0,0,.2);
+}
+
+#profilePage .mz-account-card h3,
+#settingsPage .mz-account-card h3,
+#profilePage .mz-profile-view-header h2,
+#profilePage .mz-profile-identity h2 {
+    color: #FFFFFF !important;
+}
+
+#profilePage .mz-account-description,
+#profilePage .mz-profile-view-header p,
+#profilePage .mz-profile-identity p,
+#profilePage .mz-profile-identity span {
+    color: #A3A3A3 !important;
+}
+
+#profilePage .mz-account-card label,
+#settingsPage .mz-account-card label {
+    color: #E5E5E5 !important;
+}
+
+/* PROFILE AND SETTINGS INPUTS */
+#profilePage .mz-account-card input,
+#profilePage .mz-account-card textarea,
+#settingsPage .mz-account-card input:not([type="checkbox"]) {
+    background: #0B0B0C !important;
+    color: #FFFFFF !important;
+    border-color: #383838 !important;
+}
+
+#profilePage .mz-account-card input:focus,
+#profilePage .mz-account-card textarea:focus,
+#settingsPage .mz-account-card input:not([type="checkbox"]):focus {
+    background: #111111 !important;
+    border-color: #C6F432 !important;
+    box-shadow: 0 0 0 3px rgba(198,244,50,.12) !important;
+}
+
+#profilePage .mz-account-card input[readonly] {
+    background: #202020 !important;
+    color: #A3A3A3 !important;
+}
+
+#settingsPage .mz-setting-row {
+    border-color: #303030 !important;
+}
+
+#settingsPage .mz-setting-row strong {
+    color: #FFFFFF !important;
+}
+
+#settingsPage .mz-setting-row small {
+    color: #A3A3A3 !important;
+}
+
+#settingsPage .mz-setting-row input[type="checkbox"] {
+    accent-color: #C6F432 !important;
+}
+
+/* PROFILE VIEW */
+#profilePage .mz-profile-identity {
+    background: #202020 !important;
+    border-color: #383838 !important;
+}
+
+#profilePage .mz-profile-avatar {
+    background: #C6F432 !important;
+    color: #0B0B0C !important;
+}
+
+#profilePage .mz-profile-detail {
+    background: #111111 !important;
+    border-color: #383838 !important;
+}
+
+#profilePage .mz-profile-detail small {
+    color: #A3A3A3 !important;
+}
+
+#profilePage .mz-profile-detail strong {
+    color: #FFFFFF !important;
+}
+
+#profilePage .mz-edit-profile-btn {
+    background: #C6F432 !important;
+    border-color: #C6F432 !important;
+    color: #0B0B0C !important;
+}
+
+#profilePage .mz-cancel-profile-btn {
+    background: #242424 !important;
+    border-color: #444444 !important;
+    color: #FFFFFF !important;
+}
+
+/* SAVE BUTTONS */
+#profilePage #saveProfileBtn,
+#settingsPage #saveSettingsBtn {
+    background: #C6F432 !important;
+    border-color: #C6F432 !important;
+    color: #0B0B0C !important;
+    box-shadow: none;
+}
+
+/* SALES HISTORY SEARCH */
+#mzSalesSearch {
+    background: #171717 !important;
+    color: #FFFFFF !important;
+    border-color: #383838 !important;
+}
+
+#mzSalesSearch:focus {
+    border-color: #C6F432 !important;
+    box-shadow: 0 0 0 3px rgba(198,244,50,.12) !important;
+}
+
+#mzSalesSearch::placeholder {
+    color: #A3A3A3 !important;
+}
+
+/* NOTIFICATION PANEL */
+.notification-panel {
+    background: #171717 !important;
+    border-color: #383838 !important;
+}
+
+.notification-panel-header,
+.notification-card {
+    border-color: #303030 !important;
+}
+
+.notification-card.is-unread {
+    background: rgba(198,244,50,.07) !important;
+}
+
+.notification-actions .notification-subscribe-btn {
+    background: #C6F432 !important;
+    color: #0B0B0C !important;
+}
+
+.notification-actions .notification-subscribe-btn:hover {
+    background: #D5FF45 !important;
+}
+
+/* FULL-PAGE NOTIFICATIONS */
+#notificationsPage {
+    background: #0B0B0C !important;
+}
+
+#notificationsPage .notifications-page-shell {
+    background: #171717 !important;
+    border-color: #383838 !important;
+}
+
+#notificationsPage .notifications-page-unread {
+    background: rgba(198,244,50,.08) !important;
+    border-color: rgba(198,244,50,.3) !important;
+}
+
+#notificationsPage .notifications-page-unread span {
+    color: #C6F432 !important;
+}
+
+#notificationsPage .notifications-page-list .notification-card.is-unread {
+    background: rgba(198,244,50,.07) !important;
+    border-color: rgba(198,244,50,.3) !important;
+}
+
+/* SUBSCRIPTION ACCORDION */
+.subscription-countdown-details > summary::after {
+    color: #C6F432 !important;
+}
+
+.subscription-countdown-content {
+    border-color: #383838 !important;
+}
+
+.subscription-countdown-content > p:first-child {
+    color: #A3A3A3 !important;
+}
+
+/* SUBSCRIPTION PAGE — LIME BRAND ACCENTS */
+#subscriptionPage .section-kicker {
+    color: #C6F432 !important;
+}
