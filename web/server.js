@@ -5184,6 +5184,7 @@ app.post("/api/razorpay/webhook", async (req, res) => {
                           // ----------------------------------------------
 
                               if (
+                                  eventType === "subscription.charged" &&
                                   paymentNotificationRef &&
                                   !paymentNotificationSnapshot?.exists
                               ) {
@@ -5382,6 +5383,7 @@ app.post("/api/razorpay/webhook", async (req, res) => {
 
 
                 if (
+                    eventType === "payment.failed" &&
                     paymentNotificationRef &&
                     !paymentNotificationSnapshot?.exists
                 ) {
@@ -5409,7 +5411,7 @@ app.post("/api/razorpay/webhook", async (req, res) => {
                     });
                 }
 
-            else if (eventType === "payment.failed") {
+                if (eventType === "payment.failed") {
                 const failedPaymentCreatedAt = Number(
                     paymentEntity?.created_at ||
                     event.created_at ||
