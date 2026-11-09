@@ -40,6 +40,31 @@ async function getIdToken() {
     return user.getIdToken();
 }
 
+async function reconcileSubscription(idToken) {
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/api/subscription/reconcile`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${idToken}`
+                },
+                body: JSON.stringify({})
+            }
+        );
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            console.warn("Subscription reconciliation:", response.status, data.message || data.error);
+        }
+        return data;
+    } catch (error) {
+        console.error("Subscription reconciliation error:", error);
+        return null;
+    }
+}
+
+
 /* =====================================================
    CREATE RAZORPAY SUBSCRIPTION
 ===================================================== */
@@ -94,6 +119,8 @@ async function startSubscription(
         );
 
         const idToken = await user.getIdToken();
+
+        await reconcileSubscription(idToken);
 
         const response = await fetch(
             `${API_BASE_URL}/api/subscription/create`,
@@ -212,6 +239,8 @@ async function startSubscription(
                                 resolve => setTimeout(resolve, 5000)
                             );
                         }
+
+                        await reconcileSubscription(freshToken);
 
                         const statusResponse =
                             await fetch(

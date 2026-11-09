@@ -4521,6 +4521,582 @@ app.get(
 );
 
 // ======================================================
+// SECURE SUBSCRIPTION PAYMENT RECONCILIATION
+// POST /api/subscription/reconcile
+// ======================================================
+
+app.post(
+    "/api/subscription/reconcile",
+    async (req, res) => {
+        try {
+            if (!razorpay || !firebaseInitialized || !db) {
+                return res.status(503).json({
+                    success: false,
+                    message: "Payment service is unavailable."
+                });
+            }
+
+            // 1. Authenticate Firebase user.
+            const decodedToken =
+                await authenticateFirebaseRequest(req);
+
+            const uid = decodedToken.uid;
+
+            // 2. Find this user's pending/active Razorpay subscription.
+            const recordsSnapshot = await db
+                .collection(SUBSCRIPTION_COLLECTION)
+                .where("uid", "==", uid)
+                .get();
+
+            const candidates = recordsSnapshot.docs
+                .filter((doc) => {
+                    const data = doc.data();
+
+                    return (
+                        ["pending", "active"].includes(data.status) &&
+                        data.razorpayStatus === "active"
+                    );
+                });
+
+            if (candidates.length !== 1) {
+                return res.status(409).json({
+                    success: false,
+                    message:
+                        candidates.length === 0
+                            ? "No eligible subscription was found."
+                            : "Multiple subscriptions require manual review."
+                });
+            }
+
+            const subscriptionDoc = candidates[0];
+
+            const subscriptionId = subscriptionDoc.id;
+
+            const subscriptionRecord =
+                subscriptionDoc.data();
+
+            const planKey = subscriptionRecord.planKey;
+
+            const expectedPlan = MEDZONEX_PLANS[planKey];
+
+            if (!expectedPlan) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid subscription plan."
+                });
+            }
+
+            // 3. Verify stored subscription ownership and plan.
+            if (
+                subscriptionRecord.uid !== uid ||
+                subscriptionRecord.razorpaySubscriptionId !== subscriptionId ||
+                subscriptionRecord.razorpayPlanId !== expectedPlan.razorpayPlanId ||
+                Number(subscriptionRecord.amount) !== Number(expectedPlan.amount)
+            ) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Subscription ownership or plan verification failed."
+                });
+            }
+
+            // 4. Find the original verified webhook event.
+            const eventSnapshot = await db
+                .collection(WEBHOOK_EVENT_COLLECTION)
+                .where("subscriptionId", "==", subscriptionId)
+                .get();
+
+            const candidateEvents = eventSnapshot.docs.filter((doc) => {
+                const data = doc.data();
+                const payload = data.eventPayload;
+                const payment = payload?.payload?.payment?.entity;
+                const eventSubscription = payload?.payload?.subscription?.entity;
+
+                return (
+                    ["subscription.activated", "subscription.charged"].includes(data.eventType) &&
+                    eventSubscription?.id === subscriptionId &&
+                    payment?.id &&
+                    payment?.invoice_id &&
+                    payment.status === "captured"
+                );
+            });
+
+            const uniquePayments = new Map();
+
+            for (const doc of candidateEvents) {
+                const payment = doc.data().eventPayload?.payload?.payment?.entity;
+                const key = `${payment.id}:${payment.invoice_id}`;
+
+                if (!uniquePayments.has(key)) uniquePayments.set(key, []);
+                uniquePayments.get(key).push(doc);
+            }
+
+            if (uniquePayments.size !== 1) {
+                return res.status(409).json({
+                    success: false,
+                    message: "A unique successful payment could not be identified."
+                });
+            }
+
+            const samePaymentEvents = [...uniquePayments.values()][0];
+
+            samePaymentEvents.sort((a, b) => {
+                const aCharged = a.data().eventType === "subscription.charged";
+                const bCharged = b.data().eventType === "subscription.charged";
+                return Number(bCharged) - Number(aCharged);
+            });
+
+            const eventDoc = samePaymentEvents[0];
+
+            const eventData = eventDoc.data();
+
+            const originalPayment =
+                eventData.eventPayload.payload.payment.entity;
+
+            const paymentId = originalPayment.id;
+
+            const invoiceId = originalPayment.invoice_id;
+
+            // 5. Fetch live Razorpay records independently.
+            const [
+                razorpaySubscription,
+                invoice,
+                payment
+            ] = await Promise.all([
+                razorpay.subscriptions.fetch(subscriptionId),
+                razorpay.invoices.fetch(invoiceId),
+                razorpay.payments.fetch(paymentId)
+            ]);
+
+            // 6. Verify Razorpay subscription.
+            if (
+                razorpaySubscription.id !== subscriptionId ||
+                razorpaySubscription.status !== "active" ||
+                razorpaySubscription.plan_id !== expectedPlan.razorpayPlanId ||
+                razorpaySubscription.notes?.uid !== uid ||
+                razorpaySubscription.notes?.planKey !== planKey
+            ) {
+                throw new Error(
+                    "Razorpay subscription verification failed."
+                );
+            }
+
+            // 7. Verify invoice.
+            if (
+                invoice.id !== invoiceId ||
+                invoice.status !== "paid" ||
+                invoice.subscription_id !== subscriptionId ||
+                invoice.payment_id !== paymentId ||
+                Number(invoice.amount) !== expectedPlan.amount * 100 ||
+                Number(invoice.amount_paid) !== expectedPlan.amount * 100 ||
+                invoice.currency !== "INR"
+            ) {
+                throw new Error(
+                    "Razorpay invoice verification failed."
+                );
+            }
+
+            // 8. Verify captured payment.
+            if (
+                payment.id !== paymentId ||
+                payment.status !== "captured" ||
+                payment.invoice_id !== invoiceId ||
+                (
+                    payment.subscription_id &&
+                    payment.subscription_id !== subscriptionId
+                ) ||
+                Number(payment.amount) !== expectedPlan.amount * 100 ||
+                payment.currency !== "INR"
+            ) {
+                throw new Error(
+                    "Razorpay payment verification failed."
+                );
+            }
+
+            // 9. Verify billing period.
+            const currentStart = Number(
+                razorpaySubscription.current_start || 0
+            );
+
+            const currentEnd = Number(
+                razorpaySubscription.current_end || 0
+            );
+
+            const now = Date.now();
+
+            if (
+                currentStart <= 0 ||
+                currentEnd <= 0 ||
+                currentEnd * 1000 <= now ||
+                currentEnd <= currentStart
+            ) {
+                throw new Error(
+                    "Valid subscription billing period could not be verified."
+                );
+            }
+
+            const periodStart =
+                admin.firestore.Timestamp.fromMillis(
+                    currentStart * 1000
+                );
+
+            const periodEnd =
+                admin.firestore.Timestamp.fromMillis(
+                    currentEnd * 1000
+                );
+
+            const paymentCreatedAt =
+                Number(payment.created_at || 0);
+
+            if (paymentCreatedAt <= 0) {
+                throw new Error(
+                    "Payment creation timestamp is missing."
+                );
+            }
+
+            const userRef = db
+                .collection("users")
+                .doc(uid);
+
+            const subscriptionRef = subscriptionDoc.ref;
+
+            const eventRef = eventDoc.ref;
+
+            const safePaymentId = paymentId.replace(
+                /[^a-zA-Z0-9_-]/g,
+                "_"
+            );
+
+            const paymentNotificationRef = userRef
+                .collection("notifications")
+                .doc("payment_" + safePaymentId);
+
+            const paymentEmailJobRef = db
+                .collection(INVOICE_EMAIL_JOB_COLLECTION)
+                .doc("paid_" + paymentId);
+
+            // 10. Prepare reminder references.
+            const reminderDefinitions =
+                getPaidSubscriptionReminderDefinitions(planKey, 2);
+
+            const reminderJobs = reminderDefinitions.map((item) => {
+                const safeSubscriptionId = subscriptionId.replace(
+                    /[^a-zA-Z0-9_-]/g,
+                    "_"
+                );
+
+                const jobId =
+                    `paid_${safeSubscriptionId}_${paymentId}_${item.key}`;
+
+                return {
+                    key: item.key,
+                    offsetMs: item.offsetMs,
+                    ref: db
+                        .collection(SUBSCRIPTION_REMINDER_JOB_COLLECTION)
+                        .doc(jobId)
+                };
+            });
+
+            // 11. Atomically update access and create related jobs.
+            const result = await db.runTransaction(
+                async (transaction) => {
+                    const [
+                        userSnapshot,
+                        currentSubscriptionSnapshot,
+                        currentEventSnapshot,
+                        notificationSnapshot,
+                        emailJobSnapshot
+                    ] = await Promise.all([
+                        transaction.get(userRef),
+                        transaction.get(subscriptionRef),
+                        transaction.get(eventRef),
+                        transaction.get(paymentNotificationRef),
+                        transaction.get(paymentEmailJobRef)
+                    ]);
+
+                    const reminderSnapshots = [];
+
+                    for (const job of reminderJobs) {
+                        reminderSnapshots.push(
+                            await transaction.get(job.ref)
+                        );
+                    }
+
+                    if (
+                        !userSnapshot.exists ||
+                        !currentSubscriptionSnapshot.exists ||
+                        !currentEventSnapshot.exists
+                    ) {
+                        throw new Error(
+                            "Required Firestore records are missing."
+                        );
+                    }
+
+                    const currentUser = userSnapshot.data();
+
+                    const currentSubscription =
+                        currentUser.subscription || {};
+
+                    const currentRecord =
+                        currentSubscriptionSnapshot.data();
+
+                    const currentEvent =
+                        currentEventSnapshot.data();
+
+                    // Revalidate the stored subscription inside the transaction.
+                    if (
+                        currentRecord.uid !== uid ||
+                        currentRecord.razorpaySubscriptionId !== subscriptionId ||
+                        currentRecord.razorpayPlanId !== expectedPlan.razorpayPlanId ||
+                        Number(currentRecord.amount) !== Number(expectedPlan.amount) ||
+                        !["pending", "active"].includes(currentRecord.status) ||
+                        currentRecord.razorpayStatus !== "active"
+                    ) {
+                        throw new Error("Subscription record changed during reconciliation.");
+                    }
+
+                    // Confirm ownership has not changed.
+                    if (
+                        currentRecord.uid !== uid ||
+                        currentEvent.eventPayload
+                            ?.payload?.payment?.entity?.id !== paymentId ||
+                        currentEvent.eventPayload
+                            ?.payload?.payment?.entity?.invoice_id !== invoiceId
+                    ) {
+                        throw new Error(
+                            "Reconciliation ownership verification failed."
+                        );
+                    }
+
+                    // Idempotency: same payment already applied.
+                    if (
+                        currentSubscription.lastPaymentId === paymentId &&
+                        currentSubscription.razorpaySubscriptionId === subscriptionId &&
+                        currentSubscription.status === "active"
+                    ) {
+                        return {
+                            alreadyApplied: true
+                        };
+                    }
+
+                    const currentSubscriptionId =
+                        currentSubscription.razorpaySubscriptionId || null;
+
+                    // Protect unrelated active subscriptions.
+                    const hasManualPayment =
+                        currentSubscription.status === "active" &&
+                        Boolean(currentSubscription.lastOrderId) &&
+                        !currentSubscriptionId;
+
+                    if (
+                        hasManualPayment ||
+                        (
+                            currentSubscriptionId &&
+                            currentSubscriptionId !== subscriptionId
+                        )
+                    ) {
+                        throw new Error(
+                            "Another active subscription prevents reconciliation."
+                        );
+                    }
+
+                    // Prevent older payment from overwriting newer payment.
+                    const lastSuccessfulPaymentCreatedAt =
+                        Number(
+                            currentSubscription.lastSuccessfulPaymentCreatedAt || 0
+                        );
+
+                    if (
+                        lastSuccessfulPaymentCreatedAt > 0 &&
+                        paymentCreatedAt < lastSuccessfulPaymentCreatedAt
+                    ) {
+                        throw new Error(
+                            "An older payment cannot replace a newer successful payment."
+                        );
+                    }
+
+                    const nowTimestamp =
+                        admin.firestore.Timestamp.fromMillis(Date.now());
+
+                    const storeName =
+                        currentUser.storeName ||
+                        currentRecord.storeName ||
+                        "MedZoneX Customer";
+
+                    // Activate user subscription.
+                    transaction.set(
+                        userRef,
+                        {
+                            subscription: {
+                                ...currentSubscription,
+                                provider: "razorpay",
+                                status: "active",
+                                planKey,
+                                planName: expectedPlan.name,
+                                razorpaySubscriptionId: subscriptionId,
+                                lastPaymentId: paymentId,
+                                lastSuccessfulPaymentCreatedAt: paymentCreatedAt,
+                                lastPaymentEventCreatedAt: paymentCreatedAt,
+                                currentPeriodStart: periodStart,
+                                currentPeriodEnd: periodEnd,
+                                updatedAt:
+                                    admin.firestore.FieldValue.serverTimestamp()
+                            }
+                        },
+                        { merge: true }
+                    );
+
+                    // Update MedZoneX subscription record.
+                    transaction.set(
+                        subscriptionRef,
+                        {
+                            status: "active",
+                            razorpayStatus: "active",
+                            currentPeriodEnd: periodEnd,
+                            lastPaymentId: paymentId,
+                            lastReconciliationSource: "api_verified_invoice",
+                            lastReconciledAt:
+                                admin.firestore.FieldValue.serverTimestamp(),
+                            updatedAt:
+                                admin.firestore.FieldValue.serverTimestamp()
+                        },
+                        { merge: true }
+                    );
+
+                    // Create payment notification.
+                    if (!notificationSnapshot.exists) {
+                        transaction.create(
+                            paymentNotificationRef,
+                            {
+                                type: "payment_succeeded",
+                                title: "Payment successful",
+                                message:
+                                    "Your MedZoneX subscription payment of ₹" +
+                                    Number(expectedPlan.amount).toLocaleString("en-IN") +
+                                    " was successful.",
+                                isRead: false,
+                                readAt: null,
+                                createdAt:
+                                    admin.firestore.FieldValue.serverTimestamp(),
+                                source: "payment",
+                                paymentId,
+                                subscriptionId,
+                                amount: expectedPlan.amount,
+                                currency: "INR",
+                                storeName
+                            }
+                        );
+                    }
+
+                    // Queue invoice email.
+                    if (!emailJobSnapshot.exists) {
+                        transaction.create(
+                            paymentEmailJobRef,
+                            {
+                                type: "payment_succeeded",
+                                uid,
+                                email: currentUser.email ||
+                                    currentRecord.email || "",
+                                phone: currentRecord.customerPhone ||
+                                    currentUser.phone || "",
+                                storeName,
+                                planKey,
+                                planName: expectedPlan.name,
+                                amount: expectedPlan.amount,
+                                paymentId,
+                                orderId: payment.order_id || null,
+                                subscriptionId,
+                                paidAt:
+                                    admin.firestore.Timestamp.fromMillis(
+                                        paymentCreatedAt * 1000
+                                    ),
+                                periodStart,
+                                periodEnd,
+                                status: "pending",
+                                attempts: 0,
+                                createdAt:
+                                    admin.firestore.FieldValue.serverTimestamp(),
+                                updatedAt:
+                                    admin.firestore.FieldValue.serverTimestamp()
+                            }
+                        );
+                    }
+
+                    // Schedule paid subscription reminders.
+                    reminderJobs.forEach((job, index) => {
+                        if (reminderSnapshots[index].exists) {
+                            return;
+                        }
+
+                        transaction.create(job.ref, {
+                            type: "paid",
+                            reminderKey: job.key,
+                            uid,
+                            scheduleVersion: 2,
+                            email: currentUser.email ||
+                                currentRecord.email || "",
+                            storeName,
+                            subscriptionId,
+                            paymentId,
+                            planKey,
+                            planName: expectedPlan.name,
+                            periodEndMs: periodEnd.toMillis(),
+                            dueAt:
+                                admin.firestore.Timestamp.fromMillis(
+                                    periodEnd.toMillis() + job.offsetMs
+                                ),
+                            status: "pending",
+                            attempts: 0,
+                            createdAt:
+                                admin.firestore.FieldValue.serverTimestamp(),
+                            updatedAt:
+                                admin.firestore.FieldValue.serverTimestamp()
+                        });
+                    });
+
+                    return {
+                        alreadyApplied: false
+                    };
+                }
+            );
+
+            if (!result.alreadyApplied) {
+                try {
+                    await cleanupOldSubscriptionReminders(uid, paymentId);
+                } catch (cleanupError) {
+                    console.error("Reconciliation reminder cleanup failed:", cleanupError.message);
+                }
+            }
+
+            return res.status(200).json({
+                success: true,
+                active: true,
+                alreadyApplied: result.alreadyApplied,
+                message: result.alreadyApplied
+                    ? "Payment was already reconciled."
+                    : "Payment verified and subscription activated.",
+                planKey,
+                expiresAt: periodEnd.toDate().toISOString()
+            });
+
+        } catch (error) {
+            console.error(
+                "Subscription reconciliation error:",
+                error.message
+            );
+
+            return res.status(
+                error.statusCode || 500
+            ).json({
+                success: false,
+                message: error.statusCode
+                    ? error.message
+                    : "Unable to reconcile subscription."
+            });
+        }
+    }
+);
+
+// ======================================================
 // RAZORPAY WEBHOOK
 // POST /api/razorpay/webhook
 // ======================================================
@@ -4611,6 +5187,8 @@ app.post("/api/razorpay/webhook", async (req, res) => {
             null;
 
         let failedInvoice = null;
+
+        let chargedInvoice = null;
 
        // ----------------------------------------------
        // 4. CLAIM OR RECOVER WEBHOOK EVENT
@@ -4804,6 +5382,35 @@ app.post("/api/razorpay/webhook", async (req, res) => {
                 );
             }
         }
+
+                // Resolve successful recurring payment through Razorpay invoice.
+                if (
+                    eventType === "subscription.charged" &&
+                    paymentEntity?.invoice_id
+                ) {
+                    chargedInvoice = await razorpay.invoices.fetch(
+                        paymentEntity.invoice_id
+                    );
+
+                                        if (
+                                            chargedInvoice?.id !== paymentEntity.invoice_id ||
+                                            chargedInvoice?.subscription_id !== subscriptionId ||
+                                            chargedInvoice?.payment_id !== paymentEntity.id ||
+                                            chargedInvoice?.status !== "paid" ||
+                                            Number(chargedInvoice?.amount) !== Number(paymentEntity.amount) ||
+                                            Number(chargedInvoice?.amount_paid) !== Number(paymentEntity.amount) ||
+                                            chargedInvoice?.currency !== "INR" ||
+                                            paymentEntity?.status !== "captured"
+                                        ) {
+                        throw new Error(
+                            "Charged payment invoice relationship is invalid."
+                        );
+                    }
+
+                    console.log(
+                        "Verified successful subscription payment through invoice."
+                    );
+                }
 
         // 5. Locate MedZoneX subscription.
         let subscriptionRecord = null;
@@ -5035,15 +5642,30 @@ app.post("/api/razorpay/webhook", async (req, res) => {
                 );
             }
 
-            // Require the payment to belong to this subscription.
-            if (
-                paymentEntity.subscription_id !== subscriptionId
-            ) {
-                throw new Error(
-                    "Charged payment belongs to another subscription."
-                );
-            }
-        }
+                        // Verify payment-to-subscription relationship.
+                        // Prefer direct payment linkage when Razorpay supplies it.
+                        if (
+                            paymentEntity.subscription_id &&
+                            paymentEntity.subscription_id !== subscriptionId
+                        ) {
+                            throw new Error(
+                                "Charged payment subscription ID mismatch."
+                            );
+                        }
+
+                        // If direct linkage is missing, require the verified invoice.
+                        if (
+                            !paymentEntity.invoice_id ||
+                            !chargedInvoice ||
+                            chargedInvoice.id !== paymentEntity.invoice_id ||
+                            chargedInvoice.subscription_id !== subscriptionId ||
+                            chargedInvoice.payment_id !== paymentEntity.id
+                        ) {
+                            throw new Error(
+                                "Charged payment invoice relationship could not be verified."
+                            );
+                        }
+                    }
 
         // 7. Update subscription and user atomically.
         let successfulRenewalApplied = false;
@@ -5766,10 +6388,14 @@ app.post("/api/razorpay/webhook", async (req, res) => {
             eventType === "subscription.charged" &&
             successfulRenewalApplied
         ) {
-            await cleanupOldSubscriptionReminders(
-                uid,
-                paymentEntity?.id || null
-            );
+            try {
+                await cleanupOldSubscriptionReminders(
+                    uid,
+                    paymentEntity?.id || null
+                );
+            } catch (cleanupError) {
+                console.error("Webhook reminder cleanup failed:", cleanupError.message);
+            }
         }
 
         return res.status(200).json({
