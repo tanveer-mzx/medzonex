@@ -4881,19 +4881,38 @@ app.post(
                     const currentSubscriptionId =
                         currentSubscription.razorpaySubscriptionId || null;
 
-                    // Protect unrelated active subscriptions.
+                    // Protect unrelated active subscriptions without blocking expired plans.
+                    const currentPeriodEndValue =
+                        currentSubscription.currentPeriodEnd;
+
+                    const currentPeriodEndMs =
+                        typeof currentPeriodEndValue?.toMillis === "function"
+                            ? currentPeriodEndValue.toMillis()
+                            : currentPeriodEndValue instanceof Date
+                                ? currentPeriodEndValue.getTime()
+                                : typeof currentPeriodEndValue === "number"
+                                    ? currentPeriodEndValue
+                                    : Date.parse(currentPeriodEndValue || "");
+
+                    const existingSubscriptionUnexpired =
+                        Number.isFinite(currentPeriodEndMs)
+                            ? currentPeriodEndMs > Date.now()
+                            : (
+                                currentSubscription.status === "active" &&
+                                currentSubscription.subscriptionStatus === "active"
+                            );
+
                     const hasManualPayment =
                         currentSubscription.status === "active" &&
                         Boolean(currentSubscription.lastOrderId) &&
                         !currentSubscriptionId;
 
-                    if (
-                        hasManualPayment ||
-                        (
-                            currentSubscriptionId &&
-                            currentSubscriptionId !== subscriptionId
-                        )
-                    ) {
+                    const hasDifferentActiveSubscription =
+                        currentSubscriptionId &&
+                        currentSubscriptionId !== subscriptionId &&
+                        existingSubscriptionUnexpired;
+
+                    if (hasManualPayment || hasDifferentActiveSubscription) {
                         throw new Error(
                             "Another active subscription prevents reconciliation."
                         );
@@ -4930,6 +4949,9 @@ app.post(
                                 ...currentSubscription,
                                 provider: "razorpay",
                                 status: "active",
+                                subscriptionStatus: "active",
+                                cancelAtPeriodEnd: false,
+                                cancelledAt: null,
                                 planKey,
                                 planName: expectedPlan.name,
                                 razorpaySubscriptionId: subscriptionId,
