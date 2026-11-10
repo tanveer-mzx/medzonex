@@ -30,6 +30,8 @@ let billItems = [];
 
 let billingInitialized = false;
 
+let billSaveInProgress = false;
+
 
 // ============================================================
 // HELPERS
@@ -1251,7 +1253,10 @@ function generateBillNumber() {
 // SAVE BILL
 // ============================================================
 
-async function saveBill() {
+async function saveBill({
+    share = false,
+    whatsappWindow = null
+} = {}) {
 
     hideBillingMessage();
 
@@ -1325,22 +1330,28 @@ async function saveBill() {
     }
 
 
-    const button =
-        $("saveBillBtn");
-
-
-    if (button) {
-
-        button.disabled =
-            true;
-
-        button.dataset.originalText =
-            button.textContent;
-
-        button.textContent =
-            "Saving Bill...";
-
+    if (billSaveInProgress) {
+        return;
     }
+
+    billSaveInProgress = true;
+
+    const actionButtons = [
+        $("saveBillBtn"),
+        $("sellShareBillBtn")
+    ].filter(Boolean);
+
+    actionButtons.forEach(button => {
+        button.disabled = true;
+
+        if (!button.dataset.originalText) {
+            button.dataset.originalText = button.textContent;
+        }
+
+        button.textContent = share
+            ? "Selling & Preparing Share..."
+            : "Selling...";
+    });
 
 
     try {
@@ -1350,6 +1361,7 @@ async function saveBill() {
 
 
         let billNumber = '';
+        let savedBillId = '';
 
 
         /*
@@ -1545,6 +1557,8 @@ const stockReferences = [];
                         billsCollection
                     );
 
+                savedBillId = billReference.id;
+
 
                 transaction.set(
                     counterRef,
@@ -1631,22 +1645,120 @@ const stockReferences = [];
             `Bill ${billNumber} saved successfully.`,
             "success"
         );
+
         window.dispatchEvent(
             new CustomEvent("medzonex:bill-saved")
         );
 
+        if (share) {
+            try {
+                if (!customerMobile) {
+                    throw new Error(
+                        "Bill saved, but customer mobile number is missing."
+                    );
+                }
+
+                const result =
+                    await window.MedZoneXSales.generateInvoicePdf(savedBillId);
+
+                const pdfFile = new File(
+                    [result.blob],
+                    result.filename,
+                    { type: "application/pdf" }
+                );
+
+                const message =
+                    `Dear ${customerName},\n\n` +
+                    `Thank you for shopping with ${result.bill.billNumber ? "us" : "us"}!\n` +
+                    `Your invoice from ${result.bill.billNumber ? "our pharmacy" : "MedZoneX"} is ready.\n\n` +
+                    `Bill No: ${billNumber}\n` +
+                    `Amount: ${money(summary.grandTotal)}\n\n` +
+                    `Thank you!`;
+
+                // Mobile: share actual PDF through the device share sheet.
+                if (
+                    navigator.canShare &&
+                    navigator.canShare({ files: [pdfFile] }) &&
+                    navigator.share
+                ) {
+                    try {
+                        await navigator.share({
+                            files: [pdfFile],
+                            title: `Invoice ${billNumber}`,
+                            text: message
+                        });
+
+                        if (whatsappWindow && !whatsappWindow.closed) {
+                            whatsappWindow.close();
+                        }
+
+                        showBillingMessage(
+                            "Sale completed. Select WhatsApp in the share sheet to send the PDF.",
+                            "success"
+                        );
+
+                    } catch (shareError) {
+                        if (shareError.name === "AbortError") {
+                            showBillingMessage(
+                                "PDF sharing cancelled. You can share it from your downloads.",
+                                "success"
+                            );
+                        } else {
+                            throw shareError;
+                        }
+                    }
+
+                } else {
+                    // Desktop fallback: download PDF and open customer WhatsApp.
+                    const pdfUrl = URL.createObjectURL(result.blob);
+                    const link = document.createElement("a");
+
+                    link.href = pdfUrl;
+                    link.download = result.filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+
+                    setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+
+                    const whatsappNumber = "91" + customerMobile;
+
+                    const whatsappUrl =
+                        `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+
+                    if (whatsappWindow && !whatsappWindow.closed) {
+                        whatsappWindow.location.href = whatsappUrl;
+                    } else {
+                        window.open(whatsappUrl, "_blank");
+                    }
+
+                    showBillingMessage(
+                        "Invoice downloaded. WhatsApp opened — attach the PDF to send it.",
+                        "success"
+                    );
+                }
+
+            } catch (shareError) {
+                console.error("Invoice sharing error:", shareError);
+
+                if (whatsappWindow && !whatsappWindow.closed) {
+                    whatsappWindow.close();
+                }
+
+                showBillingMessage(
+                    `Sale saved, but invoice sharing failed: ${shareError.message}`,
+                    "error"
+                );
+            }
+        }
 
         /*
-         * Clear bill after successful save.
+         * Clear bill after successful sale.
          */
-
-        setTimeout(
-            () => {
-
-                clearBill();
-
-            },
-            1000
+        setTimeout(() => {
+            clearBill();
+        },
+        1000
         );
 
 
@@ -1665,20 +1777,20 @@ const stockReferences = [];
 
     } finally {
 
-        if (button) {
+          actionButtons.forEach(button => {
+              button.disabled = false;
 
-            button.disabled =
-                false;
+              button.textContent =
+                  button.dataset.originalText ||
+                  (button.id === "sellShareBillBtn"
+                      ? "SELL & SHARE BILL"
+                      : "SELL");
+          });
 
-            button.textContent =
-                button.dataset.originalText ||
-                "Save Bill";
+          billSaveInProgress = false;
 
-        }
-
-    }
-
-}
+      }
+   }
 
 
 // ============================================================
@@ -1865,17 +1977,28 @@ $("billingDiscount")
     );
 
 
-// Save bill
+// SELL
 
 $("saveBillBtn")
-    ?.addEventListener(
-        "click",
-        () => {
+    ?.addEventListener("click", () => {
+        saveBill();
+    });
 
-            saveBill();
 
-        }
-    );
+// SELL & SHARE BILL
+
+$("sellShareBillBtn")
+    ?.addEventListener("click", () => {
+
+        // Open a tab immediately to avoid popup blocking.
+        const whatsappWindow = window.open("about:blank", "_blank");
+
+        saveBill({
+            share: true,
+            whatsappWindow
+        });
+
+    });
 
 
 // Clear bill

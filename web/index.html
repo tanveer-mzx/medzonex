@@ -840,45 +840,39 @@
 
                     <div>
                         <p class="dashboard-small-title">
-                            Welcome back
+                            Welcome back 👋
                         </p>
 
-                        <h1>
-                            Dashboard
+                        <h1 id="dashboardStoreName">
+                            Your Pharmacy
                         </h1>
                     </div>
 
                     <div class="dashboard-notification-area">
 
                         <button
-                            type="button"
-                            id="notificationBell"
-                            class="notification-bell"
-                            aria-label="Notifications"
-                            aria-expanded="false"
-                            aria-controls="notificationsPage"
+                                type="button"
+                                id="notificationBell"
+                                class="notification-bell"
+                                aria-label="Notifications"
+                                aria-expanded="false"
+                                aria-controls="notificationsPage"
                         >
                             <span aria-hidden="true">🔔</span>
+
                             <span
-                                id="notificationUnreadCount"
-                                class="notification-unread-count"
-                                hidden
+                                    id="notificationUnreadCount"
+                                    class="notification-unread-count"
+                                    hidden
                             >0</span>
                         </button>
-
 
                     </div>
 
                     <div class="dashboard-user">
 
                         <div class="dashboard-user-info">
-                            <strong id="dashboardStoreName">
-                                Medical Store
-                            </strong>
-
-                            <span id="dashboardUserEmail">
-                            —
-                        </span>
+                            <span id="dashboardUserEmail">—</span>
                         </div>
 
                         <div class="dashboard-avatar">
@@ -2444,33 +2438,37 @@
 
 
                 <!-- Bill Actions -->
-
                 <div
                         style="
-                        display:flex;
-                        gap:12px;
-                        flex-wrap:wrap;
-                        margin-top:30px;
-                    "
+        display:flex;
+        gap:12px;
+        flex-wrap:wrap;
+        margin-top:30px;
+    "
                 >
-
                     <button
                             type="button"
                             id="saveBillBtn"
                             class="primary-btn"
                     >
-                        Save Bill
+                        SELL
                     </button>
 
+                    <button
+                            type="button"
+                            id="sellShareBillBtn"
+                            class="primary-btn"
+                    >
+                        SELL & SHARE BILL
+                    </button>
 
                     <button
                             type="button"
                             id="clearBillBtn"
                             class="secondary-btn"
                     >
-                        Clear Bill
+                        CLEAR BILL
                     </button>
-
                 </div>
 
             </section>
@@ -3296,6 +3294,8 @@
 </div>
 
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script src="js/html2pdf.bundle.min.js"></script>
 
 <script
         type="module"

@@ -291,6 +291,128 @@ function renderInvoice(id) {
     showPage("mzInvoicePage");
 }
 
+async function generateInvoicePdf(billId) {
+    await refresh();
+
+    const bill = allBills.find(item => item.id === billId);
+
+    if (!bill) {
+        throw new Error("Saved invoice not found.");
+    }
+
+    if (typeof window.html2pdf !== "function") {
+        throw new Error("PDF library is not loaded.");
+    }
+
+    const items = Array.isArray(bill.items) ? bill.items : [];
+
+    const addressParts = [
+        pharmacyProfile.address,
+        pharmacyProfile.city,
+        pharmacyProfile.state,
+        pharmacyProfile.pincode
+    ].filter(value => String(value || "").trim());
+
+    const invoiceAddressHTML = showInvoiceAddress
+        ? `
+            ${addressParts.length
+                ? `<p>${escapeHTML(addressParts.join(", "))}</p>`
+                : ""}
+            ${pharmacyProfile.gstin
+                ? `<p><strong>GSTIN:</strong> ${escapeHTML(pharmacyProfile.gstin)}</p>`
+                : ""}
+        `
+        : "";
+
+    const wrapper = document.createElement("div");
+
+    wrapper.style.cssText = `
+        position:fixed;
+        left:-10000px;
+        top:0;
+        width:850px;
+        background:#ffffff;
+        z-index:-1;
+    `;
+
+    wrapper.innerHTML = `
+        <article class="mz-paper">
+            <h1>${escapeHTML(pharmacyStoreName)}</h1>
+            ${invoiceAddressHTML}
+            <h2>Sales Invoice</h2>
+            <hr>
+            <p><strong>Bill No:</strong> ${escapeHTML(bill.billNumber || "")}</p>
+            <p><strong>Date:</strong> ${escapeHTML(dateText(bill))}</p>
+            <p><strong>Customer:</strong> ${escapeHTML(customerName(bill))}</p>
+            <p><strong>Mobile:</strong> ${escapeHTML(customerMobile(bill) || "—")}</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Medicine</th>
+                        <th>Batch</th>
+                        <th>Qty</th>
+                        <th>Rate</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${items.map(item => `
+                        <tr>
+                            <td>${escapeHTML(item.name)}</td>
+                            <td>${escapeHTML(item.batch || "")}</td>
+                            <td>${escapeHTML(item.quantity)}</td>
+                            <td>${money(item.price)}</td>
+                            <td>${money(item.total)}</td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+
+            <div class="mz-invoice-total">
+                <p>Subtotal: ${money(bill.subtotal)}</p>
+                <p>Discount: ${money(bill.discount)}</p>
+                <h2>Grand Total: ${money(billAmount(bill))}</h2>
+            </div>
+
+            <p class="mz-thanks">Thank you for your purchase.</p>
+        </article>
+    `;
+
+    document.body.appendChild(wrapper);
+
+    try {
+        const blob = await window.html2pdf()
+            .set({
+                margin: 10,
+                image: {
+                    type: "jpeg",
+                    quality: 0.98
+                },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true
+                },
+                jsPDF: {
+                    unit: "mm",
+                    format: "a4",
+                    orientation: "portrait"
+                }
+            })
+            .from(wrapper.querySelector(".mz-paper"))
+            .outputPdf("blob");
+
+        return {
+            blob,
+            bill,
+            filename: `${bill.billNumber || "MedZoneX-Invoice"}.pdf`
+        };
+
+    } finally {
+        wrapper.remove();
+    }
+}
+
 function ensureCustomerDetailPage() {
     if ($("mzCustomerDetailPage")) return;
 
@@ -545,6 +667,9 @@ $("billingCustomerMobile")?.addEventListener("input", async event => {
 
 window.addEventListener("medzonex:bill-saved", refresh);
 
-window.MedZoneXSales = { refresh };
+window.MedZoneXSales = {
+    refresh,
+    generateInvoicePdf
+};
 
 console.log("MedZoneX Sales module loaded.");

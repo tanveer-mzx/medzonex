@@ -2103,8 +2103,11 @@ async function loadDashboard(
 
     startDashboardNotifications(user);
 
+    // Load sales data in the background without delaying login.
     if (window.MedZoneXSales?.refresh) {
-        await window.MedZoneXSales.refresh();
+        window.MedZoneXSales.refresh().catch(error => {
+            console.error("Background sales loading error:", error);
+        });
     }
 
 }
