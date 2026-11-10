@@ -1675,68 +1675,33 @@ const stockReferences = [];
                     `Amount: ${money(summary.grandTotal)}\n\n` +
                     `Thank you!`;
 
-                // Mobile: share actual PDF through the device share sheet.
-                if (
-                    navigator.canShare &&
-                    navigator.canShare({ files: [pdfFile] }) &&
-                    navigator.share
-                ) {
-                    try {
-                        await navigator.share({
-                            files: [pdfFile],
-                            title: `Invoice ${billNumber}`,
-                            text: message
-                        });
+                // Download invoice PDF and open customer WhatsApp.
+                const pdfUrl = URL.createObjectURL(result.blob);
+                const link = document.createElement("a");
 
-                        if (whatsappWindow && !whatsappWindow.closed) {
-                            whatsappWindow.close();
-                        }
+                link.href = pdfUrl;
+                link.download = result.filename;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
 
-                        showBillingMessage(
-                            "Sale completed. Select WhatsApp in the share sheet to send the PDF.",
-                            "success"
-                        );
+                setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
 
-                    } catch (shareError) {
-                        if (shareError.name === "AbortError") {
-                            showBillingMessage(
-                                "PDF sharing cancelled. You can share it from your downloads.",
-                                "success"
-                            );
-                        } else {
-                            throw shareError;
-                        }
-                    }
+                const whatsappNumber = "91" + customerMobile;
 
+                const whatsappUrl =
+                    `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+
+                if (whatsappWindow && !whatsappWindow.closed) {
+                    whatsappWindow.location.replace(whatsappUrl);
                 } else {
-                    // Desktop fallback: download PDF and open customer WhatsApp.
-                    const pdfUrl = URL.createObjectURL(result.blob);
-                    const link = document.createElement("a");
-
-                    link.href = pdfUrl;
-                    link.download = result.filename;
-                    document.body.appendChild(link);
-                    link.click();
-                    link.remove();
-
-                    setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
-
-                    const whatsappNumber = "91" + customerMobile;
-
-                    const whatsappUrl =
-                        `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-
-                    if (whatsappWindow && !whatsappWindow.closed) {
-                        whatsappWindow.location.href = whatsappUrl;
-                    } else {
-                        window.open(whatsappUrl, "_blank");
-                    }
-
-                    showBillingMessage(
-                        "Invoice downloaded. WhatsApp opened — attach the PDF to send it.",
-                        "success"
-                    );
+                    window.open(whatsappUrl, "_blank");
                 }
+
+                showBillingMessage(
+                    "Invoice downloaded. WhatsApp opened — attach the PDF to send it.",
+                    "success"
+                );
 
             } catch (shareError) {
                 console.error("Invoice sharing error:", shareError);
