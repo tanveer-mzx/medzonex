@@ -1652,30 +1652,41 @@ const stockReferences = [];
 
         if (share) {
             try {
-                if (!customerMobile) {
+                if (!/^[0-9]{10}$/.test(customerMobile)) {
                     throw new Error(
-                        "Bill saved, but customer mobile number is missing."
+                        "Enter a valid 10-digit customer mobile number."
                     );
                 }
 
-                const result =
-                    await window.MedZoneXSales.generateInvoicePdf(savedBillId);
-
-                const pdfFile = new File(
-                    [result.blob],
-                    result.filename,
-                    { type: "application/pdf" }
-                );
-
                 const message =
                     `Dear ${customerName},\n\n` +
-                    `Thank you for shopping with ${result.bill.billNumber ? "us" : "us"}!\n` +
-                    `Your invoice from ${result.bill.billNumber ? "our pharmacy" : "MedZoneX"} is ready.\n\n` +
+                    `Thank you for shopping with us!\n` +
+                    `Your invoice is ready.\n\n` +
                     `Bill No: ${billNumber}\n` +
                     `Amount: ${money(summary.grandTotal)}\n\n` +
                     `Thank you!`;
 
-                // Download invoice PDF and open customer WhatsApp.
+                const whatsappNumber = "91" + customerMobile;
+
+                const whatsappUrl =
+                    `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+
+                // Open WhatsApp BEFORE generating PDF.
+                if (whatsappWindow && !whatsappWindow.closed) {
+                    whatsappWindow.location.replace(whatsappUrl);
+                } else {
+                    window.open(whatsappUrl, "_blank");
+                }
+
+                showBillingMessage(
+                    "WhatsApp opened. Preparing your invoice PDF...",
+                    "success"
+                );
+
+                // Generate PDF after WhatsApp has opened.
+                const result =
+                    await window.MedZoneXSales.generateInvoicePdf(savedBillId);
+
                 const pdfUrl = URL.createObjectURL(result.blob);
                 const link = document.createElement("a");
 
@@ -1687,28 +1698,13 @@ const stockReferences = [];
 
                 setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
 
-                const whatsappNumber = "91" + customerMobile;
-
-                const whatsappUrl =
-                    `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-
-                if (whatsappWindow && !whatsappWindow.closed) {
-                    whatsappWindow.location.replace(whatsappUrl);
-                } else {
-                    window.open(whatsappUrl, "_blank");
-                }
-
                 showBillingMessage(
-                    "Invoice downloaded. WhatsApp opened — attach the PDF to send it.",
+                    "Invoice downloaded. Attach the PDF in WhatsApp and send it.",
                     "success"
                 );
 
             } catch (shareError) {
                 console.error("Invoice sharing error:", shareError);
-
-                if (whatsappWindow && !whatsappWindow.closed) {
-                    whatsappWindow.close();
-                }
 
                 showBillingMessage(
                     `Sale saved, but invoice sharing failed: ${shareError.message}`,
