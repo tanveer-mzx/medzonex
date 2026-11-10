@@ -2186,6 +2186,14 @@ window.MedZoneXInventory = {
 
 };
 
+// AUTO REFRESH INVENTORY AFTER SUCCESSFUL SALE
+window.addEventListener("medzonex:bill-saved", () => {
+    window.MedZoneXInventory.loadInventory()
+        .catch(error => {
+            console.error("Automatic inventory refresh failed:", error);
+        });
+});
+
 
 // ============================================================
 // INITIALIZATION
