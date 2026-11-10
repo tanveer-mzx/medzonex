@@ -1293,25 +1293,19 @@ async function saveBill({
 
 
     const customerMobile =
-        $("billingCustomerMobile")?.value.trim() ||
-        "";
+        $("billingCustomerMobile")?.value.trim() || "";
 
-
-    if (
-        customerMobile &&
-        !/^[0-9]{10}$/.test(
-            customerMobile
-        )
-    ) {
-
+    if ((share && !/^[0-9]{10}$/.test(customerMobile)) ||
+        (customerMobile && !/^[0-9]{10}$/.test(customerMobile))) {
+        if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
         showBillingMessage(
-            "Enter a valid 10-digit mobile number."
+            share
+                ? "Mobile number is mandatory for sharing the invoice. Please enter a valid 10-digit mobile number."
+                : "Enter a valid 10-digit mobile number.",
+            "error"
         );
-
         return;
-
     }
-
 
     const summary =
         updateBillSummary();
@@ -1652,70 +1646,39 @@ const stockReferences = [];
 
         if (share) {
             try {
-                if (!/^[0-9]{10}$/.test(customerMobile)) {
-                    throw new Error(
-                        "Enter a valid 10-digit customer mobile number."
-                    );
-                }
+                const itemLines = billItems.map((item, index) =>
+                    (index + 1) + ". " + item.name +
+                    "\n   Qty: " + item.quantity +
+                    " | Rate: " + money(item.price) +
+                    " | Total: " + money(item.total)
+                ).join("\n\n");
 
                 const message =
-                    `Dear ${customerName},\n\n` +
-                    `Thank you for shopping with us!\n` +
-                    `Your invoice is ready.\n\n` +
-                    `Bill No: ${billNumber}\n` +
-                    `Amount: ${money(summary.grandTotal)}\n\n` +
-                    `Thank you!`;
-
-                const whatsappNumber = "91" + customerMobile;
+                    "Dear " + customerName + ",\n\n" +
+                    "Thank you for shopping with us!\n\n" +
+                    "Bill No: " + billNumber + "\n\n" +
+                    "PURCHASED MEDICINES:\n" + itemLines + "\n\n" +
+                    "Subtotal: " + money(summary.subtotal) + "\n" +
+                    "Discount: " + money(summary.discount || 0) + "\n" +
+                    "Grand Total: " + money(summary.grandTotal) + "\n\n" +
+                    "Thank you!\nMedZoneX";
 
                 const whatsappUrl =
-                    `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+                    "https://wa.me/91" + customerMobile + "?text=" + encodeURIComponent(message);
 
-                // Open WhatsApp BEFORE generating PDF.
                 if (whatsappWindow && !whatsappWindow.closed) {
-                    whatsappWindow.location.replace(whatsappUrl);
+                    whatsappWindow.location.href = whatsappUrl;
                 } else {
                     window.open(whatsappUrl, "_blank");
                 }
 
-                showBillingMessage(
-                    "WhatsApp opened. Preparing your invoice PDF...",
-                    "success"
-                );
-
-                // Generate PDF after WhatsApp has opened.
-                const result =
-                    await window.MedZoneXSales.generateInvoicePdf(savedBillId);
-
-                const pdfUrl = URL.createObjectURL(result.blob);
-                const link = document.createElement("a");
-
-                link.href = pdfUrl;
-                link.download = result.filename;
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-
-                setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
-
-                showBillingMessage(
-                    "Invoice downloaded. Attach the PDF in WhatsApp and send it.",
-                    "success"
-                );
-
+                showBillingMessage("WhatsApp message opened. Please review and send it.", "success");
             } catch (shareError) {
-                console.error("Invoice sharing error:", shareError);
-
-                showBillingMessage(
-                    `Sale saved, but invoice sharing failed: ${shareError.message}`,
-                    "error"
-                );
+                console.error("WhatsApp sharing error:", shareError);
+                showBillingMessage("Sale saved, but WhatsApp sharing failed: " + shareError.message, "error");
             }
         }
 
-        /*
-         * Clear bill after successful sale.
-         */
         setTimeout(() => {
             clearBill();
         },

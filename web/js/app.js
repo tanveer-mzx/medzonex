@@ -2943,6 +2943,32 @@ window.MedZoneX = {
 
 document.addEventListener("DOMContentLoaded", () => {
 
+    /* MEDZONEX SIDEBAR TOGGLE */
+    const dashboardSidebar = document.querySelector(".dashboard-sidebar");
+    const sidebarToggleBtn = document.getElementById("sidebarToggleBtn");
+    const sidebarToggleIcon = document.getElementById("sidebarToggleIcon");
+
+    if (dashboardSidebar && sidebarToggleBtn) {
+        dashboardSidebar.classList.add("is-collapsed");
+
+        sidebarToggleBtn.addEventListener("click", () => {
+            const expanded = dashboardSidebar.classList.toggle("is-expanded");
+            dashboardSidebar.classList.toggle("is-collapsed", !expanded);
+
+            sidebarToggleBtn.setAttribute("aria-expanded", String(expanded));
+            sidebarToggleBtn.setAttribute(
+                "aria-label",
+                expanded ? "Collapse sidebar" : "Expand sidebar"
+            );
+            sidebarToggleBtn.title = expanded ? "Collapse menu" : "Expand menu";
+
+            if (sidebarToggleIcon) {
+                sidebarToggleIcon.textContent = expanded ? "‹" : "›";
+            }
+        });
+    }
+
+
     /* -------------------------
        AD CAROUSEL
     ------------------------- */

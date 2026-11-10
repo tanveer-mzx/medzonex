@@ -668,6 +668,10 @@
             <!-- SIDEBAR -->
             <aside class="dashboard-sidebar">
 
+                <button type="button" id="sidebarToggleBtn" class="sidebar-toggle-btn" aria-label="Expand sidebar" aria-expanded="false" title="Expand menu">
+                    <span id="sidebarToggleIcon">›</span>
+                </button>
+
                 <div class="sidebar-brand">
                     <img
                             src="assets/medzonex-logo.png"
@@ -2461,6 +2465,8 @@
                     >
                         SELL & SHARE BILL
                     </button>
+
+                    <p id="sellShareHint" class="sell-share-hint">ℹ Mobile number is mandatory for sharing the invoice.</p>
 
                     <button
                             type="button"

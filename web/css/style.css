@@ -5529,3 +5529,110 @@ button {
 #subscriptionPage .section-kicker {
     color: #C6F432 !important;
 }
+/* MEDZONEX COLLAPSIBLE SIDEBAR */
+.dashboard-sidebar {
+    position: sticky;
+    flex: 0 0 76px;
+    width: 76px;
+    min-width: 76px;
+    transition: width .25s ease, min-width .25s ease, flex-basis .25s ease;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    z-index: 20;
+}
+
+.dashboard-sidebar.is-expanded {
+    flex-basis: 235px;
+    width: 235px;
+    min-width: 235px;
+}
+
+.sidebar-toggle-btn {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255,255,255,.16);
+    border-radius: 9px;
+    background: rgba(255,255,255,.08);
+    color: inherit;
+    font-size: 25px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.sidebar-toggle-btn:hover {
+    background: rgba(255,255,255,.16);
+}
+
+.dashboard-sidebar.is-collapsed .sidebar-brand {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.dashboard-sidebar.is-collapsed .sidebar-brand-text,
+.dashboard-sidebar.is-collapsed .sidebar-item > span:not(.sidebar-icon) {
+    display: none !important;
+}
+
+.dashboard-sidebar.is-collapsed .sidebar-item {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.dashboard-sidebar.is-expanded .sidebar-brand {
+    justify-content: flex-start;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.dashboard-sidebar.is-expanded .sidebar-brand-text {
+    display: flex !important;
+}
+
+.dashboard-sidebar.is-expanded .sidebar-item {
+    justify-content: flex-start;
+    padding-left: 13px;
+    padding-right: 13px;
+}
+
+.dashboard-sidebar.is-expanded .sidebar-item > span:not(.sidebar-icon) {
+    display: inline !important;
+}
+
+@media (max-width: 900px) {
+    .dashboard-sidebar.is-expanded {
+        flex-basis: 235px !important;
+        width: 235px !important;
+        min-width: 235px !important;
+    }
+
+    .dashboard-sidebar.is-expanded .sidebar-brand-text {
+        display: flex !important;
+    }
+
+    .dashboard-sidebar.is-expanded .sidebar-item > span:not(.sidebar-icon) {
+        display: inline !important;
+    }
+
+    .dashboard-sidebar.is-expanded .sidebar-item {
+        justify-content: flex-start;
+        padding-left: 13px;
+        padding-right: 13px;
+    }
+}
+
+
+/* SELL & SHARE MOBILE HINT */
+.sell-share-hint {
+    margin: 7px 0 12px;
+    color: #f0c96b;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+}
