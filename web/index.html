@@ -27,7 +27,7 @@
             rel="stylesheet"
             href="css/style.css"
     >
-    
+
 </head>
 
 <body>
@@ -1646,15 +1646,48 @@
                     <div class="form-group">
 
                         <label for="medicinePackSize">
-                            Pack Size
+                            Pack Size / Unit
                         </label>
 
-                        <input
-                                type="text"
-                                id="medicinePackSize"
-                                placeholder="e.g. 10 tablets"
-                                autocomplete="off"
-                        >
+                        <select id="medicinePackSize">
+                            <option value="">Select pack size / unit</option>
+                            <optgroup label="Solid Medicines">
+                                <option value="Piece">Piece</option>
+                                <option value="Tablet">Tablet</option>
+                                <option value="Capsule">Capsule</option>
+                                <option value="Strip">Strip</option>
+                                <option value="Blister">Blister</option>
+                            </optgroup>
+                            <optgroup label="Packaging">
+                                <option value="Box">Box</option>
+                                <option value="Pack">Pack</option>
+                                <option value="Bottle">Bottle</option>
+                                <option value="Sachet">Sachet</option>
+                            </optgroup>
+                            <optgroup label="Liquid Medicines">
+                                <option value="Syrup">Syrup</option>
+                                <option value="Drops">Drops</option>
+                                <option value="Suspension">Suspension</option>
+                            </optgroup>
+                            <optgroup label="Injections">
+                                <option value="Vial">Vial</option>
+                                <option value="Ampoule">Ampoule</option>
+                                <option value="Injection">Injection</option>
+                            </optgroup>
+                            <optgroup label="External Medicines">
+                                <option value="Tube">Tube</option>
+                                <option value="Cream">Cream</option>
+                                <option value="Ointment">Ointment</option>
+                                <option value="Gel">Gel</option>
+                            </optgroup>
+                            <optgroup label="Other Forms">
+                                <option value="Powder">Powder</option>
+                                <option value="Inhaler">Inhaler</option>
+                                <option value="Spray">Spray</option>
+                                <option value="Patches">Patches</option>
+                                <option value="Other">Other</option>
+                            </optgroup>
+                        </select>
 
                     </div>
 

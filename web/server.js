@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const admin = require("firebase-admin");
 const OpenAI = require("openai");
 const multer = require("multer");
+const sharp = require("sharp");
 const path = require("path");
 const PDFDocument = require("pdfkit");
 
@@ -2729,15 +2730,84 @@ app.post(
                 });
             }
 
-            const base64Image =
-                req.file.buffer.toString("base64");
+            const supportedMimeTypes = [
+                "image/jpeg",
+                "image/png",
+                "image/webp"
+            ];
 
-            const mimeType =
-                req.file.mimetype || "image/jpeg";
+            if (!supportedMimeTypes.includes(req.file.mimetype)) {
+                return res.status(400).json({
+                    success: false,
+                    code: "UNSUPPORTED_IMAGE_TYPE",
+                    message: "Please upload a JPG, PNG, or WEBP image."
+                });
+            }
+
+            let optimizedImage;
+
+            try {
+                optimizedImage = await sharp(req.file.buffer)
+                    .rotate()
+                    .resize({
+                        width: 2000,
+                        height: 2000,
+                        fit: "inside",
+                        withoutEnlargement: true
+                    })
+                    .flatten({ background: "#ffffff" })
+                    .jpeg({
+                        quality: 88,
+                        mozjpeg: true
+                    })
+                    .toBuffer();
+            } catch (imageError) {
+                console.error(
+                    "Medicine image processing failed:",
+                    imageError.message
+                );
+
+                return res.status(400).json({
+                    success: false,
+                    code: "INVALID_MEDICINE_IMAGE",
+                    message: "Image could not be processed. Please upload a clear JPG, PNG, or WEBP photo."
+                });
+            }
+
+            const base64Image = optimizedImage.toString("base64");
+            const mimeType = "image/jpeg";
 
             const response = await openai.responses.create({
 
                 model: "gpt-5.6-luna",
+
+                text: {
+                    format: {
+                        type: "json_schema",
+                        name: "medicine_recognition",
+                        strict: true,
+                        schema: {
+                            type: "object",
+                            properties: {
+                                name: { type: "string" },
+                                genericName: { type: "string" },
+                                strength: { type: "string" },
+                                manufacturer: { type: "string" },
+                                dosageForm: { type: "string" },
+                                packSize: { type: "string" }
+                            },
+                            required: [
+                                "name",
+                                "genericName",
+                                "strength",
+                                "manufacturer",
+                                "dosageForm",
+                                "packSize"
+                            ],
+                            additionalProperties: false
+                        }
+                    }
+                },
 
                 input: [
                     {
@@ -2796,33 +2866,45 @@ Important:
             let medicine;
 
             try {
-
                 medicine = JSON.parse(output);
-
             } catch (parseError) {
-
-                console.error(
-                    "OpenAI returned invalid JSON:",
-                    output
-                );
-
+                console.error("OpenAI JSON parsing error:", parseError.message);
                 return res.status(502).json({
                     success: false,
-                    message:
-                        "Medicine information could not be read reliably."
+                    code: "INVALID_AI_RESPONSE",
+                    message: "Medicine details could not be read. Please upload a clearer image."
+                });
+            }
+
+            const fields = [
+                "name",
+                "genericName",
+                "strength",
+                "manufacturer",
+                "dosageForm",
+                "packSize"
+            ];
+
+            const normalizedMedicine = {};
+
+            for (const field of fields) {
+                normalizedMedicine[field] =
+                    typeof medicine[field] === "string"
+                        ? medicine[field].trim()
+                        : "";
+            }
+
+            if (!normalizedMedicine.name) {
+                return res.status(422).json({
+                    success: false,
+                    code: "MEDICINE_NOT_RECOGNIZED",
+                    message: "Medicine name could not be identified. Please upload a clear photo of the medicine packaging."
                 });
             }
 
             return res.json({
                 success: true,
-                medicine: {
-                    name: medicine.name || "",
-                    genericName: medicine.genericName || "",
-                    strength: medicine.strength || "",
-                    manufacturer: medicine.manufacturer || "",
-                    dosageForm: medicine.dosageForm || "",
-                    packSize: medicine.packSize || ""
-                }
+                medicine: normalizedMedicine
             });
 
                 } catch (error) {

@@ -1048,10 +1048,32 @@ async function recognizeMedicineFromImage(file) {
 
 
         if ($("medicineManufacturer")) {
-
             $("medicineManufacturer").value =
                 medicine.manufacturer || "";
+        }
 
+        if ($("medicineStrength")) {
+            $("medicineStrength").value =
+                medicine.strength || "";
+        }
+
+        if ($("medicineDosageForm")) {
+            $("medicineDosageForm").value =
+                medicine.dosageForm || "";
+        }
+
+        if ($("medicinePackSize")) {
+            const packSizeSelect = $("medicinePackSize");
+            const savedPackSize = String(medicine.packSize || "").trim();
+
+            if (savedPackSize && !Array.from(packSizeSelect.options).some(option => option.value === savedPackSize)) {
+                const option = document.createElement("option");
+                option.value = savedPackSize;
+                option.textContent = savedPackSize;
+                packSizeSelect.appendChild(option);
+            }
+
+            packSizeSelect.value = savedPackSize;
         }
 
 
@@ -1563,7 +1585,17 @@ async function editMedicine(
     }
 
     if ($("medicinePackSize")) {
-        $("medicinePackSize").value = medicine.packSize || "";
+        const packSizeSelect = $("medicinePackSize");
+        const savedPackSize = String(medicine.packSize || "").trim();
+
+        if (savedPackSize && !Array.from(packSizeSelect.options).some(option => option.value === savedPackSize)) {
+            const legacyOption = document.createElement("option");
+            legacyOption.value = savedPackSize;
+            legacyOption.textContent = savedPackSize + " (Existing)";
+            packSizeSelect.appendChild(legacyOption);
+        }
+
+        packSizeSelect.value = savedPackSize;
     }
 
     if ($("medicineManufacturer")) {
@@ -1967,44 +1999,169 @@ $("inventorySearch")?.addEventListener(
 );
 
 
-// Medicine image recognition
+// MedZoneX medicine image permission manager
+
+window.__medzoneMedicineImagePermission =
+    window.__medzoneMedicineImagePermission || "unset";
+
+function getMedicineImagePermission() {
+    try {
+        if (
+            sessionStorage.getItem("medzonexMedicineImagePermission") === "session"
+        ) {
+            return "session";
+        }
+    } catch (error) {}
+
+    return window.__medzoneMedicineImagePermission;
+}
+
+function showMedicineImagePermissionDialog() {
+    return new Promise((resolve) => {
+        const overlay = document.createElement("div");
+
+        overlay.style.cssText =
+            "position:fixed;inset:0;z-index:999999;" +
+            "background:rgba(0,0,0,.75);display:flex;" +
+            "align-items:center;justify-content:center;padding:20px;";
+
+        const dialog = document.createElement("div");
+
+        dialog.style.cssText =
+            "width:100%;max-width:410px;background:#fff;color:#222;" +
+            "border-radius:18px;padding:26px;" +
+            "box-shadow:0 15px 50px rgba(0,0,0,.3);" +
+            "font-family:Arial,sans-serif;";
+
+        dialog.innerHTML = `
+            <h2 style="margin:0 0 14px;font-size:21px;">
+                MedZoneX Permission Request
+            </h2>
+
+            <p style="font-size:14px;line-height:1.7;margin-bottom:22px;">
+                MedZoneX wants permission to access your camera or photo
+                gallery to recognize medicine packages and automatically
+                fill in medicine details.
+
+                <br><br>
+                Your selected image will be processed by AI for medicine
+                recognition.
+            </p>
+
+            <div style="display:flex;flex-direction:column;gap:10px;">
+
+                <button type="button" data-choice="once"
+                    style="padding:13px;border:0;border-radius:9px;
+                    background:#2563eb;color:white;font-weight:bold;
+                    cursor:pointer;">
+                    ALLOW THIS TIME
+                </button>
+
+                <button type="button" data-choice="session"
+                    style="padding:13px;border:0;border-radius:9px;
+                    background:#15803d;color:white;font-weight:bold;
+                    cursor:pointer;">
+                    ALLOW WHILE USING THE SITE
+                </button>
+
+                <button type="button" data-choice="denied"
+                    style="padding:13px;border:1px solid #ddd;
+                    border-radius:9px;background:#fff;color:#333;
+                    font-weight:bold;cursor:pointer;">
+                    DON'T ALLOW
+                </button>
+
+            </div>
+        `;
+
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        dialog.querySelectorAll("[data-choice]").forEach(button => {
+            button.addEventListener("click", () => {
+                const choice = button.dataset.choice;
+
+                window.__medzoneMedicineImagePermission = choice;
+
+                try {
+                    if (choice === "session") {
+                        sessionStorage.setItem(
+                            "medzonexMedicineImagePermission",
+                            "session"
+                        );
+                    } else {
+                        sessionStorage.removeItem(
+                            "medzonexMedicineImagePermission"
+                        );
+                    }
+                } catch (error) {}
+
+                overlay.remove();
+                resolve(choice);
+            });
+        });
+    });
+}
+
+
+// Medicine image recognition button
 
 $("recognizeMedicineBtn")?.addEventListener(
     "click",
-    () => {
+    async () => {
+        const input = $("medicineImageInput");
+        const status = $("medicineRecognitionStatus");
 
-        const input =
-            $("medicineImageInput");
+        if (!input) return;
 
-        if (!input) {
+        let permission = getMedicineImagePermission();
+
+        if (permission !== "session") {
+            permission = await showMedicineImagePermissionDialog();
+        }
+
+        if (permission === "denied") {
+            input.value = "";
+
+            if (status) {
+                status.textContent =
+                    "Permission denied. Camera and gallery access are required for medicine recognition.";
+                status.className = "otp-status";
+            }
+
             return;
         }
 
         input.click();
-
     }
 );
 
 
+// Medicine image selection
+
 $("medicineImageInput")?.addEventListener(
     "change",
     async (event) => {
+        const input = event.target;
+        const file = input.files?.[0];
 
-        const file =
-            event.target.files?.[0];
+        if (!file) return;
 
-        if (!file) {
+        const permission = getMedicineImagePermission();
+
+        if (permission !== "once" && permission !== "session") {
+            input.value = "";
             return;
         }
 
-        await recognizeMedicineFromImage(
-            file
-        );
+        if (permission === "once") {
+            window.__medzoneMedicineImagePermission = "unset";
+        }
+
+        await recognizeMedicineFromImage(file);
 
         // Allow selecting the same image again
-        event.target.value =
-            "";
-
+        input.value = "";
     }
 );
 
