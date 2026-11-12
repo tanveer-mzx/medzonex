@@ -2787,25 +2787,27 @@ app.post(
                         name: "medicine_recognition",
                         strict: true,
                         schema: {
-                            type: "object",
-                            properties: {
-                                name: { type: "string" },
-                                genericName: { type: "string" },
-                                strength: { type: "string" },
-                                manufacturer: { type: "string" },
-                                dosageForm: { type: "string" },
-                                packSize: { type: "string" }
-                            },
-                            required: [
-                                "name",
-                                "genericName",
-                                "strength",
-                                "manufacturer",
-                                "dosageForm",
-                                "packSize"
-                            ],
-                            additionalProperties: false
-                        }
+    type: "object",
+    properties: {
+        name: { type: "string" },
+        genericName: { type: "string" },
+        strength: { type: "string" },
+        manufacturer: { type: "string" },
+        dosageForm: { type: "string" },
+        batchNumber: { type: "string" },
+        expiryDate: { type: "string" }
+    },
+    required: [
+        "name",
+        "genericName",
+        "strength",
+        "manufacturer",
+        "dosageForm",
+        "batchNumber",
+        "expiryDate"
+    ],
+    additionalProperties: false
+}
                     }
                 },
 
@@ -2821,30 +2823,38 @@ app.post(
                                 text: `
 You are a medicine packaging recognition assistant.
 
-Analyze the uploaded medicine package carefully.
+Carefully examine the uploaded medicine package.
 
-Extract only information that is actually visible or reasonably readable from the package.
+Extract ONLY these details when clearly visible and readable:
+- Medicine name
+- Salt / Generic name
+- Strength
+- Manufacturer
+- Dosage form
+- Batch number
+- Expiry date
+
+EXPIRY DATE FORMAT:
+- Return expiry date in YYYY-MM-DD format.
+- If the package shows only MM/YYYY, convert it to the last calendar day of that month.
+- Example: 08/2028 becomes 2028-08-31.
+- Example: 02/2028 becomes 2028-02-29.
+- If a complete date is printed, preserve that date.
+- Never invent a month or year.
+
+IMPORTANT:
+- Extract every readable detail from these fields.
+- If a field is unclear or missing, return an empty string for that field.
+- Never guess or invent information.
+- Do not skip other readable fields because one field is unclear.
+- Do not extract Pack Size / Unit. The user will enter it manually.
+- Do not extract prices, quantity, minimum stock or additional details.
 
 Return ONLY valid JSON.
 Do not use markdown.
 Do not add explanations.
 
-Use exactly this structure:
-
-{
-  "name": "",
-  "genericName": "",
-  "strength": "",
-  "manufacturer": "",
-  "dosageForm": "",
-  "packSize": ""
-}
-
-Important:
-- Do not invent missing information.
-- If a field cannot be determined, return an empty string.
-- Do not guess a medicine name from unclear text.
-- This is identification assistance only, not medical advice.
+Use exactly the requested JSON fields.
 `
                             },
 
@@ -2877,13 +2887,14 @@ Important:
             }
 
             const fields = [
-                "name",
-                "genericName",
-                "strength",
-                "manufacturer",
-                "dosageForm",
-                "packSize"
-            ];
+    "name",
+    "genericName",
+    "strength",
+    "manufacturer",
+    "dosageForm",
+    "batchNumber",
+    "expiryDate"
+];
 
             const normalizedMedicine = {};
 

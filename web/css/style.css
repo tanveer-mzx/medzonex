@@ -5636,3 +5636,18 @@ button {
     font-weight: 600;
     text-align: center;
 }
+
+
+
+/* MedZoneX: Disable number spinners and wheel changes */
+input[type="number"] {
+    appearance: none !important;
+    -moz-appearance: textfield !important;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    display: none !important;
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+}

@@ -919,6 +919,26 @@ function clearMedicineForm() {
 // OPENAI MEDICINE RECOGNITION
 // ============================================================
 
+
+function normalizeMedicineExpiry(value) {
+    const date = String(value || "").trim();
+
+    const match = date.match(/^(\d{1,2})[\/-](\d{4})$/);
+
+    if (match) {
+        const month = Number(match[1]);
+        const year = Number(match[2]);
+
+        if (month < 1 || month > 12) return "";
+
+        const lastDay = new Date(year, month, 0).getDate();
+
+        return `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    }
+
+    return date;
+}
+
 async function recognizeMedicineFromImage(file) {
 
     if (!file) {
@@ -1029,53 +1049,30 @@ async function recognizeMedicineFromImage(file) {
 
         // --------------------------------------------
         // FILL MEDICINE FORM
-        // --------------------------------------------
+        // Only fill details returned clearly by AI.
+        // Never modify Pack Size / Unit or pricing and stock fields.
 
-        if ($("medicineName")) {
+        const fieldMappings = [
+            ["medicineName", medicine.name],
+            ["medicineSalt", medicine.genericName],
+            ["medicineStrength", medicine.strength],
+            ["medicineManufacturer", medicine.manufacturer],
+            ["medicineDosageForm", medicine.dosageForm],
+            ["medicineBatch", medicine.batchNumber],
+            [
+                "medicineExpiry",
+                normalizeMedicineExpiry(medicine.expiryDate)
+            ]
+        ];
 
-            $("medicineName").value =
-                medicine.name || "";
+        for (const [elementId, value] of fieldMappings) {
+            const element = $(elementId);
+            const detectedValue = String(value || "").trim();
 
-        }
-
-
-        if ($("medicineSalt")) {
-
-            $("medicineSalt").value =
-                medicine.genericName || "";
-
-        }
-
-
-        if ($("medicineManufacturer")) {
-            $("medicineManufacturer").value =
-                medicine.manufacturer || "";
-        }
-
-        if ($("medicineStrength")) {
-            $("medicineStrength").value =
-                medicine.strength || "";
-        }
-
-        if ($("medicineDosageForm")) {
-            $("medicineDosageForm").value =
-                medicine.dosageForm || "";
-        }
-
-        if ($("medicinePackSize")) {
-            const packSizeSelect = $("medicinePackSize");
-            const savedPackSize = String(medicine.packSize || "").trim();
-
-            if (savedPackSize && !Array.from(packSizeSelect.options).some(option => option.value === savedPackSize)) {
-                const option = document.createElement("option");
-                option.value = savedPackSize;
-                option.textContent = savedPackSize;
-                packSizeSelect.appendChild(option);
+            if (element && detectedValue) {
+                element.value = detectedValue;
             }
-
-            packSizeSelect.value = savedPackSize;
         }
-
 
         if (status) {
 
@@ -1162,16 +1159,6 @@ function validateMedicine(
             valid: false,
             message:
                 "Medicine name is required."
-        };
-
-    }
-
-    if (!data.batch) {
-
-        return {
-            valid: false,
-            message:
-                "Batch number is required."
         };
 
     }
@@ -2380,3 +2367,11 @@ initializeInventory();
 console.log(
     "MedZoneX Inventory.js loaded successfully."
 );
+
+// MEDZONEX_DISABLE_NUMBER_WHEEL_CHANGE
+document.addEventListener("wheel", function (event) {
+    if (event.target instanceof HTMLInputElement &&
+        event.target.type === "number") {
+        event.preventDefault();
+    }
+}, { passive: false, capture: true });
