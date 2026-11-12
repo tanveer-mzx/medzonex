@@ -1173,6 +1173,24 @@ function validateMedicine(
 
     }
 
+    const requiredNumericFields = [
+        ["medicinePurchasePrice", "Purchase price is required."],
+        ["medicineSellingPrice", "Selling price is required."],
+        ["medicineQuantity", "Quantity is required."],
+        ["medicineMinimumStock", "Minimum stock is required."]
+    ];
+
+    for (const [fieldId, message] of requiredNumericFields) {
+        const input = $(fieldId);
+
+        if (!input || input.value.trim() === "") {
+            return {
+                valid: false,
+                message
+            };
+        }
+    }
+
     if (
         isNaN(
             data.purchasePrice
