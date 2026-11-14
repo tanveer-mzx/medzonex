@@ -474,24 +474,48 @@ function renderCustomers() {
                 </div>
             </header>
             <section class="dashboard-panel">
+                <input
+                    type="search"
+                    id="mzCustomerSearch"
+                    class="mz-customer-search"
+                    placeholder="Search by customer name or mobile number..."
+                    aria-label="Search customers by name or mobile number"
+                    autocomplete="off"
+                >
                 <div class="mz-record-list" id="mzCustomerList"></div>
             </section>
         </div>`;
 
     const groups = customerGroups();
     const target = $("mzCustomerList");
+    const searchInput = $("mzCustomerSearch");
 
-    target.innerHTML = groups.length ? groups.map(group => `
-        <button type="button" class="mz-record-row"
-            data-customer-mobile="${escapeHTML(group.mobile)}">
-            <span>
-                <strong>${escapeHTML(group.name)}</strong>
-                <small>${escapeHTML(group.mobile)}</small>
-                <small>${group.bills.length} purchase(s)</small>
-            </span>
-            <strong>${money(group.bills.reduce((sum, bill) => sum + billAmount(bill), 0))}</strong>
-        </button>
-    `).join("") : `<p class="mz-empty">No customers with a valid mobile number yet.</p>`;
+    function renderList(query = "") {
+        const normalizedQuery = query.trim().toLowerCase();
+
+        const filteredGroups = groups.filter(group =>
+            group.name.toLowerCase().includes(normalizedQuery) ||
+            group.mobile.includes(normalizedQuery)
+        );
+
+        target.innerHTML = filteredGroups.length ? filteredGroups.map(group => `
+            <button type="button" class="mz-record-row"
+                data-customer-mobile="${escapeHTML(group.mobile)}">
+                <span>
+                    <strong>${escapeHTML(group.name)}</strong>
+                    <small>${escapeHTML(group.mobile)}</small>
+                    <small>${group.bills.length} purchase(s)</small>
+                </span>
+                <strong>${money(group.bills.reduce((sum, bill) => sum + billAmount(bill), 0))}</strong>
+            </button>
+        `).join("") : `<p class="mz-empty">${normalizedQuery ? "No matching customers found." : "No customers with a valid mobile number yet."}</p>`;
+    }
+
+    searchInput.addEventListener("input", event => {
+        renderList(event.target.value);
+    });
+
+    renderList();
 }
 
 function renderCustomerStatement(mobile) {

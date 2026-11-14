@@ -820,104 +820,12 @@
             </aside>
 
 
-            <!-- MAIN DASHBOARD -->
-            <main class="dashboard-main">
-
-                <section
-                        id="subscriptionCountdownCard"
-                        class="subscription-countdown-card"
-                        aria-live="polite"
-                >
-                    <details class="subscription-countdown-details">
-
-                        <summary class="subscription-countdown-header">
-                            <h3>My Subscription</h3>
-
-                            <span
-                                id="subscriptionStatusBadge"
-                                class="subscription-status-badge"
-                            >CHECKING</span>
-                        </summary>
-
-                        <div class="subscription-countdown-content">
-
-                            <p id="subscriptionCountdownLabel">
-                                Checking subscription status...
-                            </p>
-
-                            <div
-                                id="subscriptionCountdownTimer"
-                                class="subscription-countdown-timer"
-                            >
-                                -- Days : -- Hours : -- Minutes : -- Seconds
-                            </div>
-
-                            <p id="subscriptionExpiryDate" class="subscription-expiry-date"></p>
-
-                            <button
-                                type="button"
-                                id="subscriptionManageBtn"
-                                class="subscription-manage-btn"
-                            >
-                                Manage Subscription
-                            </button>
-
-                        </div>
-
-                    </details>
-
-</section>
-
-                <!-- TOP BAR -->
-                <header class="dashboard-topbar">
-
-                    <div>
-                        <p class="dashboard-small-title">
-                            Welcome back 👋
-                        </p>
-
-                        <h1 id="dashboardStoreName">
-                            Your Pharmacy
-                        </h1>
-                    </div>
-
-                    <div class="dashboard-notification-area">
-
-                        <button
-                                type="button"
-                                id="notificationBell"
-                                class="notification-bell"
-                                aria-label="Notifications"
-                                aria-expanded="false"
-                                aria-controls="notificationsPage"
-                        >
-                            <span aria-hidden="true">🔔</span>
-
-                            <span
-                                    id="notificationUnreadCount"
-                                    class="notification-unread-count"
-                                    hidden
-                            >0</span>
-                        </button>
-
-                    </div>
-
-                    <div class="dashboard-user">
-
-                        <div class="dashboard-user-info">
-                            <span id="dashboardUserEmail">—</span>
-                        </div>
-
-                        <div class="dashboard-avatar">
-                            <span>♙</span>
-                        </div>
-
-                    </div>
-
-                </header>
 
 
-                <!-- ADVERTISEMENT / MEDIA -->
+                <!-- MAIN DASHBOARD -->
+<main class="dashboard-main">
+
+<!-- ADVERTISEMENT / MEDIA -->
                 <section class="dashboard-ad-section">
 
                     <div class="section-heading">
@@ -996,6 +904,55 @@
                     ></div>
 
                 </section>
+
+
+<!-- TOP BAR -->
+                <header class="dashboard-topbar">
+
+                    <div>
+                        <p class="dashboard-small-title">
+                            Welcome back 👋
+                        </p>
+
+                        <h1 id="dashboardStoreName">
+                            Your Pharmacy
+                        </h1>
+                    </div>
+
+                    <div class="dashboard-notification-area">
+
+                        <button
+                                type="button"
+                                id="notificationBell"
+                                class="notification-bell"
+                                aria-label="Notifications"
+                                aria-expanded="false"
+                                aria-controls="notificationsPage"
+                        >
+                            <span aria-hidden="true">🔔</span>
+
+                            <span
+                                    id="notificationUnreadCount"
+                                    class="notification-unread-count"
+                                    hidden
+                            >0</span>
+                        </button>
+
+                    </div>
+
+                    <div class="dashboard-user">
+
+                        <div class="dashboard-user-info">
+                            <span id="dashboardUserEmail">—</span>
+                        </div>
+
+                        <div class="dashboard-avatar">
+                            <span>♙</span>
+                        </div>
+
+                    </div>
+
+                </header>
 
 
                 <!-- TODAY SALES -->
@@ -2597,7 +2554,7 @@
 
                 </div>
 
-                
+
                 <div class="mz-purchase-layout">
                     <div class="mz-purchase-grid">
                         <section class="mz-purchase-card">
@@ -2793,7 +2750,7 @@
 
                 </div>
 
-                
+
 
 <div id="profileViewPanel" class="mz-profile-view">
 
@@ -2900,7 +2857,7 @@
 
         <div id="profileMessage" class="mz-account-message" role="status"></div>
 
-        
+
 <div class="mz-profile-form-actions">
   <button id="cancelProfileBtn" type="button" class="mz-cancel-profile-btn">Cancel</button>
   <button id="saveProfileBtn" type="button" class="primary-btn">Save Profile</button>
@@ -2964,7 +2921,7 @@
 
                 </div>
 
-                
+
 <div class="mz-account-layout">
 
     <section class="mz-account-card">
@@ -3082,10 +3039,6 @@
 
                 </div>
 
-            
-                
-
-            
 
                 <button
                         type="button"
@@ -3100,9 +3053,54 @@
             </header>
 
 
-                
 
-            <!-- CUSTOMER PHONE -->
+                <section
+                        id="subscriptionCountdownCard"
+                        class="subscription-countdown-card"
+                        aria-live="polite"
+                >
+                    <details class="subscription-countdown-details">
+
+                        <summary class="subscription-countdown-header">
+                            <h3>My Subscription</h3>
+
+                            <span
+                                    id="subscriptionStatusBadge"
+                                    class="subscription-status-badge"
+                            >CHECKING</span>
+                        </summary>
+
+                        <div class="subscription-countdown-content">
+
+                            <p id="subscriptionCountdownLabel">
+                                Checking subscription status...
+                            </p>
+
+                            <div
+                                    id="subscriptionCountdownTimer"
+                                    class="subscription-countdown-timer"
+                            >
+                                -- Days : -- Hours : -- Minutes : -- Seconds
+                            </div>
+
+                            <p id="subscriptionExpiryDate" class="subscription-expiry-date"></p>
+
+                            <button
+                                    type="button"
+                                    id="subscriptionManageBtn"
+                                    class="subscription-manage-btn"
+                            >
+                                Manage Subscription
+                            </button>
+
+                        </div>
+
+                    </details>
+
+                </section>
+
+
+                <!-- CUSTOMER PHONE -->
 
             <section class="dashboard-panel">
 
