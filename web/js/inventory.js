@@ -2006,19 +2006,21 @@ $("inventorySearch")?.addEventListener(
 
 // MedZoneX medicine image permission manager
 
-window.__medzoneMedicineImagePermission =
-    window.__medzoneMedicineImagePermission || "unset";
+window.__medzoneMedicineImagePermission = (() => {
+    try {
+        return localStorage.getItem("medzonexMedicineImagePermission") || "unset";
+    } catch (error) {
+        return "unset";
+    }
+})();
 
 function getMedicineImagePermission() {
     try {
-        if (
-            sessionStorage.getItem("medzonexMedicineImagePermission") === "session"
-        ) {
-            return "session";
-        }
+        const saved = localStorage.getItem("medzonexMedicineImagePermission");
+        if (saved === "session") return "session";
     } catch (error) {}
 
-    return window.__medzoneMedicineImagePermission;
+    return window.__medzoneMedicineImagePermission || "unset";
 }
 
 function showMedicineImagePermissionDialog() {
@@ -2090,12 +2092,12 @@ function showMedicineImagePermissionDialog() {
 
                 try {
                     if (choice === "session") {
-                        sessionStorage.setItem(
+                        localStorage.setItem(
                             "medzonexMedicineImagePermission",
                             "session"
                         );
                     } else {
-                        sessionStorage.removeItem(
+                        localStorage.removeItem(
                             "medzonexMedicineImagePermission"
                         );
                     }
