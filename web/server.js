@@ -68,6 +68,13 @@ const MEDZONEX_PLANS = {
         amount: 2274,
         razorpayPlanId: "plan_TmGgFi0atI45r3",
         totalCount: 20
+    },
+
+    yearly: {
+        name: "MedZoneX Yearly",
+        amount: 4440,
+        razorpayPlanId: "plan_U25rK4VPUdGaCO",
+        totalCount: 10
     }
 };
 
@@ -2978,7 +2985,8 @@ const WEBHOOK_EVENT_COLLECTION = "razorpayWebhookEvents";
 const PLAN_DURATIONS_MS = {
     monthly: 30 * 24 * 60 * 60 * 1000,
     threeMonth: 90 * 24 * 60 * 60 * 1000,
-    sixMonth: 180 * 24 * 60 * 60 * 1000
+    sixMonth: 180 * 24 * 60 * 60 * 1000,
+    yearly: 365 * 24 * 60 * 60 * 1000
 };
 
 async function authenticateFirebaseRequest(req) {

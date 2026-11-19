@@ -4940,9 +4940,14 @@ button {
 #billingPage input,
 #billingPage select,
 #billingPage textarea {
-    background-color: #171717;
-    border-color: #383838;
-    color: #FFFFFF;
+    background-color: #FFFFFF;
+    border-color: #D1D5DB;
+    color: #000000;
+}
+
+#billingPage select option {
+    background-color: #FFFFFF;
+    color: #000000;
 }
 
 #billingPage input::placeholder,

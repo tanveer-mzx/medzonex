@@ -2748,6 +2748,36 @@ $("openInventoryBtn")
         }
     });
 
+const lowStockCard = $("lowStockCount")?.closest(".stat-card");
+
+if (lowStockCard) {
+    lowStockCard.style.cursor = "pointer";
+    lowStockCard.setAttribute("role", "button");
+    lowStockCard.setAttribute("tabindex", "0");
+    lowStockCard.setAttribute("aria-label", "View low stock medicines");
+
+    const openLowStockInventory = async () => {
+        showPage("inventoryPage");
+
+        if (window.MedZoneXInventory?.loadInventory &&
+            window.MedZoneXInventory?.showLowStock) {
+            await window.MedZoneXInventory.loadInventory();
+            window.MedZoneXInventory.showLowStock();
+        } else {
+            console.error("Low Stock inventory functions are not available.");
+        }
+    };
+
+    lowStockCard.addEventListener("click", openLowStockInventory);
+
+    lowStockCard.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openLowStockInventory();
+        }
+    });
+}
+
 $("openPurchaseBtn")
     ?.addEventListener("click", async () => {
         showPage("purchasePage");

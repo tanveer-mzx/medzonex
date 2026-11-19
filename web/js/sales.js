@@ -233,6 +233,49 @@ function ensureInvoicePage() {
     $("mzPrintInvoice").addEventListener("click", () => window.print());
 }
 
+function invoiceItemsWithDiscount(bill) {
+    const items = Array.isArray(bill.items) ? bill.items : [];
+
+    const originalTotals = items.map(item =>
+        Math.max(0, Math.round(
+            (Number(item.total) || 0) * 100
+        ))
+    );
+
+    const itemsSubtotal = originalTotals.reduce((sum, value) => sum + value, 0);
+    const discountCents = Math.min(
+        itemsSubtotal,
+        Math.max(0, Math.round((Number(bill.discount) || 0) * 100))
+    );
+
+    let allocatedDiscount = 0;
+
+    return items.map((item, index) => {
+        const originalTotal = originalTotals[index];
+
+        let lineDiscount = index === items.length - 1
+            ? discountCents - allocatedDiscount
+            : itemsSubtotal > 0
+                ? Math.round(discountCents * originalTotal / itemsSubtotal)
+                : 0;
+
+        lineDiscount = Math.min(lineDiscount, discountCents - allocatedDiscount);
+        allocatedDiscount += lineDiscount;
+
+        const discountedTotal = originalTotal - lineDiscount;
+        const quantity = Number(item.quantity) || 0;
+
+        return {
+            ...item,
+            originalPrice: Number(item.price) || 0,
+            discountedPrice: quantity > 0
+                ? discountedTotal / 100 / quantity
+                : 0,
+            discountedTotal: discountedTotal / 100
+        };
+    });
+}
+
 function renderInvoice(id) {
     const bill = allBills.find(item => item.id === id);
     if (!bill) return;
@@ -240,6 +283,7 @@ function renderInvoice(id) {
     ensureInvoicePage();
 
     const items = Array.isArray(bill.items) ? bill.items : [];
+    const invoiceItems = invoiceItemsWithDiscount(bill);
 
     const addressParts = [
         pharmacyProfile.address,
@@ -269,15 +313,18 @@ function renderInvoice(id) {
             <p><strong>Date:</strong> ${escapeHTML(dateText(bill))}</p>
             <p><strong>Customer:</strong> ${escapeHTML(customerName(bill))}</p>
             <p><strong>Mobile:</strong> ${escapeHTML(customerMobile(bill) || "—")}</p>
+            ${bill.customer?.doctorName ? `<p><strong>Doctor Name:</strong> ${escapeHTML(bill.customer.doctorName)}</p>` : ""}
+            ${bill.customer?.doctorMobile ? `<p><strong>Doctor Mobile:</strong> ${escapeHTML(bill.customer.doctorMobile)}</p>` : ""}
             <table>
-                <thead><tr><th>Medicine</th><th>Batch</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead>
-                <tbody>${items.map(item => `
+                <thead><tr><th>Medicine</th><th>Batch</th><th>Qty</th><th>Original Rate</th><th>Discounted Rate</th><th>Discounted Total</th></tr></thead>
+                <tbody>${invoiceItems.map(item => `
                     <tr>
                         <td>${escapeHTML(item.name)}</td>
                         <td>${escapeHTML(item.batch || "")}</td>
                         <td>${escapeHTML(item.quantity)}</td>
-                        <td>${money(item.price)}</td>
-                        <td>${money(item.total)}</td>
+                        <td>${money(item.originalPrice)}</td>
+                        <td>${money(item.discountedPrice)}</td>
+                        <td>${money(item.discountedTotal)}</td>
                     </tr>`).join("")}</tbody>
             </table>
             <div class="mz-invoice-total">
@@ -305,6 +352,7 @@ async function generateInvoicePdf(billId) {
     }
 
     const items = Array.isArray(bill.items) ? bill.items : [];
+    const invoiceItems = invoiceItemsWithDiscount(bill);
 
     const addressParts = [
         pharmacyProfile.address,
@@ -345,6 +393,8 @@ async function generateInvoicePdf(billId) {
             <p><strong>Date:</strong> ${escapeHTML(dateText(bill))}</p>
             <p><strong>Customer:</strong> ${escapeHTML(customerName(bill))}</p>
             <p><strong>Mobile:</strong> ${escapeHTML(customerMobile(bill) || "—")}</p>
+            ${bill.customer?.doctorName ? `<p><strong>Doctor Name:</strong> ${escapeHTML(bill.customer.doctorName)}</p>` : ""}
+            ${bill.customer?.doctorMobile ? `<p><strong>Doctor Mobile:</strong> ${escapeHTML(bill.customer.doctorMobile)}</p>` : ""}
 
             <table>
                 <thead>
@@ -352,18 +402,20 @@ async function generateInvoicePdf(billId) {
                         <th>Medicine</th>
                         <th>Batch</th>
                         <th>Qty</th>
-                        <th>Rate</th>
-                        <th>Total</th>
+                        <th>Original Rate</th>
+                        <th>Discounted Rate</th>
+                        <th>Discounted Total</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${items.map(item => `
+                    ${invoiceItems.map(item => `
                         <tr>
                             <td>${escapeHTML(item.name)}</td>
                             <td>${escapeHTML(item.batch || "")}</td>
                             <td>${escapeHTML(item.quantity)}</td>
-                            <td>${money(item.price)}</td>
-                            <td>${money(item.total)}</td>
+                            <td>${money(item.originalPrice)}</td>
+                            <td>${money(item.discountedPrice)}</td>
+                            <td>${money(item.discountedTotal)}</td>
                         </tr>
                     `).join("")}
                 </tbody>

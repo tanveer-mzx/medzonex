@@ -1123,90 +1123,48 @@ function removeBillItem(
 
 function updateBillSummary() {
 
-    const subtotal =
-        billItems.reduce(
-            (
-                total,
-                item
-            ) =>
-                total +
-                (
-                    Number(
-                        item.total
-                    ) || 0
-                ),
-            0
-        );
+    const subtotal = billItems.reduce(
+        (total, item) => total + (Number(item.total) || 0),
+        0
+    );
 
+    let discountPercent =
+        Number($("billingDiscount")?.value) || 0;
 
-    let discount =
-        Number(
-            $("billingDiscount")?.value
-        ) || 0;
+    discountPercent = Math.min(100, Math.max(0, discountPercent));
 
-
-    if (discount < 0) {
-
-        discount =
-            0;
-
+    if ($("billingDiscount")) {
+        $("billingDiscount").value = discountPercent;
     }
 
+    // Convert percentage into actual rupee discount.
+    const discount =
+        (subtotal * discountPercent) / 100;
 
-    if (discount > subtotal) {
-
-        discount =
-            subtotal;
-
-    }
-
-
-    const grandTotal =
-        subtotal -
-        discount;
-
+    const grandTotal = subtotal - discount;
 
     if ($("billingSubtotal")) {
-
-        $("billingSubtotal")
-            .textContent =
-                money(subtotal);
-
+        $("billingSubtotal").textContent = money(subtotal);
     }
-
 
     if ($("billingDiscountAmount")) {
-
-        $("billingDiscountAmount")
-            .textContent =
-                money(discount);
-
+        $("billingDiscountAmount").textContent = money(discount);
     }
-
 
     if ($("billingGrandTotal")) {
-
-        $("billingGrandTotal")
-            .textContent =
-                money(grandTotal);
-
+        $("billingGrandTotal").textContent = money(grandTotal);
     }
 
-
     return {
-
         subtotal,
-
         discount,
-
+        discountPercent,
         grandTotal
-
     };
 
 }
 
 
-// ============================================================
 // BILL NUMBER
 // ============================================================
 
@@ -1295,6 +1253,12 @@ async function saveBill({
     const customerMobile =
         $("billingCustomerMobile")?.value.trim() || "";
 
+    const doctorName =
+        $("billingDoctorName")?.value.trim() || "";
+
+    const doctorMobile =
+        $("billingDoctorMobile")?.value.trim() || "";
+
     if ((share && !/^[0-9]{10}$/.test(customerMobile)) ||
         (customerMobile && !/^[0-9]{10}$/.test(customerMobile))) {
         if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
@@ -1302,6 +1266,14 @@ async function saveBill({
             share
                 ? "Mobile number is mandatory for sharing the invoice. Please enter a valid 10-digit mobile number."
                 : "Enter a valid 10-digit mobile number.",
+            "error"
+        );
+        return;
+    }
+
+    if (doctorMobile && !/^[0-9]{10}$/.test(doctorMobile)) {
+        showBillingMessage(
+            "Enter a valid 10-digit doctor mobile number.",
             "error"
         );
         return;
@@ -1575,7 +1547,10 @@ const stockReferences = [];
                                 customerName,
 
                             mobile:
-                                customerMobile
+                                customerMobile,
+
+                            doctorName,
+                            doctorMobile
 
                         },
 
@@ -1744,6 +1719,14 @@ function clearBill() {
 
     }
 
+
+    if ($("billingDoctorName")) {
+        $("billingDoctorName").value = "";
+    }
+
+    if ($("billingDoctorMobile")) {
+        $("billingDoctorMobile").value = "";
+    }
 
     if ($("billingMedicineSearch")) {
 
